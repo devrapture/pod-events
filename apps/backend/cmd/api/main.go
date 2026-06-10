@@ -1,8 +1,14 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"log"
+	"net/http"
+	"os"
+	"os/signal"
+	"syscall"
+	"time"
 
 	"github.com/devrapture/pod-events/internal/config"
 	"github.com/devrapture/pod-events/internal/database"
@@ -33,8 +39,37 @@ func main() {
 
 	addr := fmt.Sprintf(":%s", cfg.Port)
 	r := routes.Setup(db, deps, cfg, logger)
-	logger.Info("Server starting", zap.String("addr", addr))
-	if err := r.Run(addr); err != nil {
-		log.Fatalf("Failed to start server %v", err)
+
+	srv := &http.Server{
+		Addr:    addr,
+		Handler: r.Handler(),
 	}
+
+	go func() {									
+		logger.Info("Server starting", zap.String("addr", addr))
+		if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+			logger.Fatal("Failed to start server", zap.Error(err))
+		}
+	}()
+
+	quit := make(chan os.Signal, 1)
+	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
+	<-quit
+	logger.Info("Shutting down server...")
+
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	if err := srv.Shutdown(ctx); err != nil {
+		logger.Fatal("Server forced to shutdown", zap.Error(err))
+	}
+
+	sqlDB, err := db.DB()
+	if err == nil {
+		if err := sqlDB.Close(); err != nil {
+			logger.Fatal("Failed to close database", zap.Error(err))
+		}
+	}
+
+	logger.Info("Server exited")
 }
