@@ -10,6 +10,7 @@ import (
 	"github.com/devrapture/pod-events/internal/models"
 	"github.com/devrapture/pod-events/internal/repositories"
 	"github.com/devrapture/pod-events/internal/spotify"
+	"github.com/devrapture/pod-events/pkg/jwt"
 	"github.com/google/uuid"
 	"go.uber.org/zap"
 )
@@ -118,10 +119,12 @@ func (s *authService) HandleCallback(ctx context.Context, code, state, cookieSta
 		return nil, "", fmt.Errorf("save spotify tokens: %w", err)
 	}
 
-	// TODO implement jwt
 	s.logger.Info("user authenticated via spotify", zap.String("user_id", user.ID.String()))
-	// return user, sessionToken, nil
-	return user, "", nil
+	sessionToken, err := jwt.GenerateJwt(user.ID, user.Email, s.cfg)
+	if err != nil {
+		return nil, "", fmt.Errorf("generate jwt: %w", err)
+	}
+	return user, sessionToken, nil
 }
 
 // GetValidAccessToken returns a valid Spotify access token for a user.

@@ -89,12 +89,15 @@ func (h *AuthHandler) SpotifyCallback(c *gin.Context) {
 		true, // httpOnly
 	)
 
-	user, _, err := h.authService.HandleCallback(c.Request.Context(), code, state, cookieState)
+	user, token, err := h.authService.HandleCallback(c.Request.Context(), code, state, cookieState)
 	if err != nil {
 		h.logger.Warn("failed to authenticate with spotify", zap.Error(err))
 		response.ErrorResponse(c, http.StatusInternalServerError, "authentication failed")
 		return
 	}
 
-	response.SuccessResponse(c, http.StatusOK, "Successfully authenticated", user, nil)
+	response.SuccessResponse(c, http.StatusOK, "Successfully authenticated", gin.H{
+		"user":  user,
+		"token": token,
+	}, nil)
 }
