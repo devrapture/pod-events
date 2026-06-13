@@ -10,6 +10,7 @@ import (
 )
 
 type HandlerDependencies struct {
+	AuthHandler *handlers.AuthHandler
 }
 
 func Setup(db *gorm.DB, deps HandlerDependencies, cfg *config.Config, logger *zap.Logger) *gin.Engine {
@@ -21,6 +22,14 @@ func Setup(db *gorm.DB, deps HandlerDependencies, cfg *config.Config, logger *za
 
 	{
 		v1.GET("/health", handlers.HealthHandler(db))
+
+		// auth
+		auth := v1.Group("/auth")
+
+		auth.
+			GET("/spotify/login", deps.AuthHandler.SpotifyLogin).
+			GET("/spotify/callback", deps.AuthHandler.SpotifyCallback)
+
 	}
 
 	return r

@@ -27,7 +27,6 @@ type PaginationMeta struct {
 }
 
 type ErrorInfo struct {
-	Code    string            `json:"code"`
 	Message string            `json:"message"`
 	Details map[string]string `json:"details,omitempty"`
 }
@@ -41,10 +40,10 @@ func SuccessResponse(c *gin.Context, status int, message string, data interface{
 	})
 }
 
-func ErrorResponse(c *gin.Context, status int, code, message string) {
+func ErrorResponse(c *gin.Context, status int, message string) {
 	c.JSON(status, APIResponse{
 		Success: false,
-		Error:   &ErrorInfo{Code: code, Message: message},
+		Error:   &ErrorInfo{Message: message},
 	})
 }
 
@@ -58,7 +57,6 @@ func InternalError(c *gin.Context, msg ...string) {
 	c.JSON(http.StatusInternalServerError, APIResponse{
 		Success: false,
 		Error: &ErrorInfo{
-			Code:    "INTERNAL_ERROR",
 			Message: message,
 		},
 	})
@@ -72,7 +70,6 @@ func ValidationError(c *gin.Context, err error) {
 		Success: false,
 		Message: "Validation failed",
 		Error: &ErrorInfo{
-			Code:    "VALIDATION_ERROR",
 			Message: "One or more fields are invalid",
 			Details: details,
 		},
