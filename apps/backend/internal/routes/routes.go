@@ -11,6 +11,7 @@ import (
 
 type HandlerDependencies struct {
 	AuthHandler *handlers.AuthHandler
+	ShowHandler *handlers.ShowHandler
 }
 
 func Setup(db *gorm.DB, deps HandlerDependencies, cfg *config.Config, logger *zap.Logger) *gin.Engine {
@@ -29,6 +30,14 @@ func Setup(db *gorm.DB, deps HandlerDependencies, cfg *config.Config, logger *za
 		auth.
 			GET("/spotify/login", deps.AuthHandler.SpotifyLogin).
 			GET("/spotify/callback", deps.AuthHandler.SpotifyCallback)
+
+		protected := v1.Group("")
+		protected.Use(middleware.AuthMiddleware(cfg))
+
+		// shows
+		shows := protected.Group("/shows")
+		shows.
+			GET("/saved", deps.ShowHandler.GetUserSavedShows)
 
 	}
 

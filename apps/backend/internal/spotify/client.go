@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/devrapture/pod-events/internal/config"
+	"github.com/google/uuid"
 	"go.uber.org/zap"
 )
 
@@ -78,6 +79,16 @@ func (c *SpotifyClient) GetCurrentUser(ctx context.Context, accessToken string) 
 	return &user, nil
 }
 
+// get podcasts saved by a user on spotify
+func (c *SpotifyClient) GetUserSavedShows(ctx context.Context, accessToken string, userID uuid.UUID) (*SpotifySavedShowsResponse, error) {
+	endpoint := "/me/shows"
+	var show SpotifySavedShowsResponse
+	if err := c.get(ctx, accessToken, endpoint, &show); err != nil {
+		return nil, err
+	}
+	return &show, nil
+}
+
 func (c *SpotifyClient) requestToken(ctx context.Context, data url.Values) (*TokenResponse, error) {
 	req, err := http.NewRequestWithContext(ctx, http.MethodPost, spotifyTokenURL, strings.NewReader(data.Encode()))
 	if err != nil {
@@ -114,6 +125,7 @@ func (c *SpotifyClient) get(ctx context.Context, accessToken, endpoint string, t
 	}
 
 	defer res.Body.Close()
+
 	switch res.StatusCode {
 	case http.StatusOK:
 		if err := json.NewDecoder(res.Body).Decode(target); err != nil {
