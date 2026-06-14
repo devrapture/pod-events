@@ -12,7 +12,13 @@ import (
 
 	"github.com/devrapture/pod-events/internal/config"
 	"github.com/devrapture/pod-events/internal/database"
+	handlers "github.com/devrapture/pod-events/internal/handler"
+	"github.com/devrapture/pod-events/internal/repositories"
+	"github.com/gin-gonic/gin"
+
 	"github.com/devrapture/pod-events/internal/routes"
+	"github.com/devrapture/pod-events/internal/services"
+	"github.com/devrapture/pod-events/internal/spotify"
 	"github.com/devrapture/pod-events/pkg/logger"
 	"go.uber.org/zap"
 )
@@ -35,9 +41,27 @@ func main() {
 		log.Fatalf("Failed to initialize database: %v", err)
 	}
 
-	deps := routes.HandlerDependencies{}
+	// ── Clients ────────────────────────────────────────────────
+	spotifyClient := spotify.NewSpotifyClient(cfg, logger)
+
+	// ── Repositories ────────────────────────────────────────────────
+	userRepo := repositories.NewUserRepository(db)
+	tokenRepo := repositories.NewTokenRepository(db, cfg.TokenEncryptionKey)
+
+	// ── Services ────────────────────────────────────────────────
+	authService := services.NewAuthService(cfg, tokenRepo, userRepo, spotifyClient, logger)
+
+	// ── Handlers ────────────────────────────────────────────────
+	authHandler := handlers.NewAuthHandler(authService, logger, cfg)
+
+	deps := routes.HandlerDependencies{
+		AuthHandler: authHandler,
+	}
 
 	addr := fmt.Sprintf(":%s", cfg.Port)
+	if cfg.IsProduction() {
+		gin.SetMode(gin.ReleaseMode)
+	}
 	r := routes.Setup(db, deps, cfg, logger)
 
 	srv := &http.Server{
@@ -45,7 +69,7 @@ func main() {
 		Handler: r.Handler(),
 	}
 
-	go func() {									
+	go func() {
 		logger.Info("Server starting", zap.String("addr", addr))
 		if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
 			logger.Fatal("Failed to start server", zap.Error(err))
