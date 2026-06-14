@@ -63,7 +63,7 @@ type SpotifySavedShowItem struct {
 type SpotifyShow struct {
 	ID            string `json:"id"`
 	Name          string `json:"name"`
-	Publisher     string `json:"publisher"`
+	Description   string `json:"description"`
 	TotalEpisodes int    `json:"total_episodes"`
 	Images        []struct {
 		URL string `json:"url"`
@@ -84,7 +84,7 @@ func (s *SpotifySavedShowsResponse) ToSavedShows() []dto.SavedShowResponse {
 		shows = append(shows, dto.SavedShowResponse{
 			ID:            item.Show.ID,
 			Name:          item.Show.Name,
-			Publisher:     item.Show.Publisher,
+			Description:   item.Show.Description,
 			AddedAt:       item.AddedAt,
 			ImageURL:      item.Show.ImageURL(),
 			TotalEpisodes: item.Show.TotalEpisodes,
