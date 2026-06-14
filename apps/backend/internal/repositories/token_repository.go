@@ -73,10 +73,17 @@ func (r *tokenRepository) UpdateAccessToken(ctx context.Context, userID uuid.UUI
 		return fmt.Errorf("failed to encrypt access token: %w", err)
 	}
 
-	return r.db.WithContext(ctx).Model(&models.SpotifyToken{}).Where("user_id = ?", userID).Updates(map[string]interface{}{
+	result := r.db.WithContext(ctx).Model(&models.SpotifyToken{}).Where("user_id = ?", userID).Updates(map[string]interface{}{
 		"access_token": accessTokenEncrypted,
 		"expires_at":   expires_at,
-	}).Error
+	})
+	if result.Error != nil {
+		return fmt.Errorf("failed to update access token: %w", result.Error)
+	}
+	if result.RowsAffected == 0 {
+		return apperrors.ErrorSpotifyTokenNotFound
+	}
+	return nil
 }
 
 func (r *tokenRepository) GetByUserID(ctx context.Context, userID uuid.UUID) (*models.SpotifyToken, error) {

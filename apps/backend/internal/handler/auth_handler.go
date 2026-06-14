@@ -62,7 +62,6 @@ func (h *AuthHandler) SpotifyCallback(c *gin.Context) {
 	state := c.Query("state")
 	spotifyError := c.Query("error") // Spotify sends "error=access_denied" if user rejects
 	if spotifyError != "" {
-		h.logger.Warn("spotify user rejected login", zap.String("state", state))
 		response.ErrorResponse(c, http.StatusUnauthorized, "Spotify login rejected")
 		return
 	}
@@ -74,7 +73,7 @@ func (h *AuthHandler) SpotifyCallback(c *gin.Context) {
 	cookieState, err := c.Cookie(stateCookieName)
 	if err != nil {
 		h.logger.Warn("failed to get state cookie", zap.Error(err))
-		response.ErrorResponse(c, http.StatusInternalServerError, "failed to get state cookie")
+		response.ErrorResponse(c, http.StatusUnauthorized, "invalid or expired oauth state")
 		return
 	}
 	secureCookie := h.cfg.IsProduction()

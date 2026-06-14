@@ -4,9 +4,11 @@ import (
 	"context"
 	"crypto/rand"
 	"encoding/hex"
+	"errors"
 	"fmt"
 
 	"github.com/devrapture/pod-events/internal/config"
+	apperrors "github.com/devrapture/pod-events/internal/errors"
 	"github.com/devrapture/pod-events/internal/models"
 	"github.com/devrapture/pod-events/internal/repositories"
 	"github.com/devrapture/pod-events/internal/spotify"
@@ -90,7 +92,7 @@ func (s *authService) HandleCallback(ctx context.Context, code, state, cookieSta
 		if err := s.userRepository.Create(ctx, user); err != nil {
 			return nil, "", fmt.Errorf("create user: %w", err)
 		}
-		s.logger.Info("new user created via spotify oauth", zap.String("user_id", user.ID.String()), zap.String("email", user.Email))
+		s.logger.Info("new user created via spotify oauth", zap.String("user_id", user.ID.String()))
 	} else {
 		// Existing user — update their Spotify info in case it changed
 		user.Name = spotifyUser.DisplayName
@@ -110,9 +112,12 @@ func (s *authService) HandleCallback(ctx context.Context, code, state, cookieSta
 	}
 
 	if tokenResp.RefreshToken == "" {
-		exiting, _ := s.tokenRepository.GetByUserID(ctx, user.ID)
-		if exiting != nil {
-			spotifyToken.RefreshToken = exiting.RefreshToken
+		existing, err := s.tokenRepository.GetByUserID(ctx, user.ID)
+		if err != nil && !errors.Is(err, apperrors.ErrorSpotifyTokenNotFound) {
+			return nil, "", fmt.Errorf("load existing spotify token: %w", err)
+		}
+		if existing != nil {
+			spotifyToken.RefreshToken = existing.RefreshToken
 		}
 	}
 	if err := s.tokenRepository.Upsert(ctx, spotifyToken); err != nil {
@@ -150,8 +155,21 @@ func (s *authService) GetValidAccessToken(ctx context.Context, userID uuid.UUID)
 	}
 
 	newExpiredAt := refreshedToken.ExpiresAt()
-	if err := s.tokenRepository.UpdateAccessToken(ctx, userID, refreshedToken.AccessToken, newExpiredAt); err != nil {
-		return "", fmt.Errorf("saved refresh token: %w", err)
+	// if err := s.tokenRepository.UpdateAccessToken(ctx, userID, refreshedToken.AccessToken, newExpiredAt); err != nil {
+	// 	return "", fmt.Errorf("saved refresh token: %w", err)
+	// }
+	newRefreshToken := token.RefreshToken
+	if refreshedToken.RefreshToken != "" {
+		newRefreshToken = refreshedToken.RefreshToken
+	}
+	if err := s.tokenRepository.Upsert(ctx, &models.SpotifyToken{
+		UserID:       userID,
+		AccessToken:  refreshedToken.AccessToken,
+		RefreshToken: newRefreshToken,
+		ExpiresAt:    newExpiredAt,
+		Scope:        token.Scope,
+	}); err != nil {
+		return "", fmt.Errorf("save refreshed spotify token: %w", err)
 	}
 	return refreshedToken.AccessToken, nil
 }

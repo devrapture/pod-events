@@ -123,7 +123,7 @@ func (c *SpotifyClient) get(ctx context.Context, accessToken, endpoint string, t
 
 	case http.StatusTooManyRequests:
 		retryAfter := 1
-		if v := req.Header.Get("Retry-After"); v != "" {
+		if v := res.Header.Get("Retry-After"); v != "" {
 			if n, err := strconv.Atoi(v); err == nil {
 				retryAfter = n
 			}

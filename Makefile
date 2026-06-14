@@ -11,7 +11,15 @@ dev: db-up
 db-up:
 	docker compose up -d
 	@echo "Waiting for Postgres to be healthy..."
-	@while ! docker compose exec -T postgres pg_isready -U postgres -d podevents > /dev/null 2>&1; do sleep 1; done
+		`@retries`=60; \
+	while ! docker compose exec -T postgres pg_isready -U postgres -d podevents > /dev/null 2>&1; do \
+	  retries=$$((retries-1)); \
+	  if [ $$retries -le 0 ]; then \
+	    echo "Postgres did not become healthy in time"; \
+	    exit 1; \
+	  fi; \
+	  sleep 1; \
+	done
 	@docker compose exec -T postgres psql -U postgres -tc \
 	  "SELECT 1 FROM pg_database WHERE datname='podevents_dev'" | grep -q 1 \
 	  || docker compose exec -T postgres psql -U postgres -c "CREATE DATABASE podevents_dev;"

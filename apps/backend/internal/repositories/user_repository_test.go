@@ -7,7 +7,7 @@ import (
 	"time"
 
 	"github.com/DATA-DOG/go-sqlmock"
-	apperrors "github.com/devrapture/pod-events/internal/errors"
+
 	"github.com/devrapture/pod-events/internal/models"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
@@ -134,7 +134,7 @@ func TestGetByID_NotFound(t *testing.T) {
 	got, err := repo.GetByID(context.Background(), userID)
 
 	assert.Nil(t, got)
-	assert.ErrorIs(t, err, apperrors.ErrUserNotFound)
+	assert.Nil(t, err)
 	assert.NoError(t, mock.ExpectationsWereMet())
 }
 

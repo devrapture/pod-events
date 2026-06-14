@@ -90,7 +90,7 @@ make migrate-up
 
 ### How it works
 
-```
+```text
 GORM models (internal/models/)
     |
     |   make migrate-diff (Atlas runs the GORM loader program)

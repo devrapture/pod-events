@@ -9,8 +9,8 @@ import (
 type SpotifyToken struct {
 	Base
 	UserID       uuid.UUID `json:"user_id" gorm:"uniqueIndex;not null"`
-	AccessToken  string    `json:"access_token" gorm:"not null"`
-	RefreshToken string    `json:"refresh_token" gorm:"not null"`
+	AccessToken  string    `json:"-" gorm:"not null"`
+	RefreshToken string    `json:"-" gorm:"not null"`
 	ExpiresAt    time.Time `json:"expired_at" gorm:"not null"`
 	Scope        string    `json:"scope"`
 

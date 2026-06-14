@@ -27,7 +27,7 @@ func Load() (*Config, error) {
 	_ = godotenv.Load()
 
 	JwtExpires, err := strconv.Atoi(getEnv("JWT_EXPIRES_IN_HOURS", "24"))
-	if err != nil {
+	if err != nil || JwtExpires <= 0 {
 		log.Println("invalid JWT_EXPIRES_IN_HOURS, defaulting to 24")
 		JwtExpires = 24
 	}
