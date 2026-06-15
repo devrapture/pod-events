@@ -65,6 +65,9 @@ type SpotifyShow struct {
 	Name          string `json:"name"`
 	Description   string `json:"description"`
 	TotalEpisodes int    `json:"total_episodes"`
+	ExternalURLs struct{
+		Spotify string `json:"spotify"`
+	} `json:"external_urls"`
 	Images        []struct {
 		URL string `json:"url"`
 	} `json:"images"`
@@ -88,6 +91,7 @@ func (s *SpotifySavedShowsResponse) ToSavedShows() []dto.SavedShowResponse {
 			AddedAt:       item.AddedAt,
 			ImageURL:      item.Show.ImageURL(),
 			TotalEpisodes: item.Show.TotalEpisodes,
+			SpotifyURL: item.Show.ExternalURLs.Spotify,
 		})
 	}
 	return shows

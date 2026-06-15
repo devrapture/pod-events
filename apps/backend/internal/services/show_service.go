@@ -59,7 +59,7 @@ func (s *showServices) filterShows(shows []dto.SavedShowResponse, query string) 
 	if query == "" {
 		return shows
 	}
-	filtered := make([]dto.SavedShowResponse, 0)
+	filtered := make([]dto.SavedShowResponse, 0, len(shows))
 	for _, item := range shows {
 		if strings.Contains(strings.ToLower(item.Name), query) ||
 			strings.Contains(strings.ToLower(item.Description), query) {

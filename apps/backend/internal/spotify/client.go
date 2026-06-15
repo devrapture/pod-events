@@ -94,13 +94,18 @@ func (c *SpotifyClient) GetAllUserSavedShows(ctx context.Context, accessToken st
 		Limit: limit,
 		Items: []SpotifySavedShowItem{},
 	}
+
+	firstPage := true
 	for offset := 0; ; offset += limit {
 		page, err := c.GetUserSavedShows(ctx, accessToken, offset, limit)
 		if err != nil {
 			return nil, err
 		}
-		all.Href = page.Href
-		all.Total = page.Total
+		if firstPage {
+			all.Href = page.Href
+			all.Total = page.Total
+			firstPage = false
+		}
 
 		all.Items = append(all.Items, page.Items...)
 		if page.Next == "" || len(all.Items) >= page.Total {

@@ -27,6 +27,7 @@ func NewShowHandler(showService services.ShowServices, logger *zap.Logger) *Show
 func (h *ShowHandler) GetUserSavedShows(c *gin.Context) {
 	userID, _ := c.Get("userID")
 	query := c.Query("q")
+	h.logger.Info("saved shows request", zap.String("query", query))
 	show, err := h.showService.GetUserSavedShows(c.Request.Context(), userID.(uuid.UUID), query)
 	if err != nil {
 		h.logger.Error("failed to get saved shows", zap.Error(err))
