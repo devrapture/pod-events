@@ -44,10 +44,10 @@ func (h *ShowHandler) SearchShows(c *gin.Context) {
 	userID, _ := c.Get("userID")
 	query := strings.TrimSpace(c.Query("q"))
 
-	limit := c.DefaultQuery("limit", "20")
+	limit := c.DefaultQuery("limit", "10")
 	limitInt, err := strconv.Atoi(limit)
 	if err != nil {
-		limitInt = 20
+		limitInt = 10
 	}
 
 	if limitInt <= 0 {

@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"log"
 	"net/http"
 	"net/url"
 	"strconv"
@@ -80,13 +81,8 @@ func (c *SpotifyClient) GetCurrentUser(ctx context.Context, accessToken string) 
 }
 
 func (c *SpotifyClient) SearchShows(ctx context.Context, accessToken, query string, limit, offset int) (*ShowSearchResult, error) {
-	params := url.Values{}
-	params.Set("q", query)
-	params.Set("type", "show")
-	params.Set("limit", strconv.Itoa(limit))
-	params.Set("offset", strconv.Itoa(offset))
-
-	endpoint := "search?" + params.Encode()
+	endpoint := fmt.Sprintf("/search?q=%s&type=show&limit=%d&offset=%d",
+		url.QueryEscape(query), limit, offset)
 	var result ShowSearchResult
 	if err := c.get(ctx, accessToken, endpoint, &result); err != nil {
 		return nil, fmt.Errorf("error searching for shows: %w", err)
