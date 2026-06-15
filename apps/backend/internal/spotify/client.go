@@ -79,7 +79,7 @@ func (c *SpotifyClient) GetCurrentUser(ctx context.Context, accessToken string) 
 }
 
 func (c *SpotifyClient) SearchShows(ctx context.Context, accessToken, query string, limit, offset int) (*ShowSearchResult, error) {
-	endpoint := fmt.Sprintf("/search?q=%s&type=show&limit=%d&offset=%d", url.QueryEscape(query), limit, offset)
+	endpoint := fmt.Sprintf("search?q=%s&type=show&limit=%d&offset=%d", url.QueryEscape(query), limit, offset)
 	var result ShowSearchResult
 	if err := c.get(ctx, accessToken, endpoint, &result); err != nil {
 		return nil, fmt.Errorf("error searching for shows: %w", err)
@@ -89,7 +89,7 @@ func (c *SpotifyClient) SearchShows(ctx context.Context, accessToken, query stri
 
 // get podcasts saved by a user on spotify
 func (c *SpotifyClient) GetUserSavedShows(ctx context.Context, accessToken string, offset, limit int) (*SpotifySavedShowsResponse, error) {
-	endpoint := fmt.Sprintf("/me/shows?offset=%d&limit=%d", offset, limit)
+	endpoint := fmt.Sprintf("me/shows?offset=%d&limit=%d", offset, limit)
 	var show SpotifySavedShowsResponse
 	if err := c.get(ctx, accessToken, endpoint, &show); err != nil {
 		return nil, err
