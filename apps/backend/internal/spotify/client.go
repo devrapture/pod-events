@@ -78,6 +78,43 @@ func (c *SpotifyClient) GetCurrentUser(ctx context.Context, accessToken string) 
 	return &user, nil
 }
 
+// get podcasts saved by a user on spotify
+func (c *SpotifyClient) GetUserSavedShows(ctx context.Context, accessToken string, offset, limit int) (*SpotifySavedShowsResponse, error) {
+	endpoint := fmt.Sprintf("/me/shows?offset=%d&limit=%d", offset, limit)
+	var show SpotifySavedShowsResponse
+	if err := c.get(ctx, accessToken, endpoint, &show); err != nil {
+		return nil, err
+	}
+	return &show, nil
+}
+
+func (c *SpotifyClient) GetAllUserSavedShows(ctx context.Context, accessToken string) (*SpotifySavedShowsResponse, error) {
+	const limit = 50
+	all := &SpotifySavedShowsResponse{
+		Limit: limit,
+		Items: []SpotifySavedShowItem{},
+	}
+
+	firstPage := true
+	for offset := 0; ; offset += limit {
+		page, err := c.GetUserSavedShows(ctx, accessToken, offset, limit)
+		if err != nil {
+			return nil, err
+		}
+		if firstPage {
+			all.Href = page.Href
+			all.Total = page.Total
+			firstPage = false
+		}
+
+		all.Items = append(all.Items, page.Items...)
+		if page.Next == "" || len(all.Items) >= page.Total {
+			break
+		}
+	}
+	return all, nil
+}
+
 func (c *SpotifyClient) requestToken(ctx context.Context, data url.Values) (*TokenResponse, error) {
 	req, err := http.NewRequestWithContext(ctx, http.MethodPost, spotifyTokenURL, strings.NewReader(data.Encode()))
 	if err != nil {

@@ -15,6 +15,7 @@ import (
 	handlers "github.com/devrapture/pod-events/internal/handler"
 	"github.com/devrapture/pod-events/internal/repositories"
 	"github.com/gin-gonic/gin"
+	"github.com/patrickmn/go-cache"
 
 	"github.com/devrapture/pod-events/internal/routes"
 	"github.com/devrapture/pod-events/internal/services"
@@ -41,6 +42,9 @@ func main() {
 		log.Fatalf("Failed to initialize database: %v", err)
 	}
 
+	// ── Cache ────────────────────────────────────────────────
+	appCache := cache.New(10*time.Minute, 15*time.Minute)
+
 	// ── Clients ────────────────────────────────────────────────
 	spotifyClient := spotify.NewSpotifyClient(cfg, logger)
 
@@ -50,12 +54,15 @@ func main() {
 
 	// ── Services ────────────────────────────────────────────────
 	authService := services.NewAuthService(cfg, tokenRepo, userRepo, spotifyClient, logger)
+	showService := services.NewShowServices(spotifyClient, authService, cfg, appCache)
 
 	// ── Handlers ────────────────────────────────────────────────
 	authHandler := handlers.NewAuthHandler(authService, logger, cfg)
+	showHandler := handlers.NewShowHandler(showService, logger)
 
 	deps := routes.HandlerDependencies{
 		AuthHandler: authHandler,
+		ShowHandler: showHandler,
 	}
 
 	addr := fmt.Sprintf(":%s", cfg.Port)

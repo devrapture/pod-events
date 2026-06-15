@@ -3,6 +3,8 @@ package spotify
 import (
 	"fmt"
 	"time"
+
+	"github.com/devrapture/pod-events/internal/dto"
 )
 
 // TokenResponse is Spotify's response to a token request.
@@ -41,4 +43,56 @@ type RateLimitError struct {
 
 func (e *RateLimitError) Error() string {
 	return fmt.Sprintf("spotify rate limit exceeded, retry after %d seconds", e.RetryAfter)
+}
+
+type SpotifySavedShowsResponse struct {
+	Href     string                 `json:"href"`
+	Limit    int                    `json:"limit"`
+	Next     string                 `json:"next"`
+	Offset   int                    `json:"offset"`
+	Previous string                 `json:"previous"`
+	Total    int                    `json:"total"`
+	Items    []SpotifySavedShowItem `json:"items"`
+}
+
+type SpotifySavedShowItem struct {
+	AddedAt string      `json:"added_at"`
+	Show    SpotifyShow `json:"show"`
+}
+
+type SpotifyShow struct {
+	ID            string `json:"id"`
+	Name          string `json:"name"`
+	Description   string `json:"description"`
+	TotalEpisodes int    `json:"total_episodes"`
+	ExternalURLs struct{
+		Spotify string `json:"spotify"`
+	} `json:"external_urls"`
+	Images        []struct {
+		URL string `json:"url"`
+	} `json:"images"`
+}
+
+func (s *SpotifyShow) ImageURL() string {
+	if len(s.Images) > 0 {
+		return s.Images[0].URL
+	}
+	return ""
+}
+
+func (s *SpotifySavedShowsResponse) ToSavedShows() []dto.SavedShowResponse {
+	shows := make([]dto.SavedShowResponse, 0, len(s.Items))
+
+	for _, item := range s.Items {
+		shows = append(shows, dto.SavedShowResponse{
+			ID:            item.Show.ID,
+			Name:          item.Show.Name,
+			Description:   item.Show.Description,
+			AddedAt:       item.AddedAt,
+			ImageURL:      item.Show.ImageURL(),
+			TotalEpisodes: item.Show.TotalEpisodes,
+			SpotifyURL: item.Show.ExternalURLs.Spotify,
+		})
+	}
+	return shows
 }
