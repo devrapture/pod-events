@@ -65,10 +65,10 @@ type SpotifyShow struct {
 	Name          string `json:"name"`
 	Description   string `json:"description"`
 	TotalEpisodes int    `json:"total_episodes"`
-	ExternalURLs struct{
+	ExternalURLs  struct {
 		Spotify string `json:"spotify"`
 	} `json:"external_urls"`
-	Images        []struct {
+	Images []struct {
 		URL string `json:"url"`
 	} `json:"images"`
 }
@@ -91,7 +91,30 @@ func (s *SpotifySavedShowsResponse) ToSavedShows() []dto.SavedShowResponse {
 			AddedAt:       item.AddedAt,
 			ImageURL:      item.Show.ImageURL(),
 			TotalEpisodes: item.Show.TotalEpisodes,
-			SpotifyURL: item.Show.ExternalURLs.Spotify,
+			SpotifyURL:    item.Show.ExternalURLs.Spotify,
+		})
+	}
+	return shows
+}
+
+type ShowSearchResult struct {
+	Shows struct {
+		Items []SpotifyShow `json:"items"`
+		Total int           `json:"total"`
+	} `json:"shows"`
+}
+
+func (s *ShowSearchResult) ToSavedShows() []dto.SavedShowResponse {
+	shows := make([]dto.SavedShowResponse, 0, len(s.Shows.Items))
+
+	for _, item := range s.Shows.Items {
+		shows = append(shows, dto.SavedShowResponse{
+			ID:            item.ID,
+			Name:          item.Name,
+			Description:   item.Description,
+			ImageURL:      item.ImageURL(),
+			TotalEpisodes: item.TotalEpisodes,
+			SpotifyURL:    item.ExternalURLs.Spotify,
 		})
 	}
 	return shows
