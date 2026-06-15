@@ -3,6 +3,7 @@ package handler
 import (
 	"net/http"
 	"strconv"
+	"strings"
 
 	"github.com/devrapture/pod-events/internal/services"
 	"github.com/devrapture/pod-events/pkg/response"
@@ -41,7 +42,7 @@ func (h *ShowHandler) GetUserSavedShows(c *gin.Context) {
 // GET /shows/search
 func (h *ShowHandler) SearchShows(c *gin.Context) {
 	userID, _ := c.Get("userID")
-	query := c.Query("q")
+	query := strings.TrimSpace(c.Query("q"))
 
 	limit := c.DefaultQuery("limit", "20")
 	limitInt, err := strconv.Atoi(limit)
@@ -49,11 +50,21 @@ func (h *ShowHandler) SearchShows(c *gin.Context) {
 		limitInt = 20
 	}
 
+	if limitInt <= 0 {
+		response.ErrorResponse(c, http.StatusBadRequest, "limit must be > 0")
+		return
+	}
+
 	offset := c.DefaultQuery("offset", "0")
 	offsetInt, err := strconv.Atoi(offset)
 	if err != nil {
 		offsetInt = 0
 	}
+	if offsetInt < 0 {
+		response.ErrorResponse(c, http.StatusBadRequest, "offset must be >= 0")
+		return
+	}
+
 	if query == "" {
 		response.ErrorResponse(c, http.StatusBadRequest, "query is required")
 		return

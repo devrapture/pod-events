@@ -72,13 +72,6 @@ func (s *showServices) filterShows(shows []dto.SavedShowResponse, query string) 
 }
 
 func (s *showServices) SearchShows(ctx context.Context, userID uuid.UUID, query string, limit, offset int) ([]dto.SavedShowResponse, error) {
-	cacheKey := fmt.Sprintf("user:%s:search-shows:%s", userID.String(), query)
-	if cachedShows, found := s.cache.Get(cacheKey); found {
-		shows, ok := cachedShows.([]dto.SavedShowResponse)
-		if ok {
-			return shows, nil
-		}
-	}
 	accessToken, err := s.authService.GetValidAccessToken(ctx, userID)
 	if err != nil {
 		return nil, err
@@ -93,6 +86,5 @@ func (s *showServices) SearchShows(ctx context.Context, userID uuid.UUID, query 
 		return nil, err
 	}
 	shows := result.ToSavedShows()
-	s.cache.Set(cacheKey, shows, gocache.DefaultExpiration)
 	return shows, nil
 }
