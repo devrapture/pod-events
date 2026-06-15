@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
 	"net/url"
 	"strconv"
@@ -79,7 +80,13 @@ func (c *SpotifyClient) GetCurrentUser(ctx context.Context, accessToken string) 
 }
 
 func (c *SpotifyClient) SearchShows(ctx context.Context, accessToken, query string, limit, offset int) (*ShowSearchResult, error) {
-	endpoint := fmt.Sprintf("search?q=%s&type=show&limit=%d&offset=%d", url.QueryEscape(query), limit, offset)
+	params := url.Values{}
+	params.Set("q", query)
+	params.Set("type", "show")
+	params.Set("limit", strconv.Itoa(limit))
+	params.Set("offset", strconv.Itoa(offset))
+
+	endpoint := "search?" + params.Encode()
 	var result ShowSearchResult
 	if err := c.get(ctx, accessToken, endpoint, &result); err != nil {
 		return nil, fmt.Errorf("error searching for shows: %w", err)
@@ -148,6 +155,7 @@ func (c *SpotifyClient) requestToken(ctx context.Context, data url.Values) (*Tok
 }
 
 func (c *SpotifyClient) get(ctx context.Context, accessToken, endpoint string, target interface{}) error {
+	endpoint = strings.TrimPrefix(endpoint, "/")
 	url := fmt.Sprintf("%s/%s", spotifyAPIBase, endpoint)
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
 	if err != nil {
@@ -160,9 +168,14 @@ func (c *SpotifyClient) get(ctx context.Context, accessToken, endpoint string, t
 	}
 
 	defer res.Body.Close()
+	body, err := io.ReadAll(res.Body)
+	if err != nil {
+		return fmt.Errorf("failed to read response body from %s: %w", endpoint, err)
+	}
+
 	switch res.StatusCode {
 	case http.StatusOK:
-		if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+		if err := json.Unmarshal(body, target); err != nil {
 			return fmt.Errorf("failed to decode response: %w", err)
 		}
 		return nil
@@ -178,12 +191,12 @@ func (c *SpotifyClient) get(ctx context.Context, accessToken, endpoint string, t
 		return &RateLimitError{RetryAfter: retryAfter}
 
 	case http.StatusNotFound:
-		return fmt.Errorf("spotify resource not found")
+		return fmt.Errorf("spotify resource not found: %s", string(body))
 
 	case http.StatusUnauthorized:
-		return fmt.Errorf("spotify access token expired or invalid")
+		return fmt.Errorf("spotify access token expired or invalid: %s", string(body))
 
 	default:
-		return fmt.Errorf("failed to get %s: %s", endpoint, res.Status)
+		return fmt.Errorf("failed to get %s: %s: %s", endpoint, res.Status, string(body))
 	}
 }
