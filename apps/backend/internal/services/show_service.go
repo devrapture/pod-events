@@ -14,6 +14,7 @@ import (
 
 type ShowServices interface {
 	GetUserSavedShows(ctx context.Context, userID uuid.UUID, query string) ([]dto.SavedShowResponse, error)
+	SearchShows(ctx context.Context, userID uuid.UUID, query string, limit, offset int) ([]dto.SavedShowResponse, error)
 }
 
 type showServices struct {
@@ -68,4 +69,30 @@ func (s *showServices) filterShows(shows []dto.SavedShowResponse, query string) 
 	}
 
 	return filtered
+}
+
+func (s *showServices) SearchShows(ctx context.Context, userID uuid.UUID, query string, limit, offset int) ([]dto.SavedShowResponse, error) {
+	cacheKey := fmt.Sprintf("user:%s:search-shows:%s", userID.String(), query)
+	if cachedShows, found := s.cache.Get(cacheKey); found {
+		shows, ok := cachedShows.([]dto.SavedShowResponse)
+		if ok {
+			return shows, nil
+		}
+	}
+	accessToken, err := s.authService.GetValidAccessToken(ctx, userID)
+	if err != nil {
+		return nil, err
+	}
+
+	if limit <= 0 || limit > 50 {
+		limit = 20
+	}
+
+	result, err := s.spotifyClient.SearchShows(ctx, accessToken, query, limit, offset)
+	if err != nil {
+		return nil, err
+	}
+	shows := result.ToSavedShows()
+	s.cache.Set(cacheKey, shows, gocache.DefaultExpiration)
+	return shows, nil
 }

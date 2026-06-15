@@ -37,7 +37,8 @@ func Setup(db *gorm.DB, deps HandlerDependencies, cfg *config.Config, logger *za
 		// shows
 		shows := protected.Group("/shows")
 		shows.
-			GET("/saved", deps.ShowHandler.GetUserSavedShows)
+			GET("/saved", deps.ShowHandler.GetUserSavedShows).
+			GET("/search", deps.ShowHandler.SearchShows)
 
 	}
 
