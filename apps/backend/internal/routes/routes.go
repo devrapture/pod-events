@@ -10,8 +10,9 @@ import (
 )
 
 type HandlerDependencies struct {
-	AuthHandler *handlers.AuthHandler
-	ShowHandler *handlers.ShowHandler
+	AuthHandler     *handlers.AuthHandler
+	ShowHandler     *handlers.ShowHandler
+	TelegramHandler *handlers.TelegramWebHookHandler
 }
 
 func Setup(db *gorm.DB, deps HandlerDependencies, cfg *config.Config, logger *zap.Logger) *gin.Engine {
@@ -39,6 +40,15 @@ func Setup(db *gorm.DB, deps HandlerDependencies, cfg *config.Config, logger *za
 		shows.
 			GET("/saved", deps.ShowHandler.GetUserSavedShows).
 			GET("/search", deps.ShowHandler.SearchShows)
+
+		// webhooks
+		webhooks := v1.Group("/webhooks")
+		webhooks.POST("/telegram", deps.TelegramHandler.Handle)
+
+		// Telegram
+		telegram := protected.Group("/telegram")
+		telegram.
+			POST("/send-test-message", deps.TelegramHandler.SendTestMessage)
 
 	}
 

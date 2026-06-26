@@ -12,15 +12,17 @@ import (
 )
 
 type Config struct {
-	AppEnv              string
-	Port                string
-	DatabaseURL         string
-	TokenEncryptionKey  string
-	SpotifyClientSecret string
-	SpotifyClientID     string
-	SpotifyRedirectURL  string
-	JwtExpires          int
-	JwtSecret           string
+	AppEnv                string
+	Port                  string
+	DatabaseURL           string
+	TokenEncryptionKey    string
+	SpotifyClientSecret   string
+	SpotifyClientID       string
+	SpotifyRedirectURL    string
+	JwtExpires            int
+	JwtSecret             string
+	TelegramBotToken      string
+	TelegramWebhookSecret string
 }
 
 func Load() (*Config, error) {
@@ -33,15 +35,17 @@ func Load() (*Config, error) {
 	}
 
 	config := &Config{
-		AppEnv:              getEnv("APP_ENV", "development"),
-		Port:                getEnv("PORT", "8080"),
-		DatabaseURL:         mustGetEnv("DATABASE_URL"),
-		TokenEncryptionKey:  mustGetEnv("TOKEN_ENCRYPTION_KEY"),
-		SpotifyClientSecret: mustGetEnv("SPOTIFY_CLIENT_SECRET"),
-		SpotifyClientID:     mustGetEnv("SPOTIFY_CLIENT_ID"),
-		SpotifyRedirectURL:  mustGetEnv("SPOTIFY_REDIRECT_URL"),
-		JwtExpires:          JwtExpires,
-		JwtSecret:           mustGetEnv("JWT_SECRET"),
+		AppEnv:                getEnv("APP_ENV", "development"),
+		Port:                  getEnv("PORT", "8080"),
+		DatabaseURL:           mustGetEnv("DATABASE_URL"),
+		TokenEncryptionKey:    mustGetEnv("TOKEN_ENCRYPTION_KEY"),
+		SpotifyClientSecret:   mustGetEnv("SPOTIFY_CLIENT_SECRET"),
+		SpotifyClientID:       mustGetEnv("SPOTIFY_CLIENT_ID"),
+		SpotifyRedirectURL:    mustGetEnv("SPOTIFY_REDIRECT_URL"),
+		JwtExpires:            JwtExpires,
+		JwtSecret:             mustGetEnv("JWT_SECRET"),
+		TelegramBotToken:      mustGetEnv("TELEGRAM_BOT_TOKEN"),
+		TelegramWebhookSecret: mustGetEnv("TELEGRAM_WEBHOOK_SECRET"),
 	}
 
 	return config, config.validate()
