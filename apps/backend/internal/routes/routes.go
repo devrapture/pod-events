@@ -13,6 +13,7 @@ type HandlerDependencies struct {
 	AuthHandler     *handlers.AuthHandler
 	ShowHandler     *handlers.ShowHandler
 	TelegramHandler *handlers.TelegramWebHookHandler
+	ChannelHandler  *handlers.ChannelHandler
 }
 
 func Setup(db *gorm.DB, deps HandlerDependencies, cfg *config.Config, logger *zap.Logger) *gin.Engine {
@@ -49,6 +50,14 @@ func Setup(db *gorm.DB, deps HandlerDependencies, cfg *config.Config, logger *za
 		telegram := protected.Group("/telegram")
 		telegram.
 			POST("/send-test-message", deps.TelegramHandler.SendTestMessage)
+
+		// channels
+		channels := protected.Group("/channels")
+		channels.
+			POST("", deps.ChannelHandler.CreateChannel).
+			GET("", deps.ChannelHandler.GetChannels).
+			POST("/:channelID/toggle", deps.ChannelHandler.ToggleActive).
+			DELETE("/:channelID", deps.ChannelHandler.Delete)
 
 	}
 

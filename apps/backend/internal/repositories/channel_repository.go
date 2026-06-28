@@ -11,24 +11,24 @@ import (
 	"gorm.io/gorm"
 )
 
-type NotificationRepository interface {
+type ChannelRepository interface {
 	Create(ctx context.Context, channel *models.NotificationChannel) error
 	GetByUserID(ctx context.Context, userID uuid.UUID) ([]models.NotificationChannel, error)
 	ToggleActive(ctx context.Context, userID, channelID uuid.UUID, isActive bool) error
 	Delete(ctx context.Context, userID, channelID uuid.UUID) error
 }
 
-type notificationRepository struct {
+type channelRepository struct {
 	db *gorm.DB
 }
 
-func NewNotificationRepository(db *gorm.DB) NotificationRepository {
-	return &notificationRepository{
+func NewChannelRepository(db *gorm.DB) ChannelRepository {
+	return &channelRepository{
 		db: db,
 	}
 }
 
-func (r *notificationRepository) Create(ctx context.Context, channel *models.NotificationChannel) error {
+func (r *channelRepository) Create(ctx context.Context, channel *models.NotificationChannel) error {
 	result := r.db.WithContext(ctx).Create(channel)
 	if result.Error != nil {
 		return fmt.Errorf("failed to create notification channel: %w", result.Error)
@@ -36,7 +36,7 @@ func (r *notificationRepository) Create(ctx context.Context, channel *models.Not
 	return nil
 }
 
-func (r *notificationRepository) GetByUserID(ctx context.Context, userID uuid.UUID) ([]models.NotificationChannel, error) {
+func (r *channelRepository) GetByUserID(ctx context.Context, userID uuid.UUID) ([]models.NotificationChannel, error) {
 	var channel []models.NotificationChannel
 	if err := r.db.WithContext(ctx).Where("user_id = ? AND is_active = ?", userID, true).Find(&channel).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
@@ -47,8 +47,11 @@ func (r *notificationRepository) GetByUserID(ctx context.Context, userID uuid.UU
 	return channel, nil
 }
 
-func (r *notificationRepository) ToggleActive(ctx context.Context, userID, channelID uuid.UUID, isActive bool) error {
-	result := r.db.WithContext(ctx).Where("user_id = ? AND channel_id = ?", channelID).Update("is_active", isActive)
+func (r *channelRepository) ToggleActive(ctx context.Context, userID, channelID uuid.UUID, isActive bool) error {
+	result := r.db.WithContext(ctx).
+		Model(&models.NotificationChannel{}).
+		Where("id = ? AND user_id = ?", channelID, userID).
+		Update("is_active", isActive)
 	if result.Error != nil {
 		return fmt.Errorf("failed to toggle notification channel: %w", result.Error)
 	}
@@ -58,7 +61,7 @@ func (r *notificationRepository) ToggleActive(ctx context.Context, userID, chann
 	return nil
 }
 
-func (r *notificationRepository) Delete(ctx context.Context, userID, channelID uuid.UUID) error {
+func (r *channelRepository) Delete(ctx context.Context, userID, channelID uuid.UUID) error {
 	result := r.db.WithContext(ctx).Where("id = ? AND user_id = ?", channelID, userID).Delete(&models.NotificationChannel{})
 	if result.Error != nil {
 		return fmt.Errorf("failed to delete notification channel: %w", result.Error)

@@ -15,6 +15,7 @@ func main() {
 		// list all your model structs here
 		&models.User{},
 		&models.SpotifyToken{},
+		&models.NotificationChannel{},
 	// add all model...
 	)
 	if err != nil {

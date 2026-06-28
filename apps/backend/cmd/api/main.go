@@ -55,20 +55,24 @@ func main() {
 	// ── Repositories ────────────────────────────────────────────────
 	userRepo := repositories.NewUserRepository(db)
 	tokenRepo := repositories.NewTokenRepository(db, cfg.TokenEncryptionKey)
+	channelRepo := repositories.NewChannelRepository(db)
 
 	// ── Services ────────────────────────────────────────────────
 	authService := services.NewAuthService(cfg, tokenRepo, userRepo, spotifyClient, logger)
 	showService := services.NewShowServices(spotifyClient, authService, cfg, appCache)
+	channelService := services.NewChannelServices(channelRepo)
 
 	// ── Handlers ────────────────────────────────────────────────
 	authHandler := handlers.NewAuthHandler(authService, logger, cfg)
 	showHandler := handlers.NewShowHandler(showService, logger)
 	telegramHandler := handlers.NewTelegramWebHookHandler(cfg, telegramNotifier, logger)
+	channelHandler := handlers.NewChannelHandler(channelService, logger)
 
 	deps := routes.HandlerDependencies{
-		AuthHandler: authHandler,
-		ShowHandler: showHandler,
+		AuthHandler:     authHandler,
+		ShowHandler:     showHandler,
 		TelegramHandler: telegramHandler,
+		ChannelHandler:  channelHandler,
 	}
 
 	addr := fmt.Sprintf(":%s", cfg.Port)
