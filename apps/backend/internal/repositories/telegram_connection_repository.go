@@ -54,7 +54,10 @@ func (r *telegramConnectionRepository) Consume(ctx context.Context, tokenHash st
 }
 
 func (r *telegramConnectionRepository) DeleteExpired(ctx context.Context) error {
-	result := r.db.WithContext(ctx).Where("expired_at < ? OR consumed = ?", time.Now(), true).Delete(&models.TelegramConnection{})
+	result := r.db.WithContext(ctx).
+		Unscoped().
+		Where("expires_at < ? OR consumed = ?", time.Now(), true).
+		Delete(&models.TelegramConnection{})
 	if result.Error != nil {
 		return fmt.Errorf("failed to delete expired telegram connections: %w", result.Error)
 	}
