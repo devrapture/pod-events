@@ -8,6 +8,7 @@ import (
 	apperrors "github.com/devrapture/pod-events/internal/errors"
 	"github.com/devrapture/pod-events/internal/models"
 	"gorm.io/gorm"
+	"gorm.io/gorm/clause"
 )
 
 type TelegramConnectionRepository interface {
@@ -36,19 +37,24 @@ func (r *telegramConnectionRepository) Create(ctx context.Context, conn *models.
 
 func (r *telegramConnectionRepository) Consume(ctx context.Context, tokenHash string) (*models.TelegramConnection, error) {
 	var t models.TelegramConnection
-	err := r.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
-		if err := tx.First(&t, "token_hash = ?", tokenHash).Error; err != nil {
-			return err
-		}
-		if t.Consumed || time.Now().After(t.ExpiresAt) {
-			tx.Delete(&t)
-			return gorm.ErrRecordNotFound
-		}
-		return tx.Model(&t).Update("consumed", true).Error
-	})
+	now := time.Now()
 
-	if err != nil {
-		return nil, fmt.Errorf("failed to consume telegram connection: %w", err)
+	result := r.db.WithContext(ctx).
+		Model(&t).
+		Clauses(clause.Returning{}).
+		Where("token_hash = ? AND consumed = ? AND expires_at > ?", tokenHash, false, now).
+		Update("consumed", true)
+	if result.Error != nil {
+		return nil, fmt.Errorf("failed to consume telegram connection: %w", result.Error)
+	}
+	if result.RowsAffected == 0 {
+		if err := r.db.WithContext(ctx).
+			Unscoped().
+			Where("token_hash = ? AND (consumed = ? OR expires_at <= ?)", tokenHash, true, now).
+			Delete(&models.TelegramConnection{}).Error; err != nil {
+			return nil, fmt.Errorf("failed to delete stale telegram connection: %w", err)
+		}
+		return nil, fmt.Errorf("failed to consume telegram connection: %w", gorm.ErrRecordNotFound)
 	}
 	return &t, nil
 }

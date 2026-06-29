@@ -106,26 +106,6 @@ func (h *TelegramWebHookHandler) Handle(c *gin.Context) {
 		c.Status(http.StatusOK)
 		return
 	}
-	// name := strings.TrimSpace(strings.Join([]string{
-	// 	update.Message.From.FirstName,
-	// 	update.Message.From.LastName,
-	// }, " "))
-	// if name == "" {
-	// 	name = "there"
-	// }
-	// message := fmt.Sprintf("Hi %s, this is PodEvents. Your Telegram chat ID is %d.", name, chatID)
-	// switch text {
-	// case cmdStart:
-	// 	if err := h.notifier.SendToChatID(c.Request.Context(), message, chatID); err != nil {
-	// 		h.logger.Error("failed to send telegram chat id", zap.Error(err), zap.Int64("chat_id", chatID))
-	// 	}
-	// case "/chatid":
-	// 	if err := h.notifier.SendToChatID(c.Request.Context(), message, chatID); err != nil {
-	// 		h.logger.Error("failed to send telegram chat id", zap.Error(err), zap.Int64("chat_id", chatID))
-	// 	}
-	// default:
-	// 	// Ignore normal user messages.
-	// }
 
 	c.Status(http.StatusOK)
 }
