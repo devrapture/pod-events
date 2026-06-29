@@ -21,7 +21,7 @@ type NotificationChannel struct {
 	Base
 	UserID      uuid.UUID   `json:"user_id" gorm:"type:uuid; not null;index"`
 	ChannelType ChannelType `json:"channel_type" gorm:"not null"`
-	Destination string      `json:"destination" gorm:"not null"`
+	Destination string      `json:"destination" gorm:"not null;uniqueIndex"`
 	IsActive    bool        `json:"is_active" gorm:"type:bool; default:true"`
 	Label       string      `json:"label"` // optional human-readable label, e.g. "#dev-alerts"
 

@@ -38,7 +38,7 @@ func (r *channelRepository) Create(ctx context.Context, channel *models.Notifica
 
 func (r *channelRepository) GetByUserID(ctx context.Context, userID uuid.UUID) ([]models.NotificationChannel, error) {
 	var channel []models.NotificationChannel
-	if err := r.db.WithContext(ctx).Where("user_id = ? AND is_active = ?", userID, true).Find(&channel).Error; err != nil {
+	if err := r.db.WithContext(ctx).Where("user_id = ?", userID).Find(&channel).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, apperrors.ErrUserNotFound
 		}

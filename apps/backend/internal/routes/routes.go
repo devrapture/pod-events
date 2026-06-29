@@ -49,7 +49,7 @@ func Setup(db *gorm.DB, deps HandlerDependencies, cfg *config.Config, logger *za
 		// Telegram
 		telegram := protected.Group("/telegram")
 		telegram.
-			POST("/send-test-message", deps.TelegramHandler.SendTestMessage)
+			POST("/generate-link", deps.TelegramHandler.CreateConnectLink)
 
 		// channels
 		channels := protected.Group("/channels")

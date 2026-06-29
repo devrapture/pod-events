@@ -8,53 +8,46 @@ import (
 
 	"github.com/devrapture/pod-events/internal/config"
 	"github.com/devrapture/pod-events/internal/notifications/telegram"
+	"github.com/devrapture/pod-events/internal/services"
 	"github.com/devrapture/pod-events/pkg/response"
 	"github.com/gin-gonic/gin"
+	"github.com/google/uuid"
 	"go.uber.org/zap"
 )
 
 const telegramSecretHeader = "X-Telegram-Bot-Api-Secret-Token"
 
 type TelegramWebHookHandler struct {
-	cfg      *config.Config
-	notifier *telegram.Notifier
-	logger   *zap.Logger
+	cfg                       *config.Config
+	notifier                  *telegram.Notifier
+	telegramConnectionService services.TelegramConnectionServices
+	logger                    *zap.Logger
 }
 
 type SendTestMessageRequest struct {
 	ChatID int64 `json:"chat_id"`
 }
 
-func NewTelegramWebHookHandler(cfg *config.Config, notifier *telegram.Notifier, logger *zap.Logger) *TelegramWebHookHandler {
+func NewTelegramWebHookHandler(cfg *config.Config, notifier *telegram.Notifier, telegramConnectionService services.TelegramConnectionServices, logger *zap.Logger) *TelegramWebHookHandler {
 	return &TelegramWebHookHandler{
-		cfg:      cfg,
-		notifier: notifier,
-		logger:   logger,
+		cfg:                       cfg,
+		notifier:                  notifier,
+		telegramConnectionService: telegramConnectionService,
+		logger:                    logger,
 	}
 }
 
-func (h *TelegramWebHookHandler) SendTestMessage(c *gin.Context) {
-	message := `🧪 Test notification
-	
-	Good news! Your Telegram notifications are working.
-	
-	From now on, whenever a podcast you're subscribed to releases a new episode, you'll receive an alert like this.
-	
-	Happy listening! 🎧`
-
-	var request SendTestMessageRequest
-	if err := c.ShouldBindJSON(&request); err != nil {
-		response.ErrorResponse(c, http.StatusBadRequest, "Invalid request body. Please provide a valid chat_id.")
-		c.Status(http.StatusOK)
+func (h *TelegramWebHookHandler) CreateConnectLink(c *gin.Context) {
+	userID, _ := c.Get("userID")
+	link, err := h.telegramConnectionService.CreateConnectLink(c.Request.Context(), userID.(uuid.UUID))
+	if err != nil {
+		h.logger.Error("failed to create telegram connect link", zap.Error(err))
+		response.ErrorResponse(c, http.StatusInternalServerError, "Failed to create telegram connect link")
 		return
 	}
-
-	if err := h.notifier.SendToChatID(c.Request.Context(), message, request.ChatID); err != nil {
-		h.logger.Error("failed to send telegram chat id", zap.Error(err), zap.Int64("chat_id", request.ChatID))
-	}
-
-	response.SuccessResponse(c, http.StatusOK, "test message sent successfully", nil, nil)
+	response.SuccessResponse(c, http.StatusOK, "Telegram connect link created", gin.H{"url": link}, nil)
 }
+
 
 func (h *TelegramWebHookHandler) Handle(c *gin.Context) {
 	if !h.validSecret(c.GetHeader(telegramSecretHeader)) {
@@ -74,28 +67,65 @@ func (h *TelegramWebHookHandler) Handle(c *gin.Context) {
 		return
 	}
 
-	chatID := update.Message.Chat.ID
+	// chatID := update.Message.Chat.ID
 	text := strings.TrimSpace(update.Message.Text)
-	name := strings.TrimSpace(strings.Join([]string{
-		update.Message.From.FirstName,
-		update.Message.From.LastName,
-	}, " "))
-	if name == "" {
-		name = "there"
-	}
-	message := fmt.Sprintf("Hi %s, this is PodEvents. Your Telegram chat ID is %d.", name, chatID)
-	switch text {
-	case "/start":
-		if err := h.notifier.SendToChatID(c.Request.Context(), message, chatID); err != nil {
-			h.logger.Error("failed to send telegram chat id", zap.Error(err), zap.Int64("chat_id", chatID))
+	if strings.HasPrefix(text, "/start ") {
+		token := strings.TrimSpace(strings.TrimPrefix(text, "/start "))
+		chatID := update.Message.Chat.ID
+
+		name := strings.TrimSpace(strings.Join([]string{
+			update.Message.From.FirstName,
+			update.Message.From.LastName,
+		}, " "))
+		if name == "" {
+			name = "there"
 		}
-	case "/chatid":
-		if err := h.notifier.SendToChatID(c.Request.Context(), message, chatID); err != nil {
-			h.logger.Error("failed to send telegram chat id", zap.Error(err), zap.Int64("chat_id", chatID))
+
+		_, err := h.telegramConnectionService.CompleteConnection(
+			c.Request.Context(),
+			token,
+			chatID,
+		)
+		if err != nil {
+			h.logger.Warn("failed to complete telegram connection", zap.Error(err))
+			_ = h.notifier.SendToChatID(
+				c.Request.Context(),
+				"This PodEvents connection link is invalid or expired. Please generate a new one from the app.",
+				chatID,
+			)
+			c.Status(http.StatusOK)
+			return
 		}
-	default:
-		// Ignore normal user messages.
+
+		_ = h.notifier.SendToChatID(
+			c.Request.Context(),
+			fmt.Sprintf("Hi %s, PodEvents is now connected to this Telegram chat.", name),
+			chatID,
+		)
+
+		c.Status(http.StatusOK)
+		return
 	}
+	// name := strings.TrimSpace(strings.Join([]string{
+	// 	update.Message.From.FirstName,
+	// 	update.Message.From.LastName,
+	// }, " "))
+	// if name == "" {
+	// 	name = "there"
+	// }
+	// message := fmt.Sprintf("Hi %s, this is PodEvents. Your Telegram chat ID is %d.", name, chatID)
+	// switch text {
+	// case cmdStart:
+	// 	if err := h.notifier.SendToChatID(c.Request.Context(), message, chatID); err != nil {
+	// 		h.logger.Error("failed to send telegram chat id", zap.Error(err), zap.Int64("chat_id", chatID))
+	// 	}
+	// case "/chatid":
+	// 	if err := h.notifier.SendToChatID(c.Request.Context(), message, chatID); err != nil {
+	// 		h.logger.Error("failed to send telegram chat id", zap.Error(err), zap.Int64("chat_id", chatID))
+	// 	}
+	// default:
+	// 	// Ignore normal user messages.
+	// }
 
 	c.Status(http.StatusOK)
 }

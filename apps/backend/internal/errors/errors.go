@@ -17,4 +17,6 @@ var (
 	ErrTelegramBotTokenNotProvided = errors.New("telegram bot token is not provided")
 	// ErrInvalidTelegramBotFormat is returned when a telegram bot token is invalid
 	ErrInvalidTelegramBotFormat = errors.New("Telegram bot tokens look like: 7123456789:AAFxxxxxxxxxxxxx — get yours from @BotFather")
+	// ErrNoExpiredTelegramConnectionsFound is returned when no expired or consumed telegram connections are found for cleanup
+	ErrNoExpiredTelegramConnectionsFound = errors.New("no expired telegram connections found")
 )

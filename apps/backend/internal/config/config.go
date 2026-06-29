@@ -23,6 +23,7 @@ type Config struct {
 	JwtSecret             string
 	TelegramBotToken      string
 	TelegramWebhookSecret string
+	BotName               string
 }
 
 func Load() (*Config, error) {
@@ -46,6 +47,7 @@ func Load() (*Config, error) {
 		JwtSecret:             mustGetEnv("JWT_SECRET"),
 		TelegramBotToken:      mustGetEnv("TELEGRAM_BOT_TOKEN"),
 		TelegramWebhookSecret: mustGetEnv("TELEGRAM_WEBHOOK_SECRET"),
+		BotName:               mustGetEnv("BOT_NAME"),
 	}
 
 	return config, config.validate()

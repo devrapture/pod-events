@@ -3,6 +3,7 @@ package handler
 import (
 	"errors"
 	"net/http"
+	"strings"
 
 	"github.com/devrapture/pod-events/internal/dto"
 	apperrors "github.com/devrapture/pod-events/internal/errors"
@@ -34,6 +35,10 @@ func (h *ChannelHandler) CreateChannel(c *gin.Context) {
 	}
 	channel, err := h.channelService.Create(c.Request.Context(), userID.(uuid.UUID), req)
 	if err != nil {
+		if isChannelValidationError(err) {
+			response.ErrorResponse(c, http.StatusBadRequest, err.Error())
+			return
+		}
 		h.logger.Error("error creating channel", zap.Error(err))
 		response.ErrorResponse(c, http.StatusInternalServerError, "Failed to create channel")
 		return
@@ -95,4 +100,14 @@ func (h *ChannelHandler) Delete(c *gin.Context) {
 		return
 	}
 	response.SuccessResponse(c, http.StatusOK, "Channel deleted", nil, nil)
+}
+
+func isChannelValidationError(err error) bool {
+	msg := err.Error()
+
+	return strings.Contains(msg, "invalid channel_type") ||
+		strings.Contains(msg, "slack destination") ||
+		strings.Contains(msg, "discord destination") ||
+		strings.Contains(msg, "telegram destination") ||
+		strings.Contains(msg, "whatsapp destination")
 }

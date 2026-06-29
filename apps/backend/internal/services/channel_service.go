@@ -3,6 +3,7 @@ package services
 import (
 	"context"
 	"fmt"
+	"strconv"
 
 	"github.com/devrapture/pod-events/internal/dto"
 	"github.com/devrapture/pod-events/internal/models"
@@ -11,7 +12,7 @@ import (
 )
 
 type ChannelServices interface {
-	Create(ctx context.Context, userID uuid.UUID, req dto.CreateChannelRequest) (*models.NotificationChannel, error) 
+	Create(ctx context.Context, userID uuid.UUID, req dto.CreateChannelRequest) (*models.NotificationChannel, error)
 	GetByUser(ctx context.Context, userID uuid.UUID) ([]models.NotificationChannel, error)
 	DeleteChannel(ctx context.Context, userID, channelID uuid.UUID) error
 	ToggleActive(ctx context.Context, userID, channelID uuid.UUID, isActive bool) error
@@ -73,7 +74,7 @@ func (s *channelServices) validateDestination(channelType models.ChannelType, de
 			return fmt.Errorf("discord destination must be a valid HTTPS webhook URL")
 		}
 	case models.ChannelTypeTelegram:
-		if len(destination) == 0 {
+		if _, err := strconv.ParseInt(destination, 10, 64); err != nil {
 			return fmt.Errorf("telegram destination must be a chat_id (numeric string)")
 		}
 	case models.ChannelTypeWhatsApp:
