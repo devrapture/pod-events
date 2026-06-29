@@ -13,6 +13,7 @@ import (
 	"github.com/devrapture/pod-events/internal/config"
 	"github.com/devrapture/pod-events/internal/database"
 	handlers "github.com/devrapture/pod-events/internal/handler"
+	"github.com/devrapture/pod-events/internal/notifications/telegram"
 	"github.com/devrapture/pod-events/internal/repositories"
 	"github.com/gin-gonic/gin"
 	"github.com/patrickmn/go-cache"
@@ -48,21 +49,32 @@ func main() {
 	// ── Clients ────────────────────────────────────────────────
 	spotifyClient := spotify.NewSpotifyClient(cfg, logger)
 
+	// ── Notifier ────────────────────────────────────────────────
+	telegramNotifier := telegram.NewNotifier(cfg)
+
 	// ── Repositories ────────────────────────────────────────────────
 	userRepo := repositories.NewUserRepository(db)
 	tokenRepo := repositories.NewTokenRepository(db, cfg.TokenEncryptionKey)
+	channelRepo := repositories.NewChannelRepository(db)
+	telegramConnectionRepo := repositories.NewTelegramConnectionRepository(db)
 
 	// ── Services ────────────────────────────────────────────────
 	authService := services.NewAuthService(cfg, tokenRepo, userRepo, spotifyClient, logger)
 	showService := services.NewShowServices(spotifyClient, authService, cfg, appCache)
+	channelService := services.NewChannelServices(channelRepo)
+	telegramConnectionService := services.NewTelegramConnectionService(telegramConnectionRepo, channelRepo, cfg)
 
 	// ── Handlers ────────────────────────────────────────────────
 	authHandler := handlers.NewAuthHandler(authService, logger, cfg)
 	showHandler := handlers.NewShowHandler(showService, logger)
+	telegramHandler := handlers.NewTelegramWebHookHandler(cfg, telegramNotifier, telegramConnectionService, logger)
+	channelHandler := handlers.NewChannelHandler(channelService, logger)
 
 	deps := routes.HandlerDependencies{
-		AuthHandler: authHandler,
-		ShowHandler: showHandler,
+		AuthHandler:     authHandler,
+		ShowHandler:     showHandler,
+		TelegramHandler: telegramHandler,
+		ChannelHandler:  channelHandler,
 	}
 
 	addr := fmt.Sprintf(":%s", cfg.Port)

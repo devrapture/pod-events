@@ -7,5 +7,6 @@ type User struct {
 	AvatarURL     string `json:"avatar_url,omitempty"`
 	SpotifyUserID string `json:"spotify_user_id,omitempty" gorm:"uniqueIndex;not null"`
 
-	SpotifyToken *SpotifyToken `json:"-" gorm:"foreignKey:UserID"`
+	SpotifyToken         *SpotifyToken         `json:"-" gorm:"foreignKey:UserID"`
+	NotificationChannels []NotificationChannel `json:"-" gorm:"foreignKey:UserID"`
 }
