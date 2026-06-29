@@ -7,7 +7,6 @@ import (
 	"encoding/base64"
 	"encoding/hex"
 	"fmt"
-	"strconv"
 	"time"
 
 	"github.com/devrapture/pod-events/internal/config"
@@ -84,23 +83,7 @@ func (s *telegramConnectionService) ensureNoTelegramChannel(ctx context.Context,
 }
 
 func (s *telegramConnectionService) CompleteConnection(ctx context.Context, token string, chatID int64) (*models.NotificationChannel, error) {
-	conn, err := s.telegramConnectionRepo.Consume(ctx, hashToken(token))
-	if err != nil {
-		return nil, err
-	}
-	if err := s.ensureNoTelegramChannel(ctx, conn.UserID); err != nil {
-		return nil, err
-	}
-	channel := &models.NotificationChannel{
-		UserID:      conn.UserID,
-		ChannelType: models.ChannelTypeTelegram,
-		Destination: strconv.FormatInt(chatID, 10),
-		IsActive:    true,
-	}
-	if err := s.channelRepo.Create(ctx, channel); err != nil {
-		return nil, err
-	}
-	return channel, nil
+	return s.telegramConnectionRepo.CompleteConnection(ctx, hashToken(token), chatID)
 }
 
 func randomToken() (string, error) {
