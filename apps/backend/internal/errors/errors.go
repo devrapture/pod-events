@@ -19,4 +19,6 @@ var (
 	ErrInvalidTelegramBotFormat = errors.New("Telegram bot tokens look like: 7123456789:AAFxxxxxxxxxxxxx — get yours from @BotFather")
 	// ErrNoExpiredTelegramConnectionsFound is returned when no expired or consumed telegram connections are found for cleanup
 	ErrNoExpiredTelegramConnectionsFound = errors.New("no expired telegram connections found")
+	// ErrTelegramChannelAlreadyExists is returned when a user already has a Telegram notification channel
+	ErrTelegramChannelAlreadyExists = errors.New("telegram channel already exists")
 )

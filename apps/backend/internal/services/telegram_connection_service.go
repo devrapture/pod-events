@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/devrapture/pod-events/internal/config"
+	apperrors "github.com/devrapture/pod-events/internal/errors"
 	"github.com/devrapture/pod-events/internal/models"
 	"github.com/devrapture/pod-events/internal/repositories"
 	"github.com/google/uuid"
@@ -46,6 +47,10 @@ func NewTelegramConnectionService(telegramConnectionRepo repositories.TelegramCo
 }
 
 func (s *telegramConnectionService) CreateConnectLink(ctx context.Context, userID uuid.UUID) (string, error) {
+	if err := s.ensureNoTelegramChannel(ctx, userID); err != nil {
+		return "", err
+	}
+
 	token, err := randomToken()
 	if err != nil {
 		return "", err
@@ -63,9 +68,27 @@ func (s *telegramConnectionService) CreateConnectLink(ctx context.Context, userI
 	return fmt.Sprintf("https://t.me/%s?start=%s", s.botName, token), nil
 }
 
+func (s *telegramConnectionService) ensureNoTelegramChannel(ctx context.Context, userID uuid.UUID) error {
+	channels, err := s.channelRepo.GetByUserID(ctx, userID)
+	if err != nil {
+		return err
+	}
+
+	for _, channel := range channels {
+		if channel.ChannelType == models.ChannelTypeTelegram {
+			return apperrors.ErrTelegramChannelAlreadyExists
+		}
+	}
+
+	return nil
+}
+
 func (s *telegramConnectionService) CompleteConnection(ctx context.Context, token string, chatID int64) (*models.NotificationChannel, error) {
 	conn, err := s.telegramConnectionRepo.Consume(ctx, hashToken(token))
 	if err != nil {
+		return nil, err
+	}
+	if err := s.ensureNoTelegramChannel(ctx, conn.UserID); err != nil {
 		return nil, err
 	}
 	channel := &models.NotificationChannel{

@@ -2,11 +2,13 @@ package handler
 
 import (
 	"crypto/subtle"
+	"errors"
 	"fmt"
 	"net/http"
 	"strings"
 
 	"github.com/devrapture/pod-events/internal/config"
+	apperrors "github.com/devrapture/pod-events/internal/errors"
 	"github.com/devrapture/pod-events/internal/notifications/telegram"
 	"github.com/devrapture/pod-events/internal/services"
 	"github.com/devrapture/pod-events/pkg/response"
@@ -41,13 +43,16 @@ func (h *TelegramWebHookHandler) CreateConnectLink(c *gin.Context) {
 	userID, _ := c.Get("userID")
 	link, err := h.telegramConnectionService.CreateConnectLink(c.Request.Context(), userID.(uuid.UUID))
 	if err != nil {
+		if errors.Is(err, apperrors.ErrTelegramChannelAlreadyExists) {
+			response.ErrorResponse(c, http.StatusConflict, "You already have a Telegram channel. Delete it before creating a new Telegram connection link.")
+			return
+		}
 		h.logger.Error("failed to create telegram connect link", zap.Error(err))
 		response.ErrorResponse(c, http.StatusInternalServerError, "Failed to create telegram connect link")
 		return
 	}
 	response.SuccessResponse(c, http.StatusOK, "Telegram connect link created", gin.H{"url": link}, nil)
 }
-
 
 func (h *TelegramWebHookHandler) Handle(c *gin.Context) {
 	if !h.validSecret(c.GetHeader(telegramSecretHeader)) {
@@ -87,6 +92,15 @@ func (h *TelegramWebHookHandler) Handle(c *gin.Context) {
 			chatID,
 		)
 		if err != nil {
+			if errors.Is(err, apperrors.ErrTelegramChannelAlreadyExists) {
+				_ = h.notifier.SendToChatID(
+					c.Request.Context(),
+					"PodEvents is already connected to a Telegram channel. Delete the existing Telegram channel in the app before connecting a new one.",
+					chatID,
+				)
+				c.Status(http.StatusOK)
+				return
+			}
 			h.logger.Warn("failed to complete telegram connection", zap.Error(err))
 			_ = h.notifier.SendToChatID(
 				c.Request.Context(),
