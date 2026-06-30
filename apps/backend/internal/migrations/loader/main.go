@@ -17,6 +17,9 @@ func main() {
 		&models.SpotifyToken{},
 		&models.NotificationChannel{},
 		&models.TelegramConnection{},
+		&models.Episode{},
+		&models.PodcastShow{},
+		&models.Subscription{},
 	// add all model...
 	)
 	if err != nil {

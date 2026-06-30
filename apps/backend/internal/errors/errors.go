@@ -21,4 +21,8 @@ var (
 	ErrNoExpiredTelegramConnectionsFound = errors.New("no expired telegram connections found")
 	// ErrTelegramChannelAlreadyExists is returned when a user already has a Telegram notification channel
 	ErrTelegramChannelAlreadyExists = errors.New("telegram channel already exists")
+	// ErrPodcastShowNotFound is returned when a podcast show cannot be found
+	ErrPodcastShowNotFound = errors.New("podcast show not found")
+	// ErrEpisodeNotFound is returned when an episode cannot be found
+	ErrEpisodeNotFound = errors.New("episode not found")
 )
