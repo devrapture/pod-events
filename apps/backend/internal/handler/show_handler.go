@@ -101,15 +101,22 @@ func (h *ShowHandler) Subscribe(c *gin.Context) {
 	}
 	subscription, err := h.showService.Subscribe(c.Request.Context(), userID.(uuid.UUID), spotifyShowID)
 	if err != nil {
+
+		if errors.Is(err, apperrors.ErrPodcastShowNotFound) {
+			response.ErrorResponse(c, http.StatusNotFound, "podcast show not found")
+			return
+		}
+
 		if errors.Is(err, apperrors.ErrSubscriptionAlreadyExists) {
 			response.ErrorResponse(c, http.StatusConflict, "already subscribed to this show")
 			return
 		}
+
 		h.logger.Error("failed to subscribe", zap.Error(err))
 		response.ErrorResponse(c, http.StatusInternalServerError, "failed to subscribe")
 		return
 	}
-	response.SuccessResponse(c, http.StatusOK, "subscribed successfully", subscription, nil)
+	response.SuccessResponse(c, http.StatusOK, "subscribed successfully", dto.ToSubscriptionResponse(*subscription), nil)
 }
 
 // Unsubscribe removes a subscription by its UUID.

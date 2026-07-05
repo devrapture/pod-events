@@ -7,6 +7,7 @@ import (
 	apperrors "github.com/devrapture/pod-events/internal/errors"
 	"github.com/devrapture/pod-events/internal/models"
 	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5/pgconn"
 	"gorm.io/gorm"
 )
 
@@ -41,7 +42,13 @@ func (r *subscriptionRepository) Create(ctx context.Context, subscription *model
 		return apperrors.ErrSubscriptionAlreadyExists
 	}
 
-	return r.db.WithContext(ctx).Create(subscription).Error
+	if err := r.db.WithContext(ctx).Create(subscription).Error; err != nil {
+		if isUniqueViolation(err) {
+			return apperrors.ErrSubscriptionAlreadyExists
+		}
+		return err
+	}
+	return nil
 }
 
 // GetByID fetches a subscription by UUID.
@@ -106,4 +113,13 @@ func (r *subscriptionRepository) Delete(ctx context.Context, userID, subscriptio
 		return apperrors.ErrSubscriptionNotFound
 	}
 	return nil
+}
+
+func isUniqueViolation(err error) bool {
+	var pgErr *pgconn.PgError
+	if errors.As(err, &pgErr) {
+		return pgErr.Code == "23505"
+	}
+
+	return false
 }

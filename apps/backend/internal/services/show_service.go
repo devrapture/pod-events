@@ -2,11 +2,13 @@ package services
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"strings"
 
 	"github.com/devrapture/pod-events/internal/config"
 	"github.com/devrapture/pod-events/internal/dto"
+	apperrors "github.com/devrapture/pod-events/internal/errors"
 	"github.com/devrapture/pod-events/internal/models"
 	"github.com/devrapture/pod-events/internal/repositories"
 	"github.com/devrapture/pod-events/internal/spotify"
@@ -110,6 +112,9 @@ func (s *showServices) Subscribe(ctx context.Context, userID uuid.UUID, spotifyS
 	}
 	spotifyShow, err := s.spotifyClient.GetShow(ctx, accessToken, spotifyShowID)
 	if err != nil {
+		if errors.Is(err, apperrors.ErrSpotifyResourceNotFound) {
+			return nil, apperrors.ErrPodcastShowNotFound
+		}
 		return nil, err
 	}
 
@@ -131,6 +136,7 @@ func (s *showServices) Subscribe(ctx context.Context, userID uuid.UUID, spotifyS
 	if err := s.subscriptionRepository.Create(ctx, subscription); err != nil {
 		return nil, err
 	}
+	subscription.PodcastShow = *show
 	return subscription, nil
 }
 

@@ -39,7 +39,7 @@ func (r *episodeRepository) Create(ctx context.Context, episode *models.Episode)
 // GetByID fetches an episode by UUID.
 func (r *episodeRepository) GetByID(ctx context.Context, id uuid.UUID) (*models.Episode, error) {
 	var episode models.Episode
-	result := r.db.WithContext(ctx).First(&episode, "id = ?")
+	result := r.db.WithContext(ctx).First(&episode, "id = ?", id)
 	if result.Error != nil {
 		if errors.Is(result.Error, gorm.ErrRecordNotFound) {
 			return nil, apperrors.ErrEpisodeNotFound

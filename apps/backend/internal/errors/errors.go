@@ -31,4 +31,6 @@ var (
 	ErrSubscriptionAlreadyExists = errors.New("subscription already exists")
 	// ErrSubscriptionNotFound is returned when a subscription cannot be found
 	ErrSubscriptionNotFound = errors.New("subscription not found")
+	// ErrSpotifyResourceNotFound is returned when a spotify resource cannot be found
+	ErrSpotifyResourceNotFound = errors.New("spotify resource not found")
 )

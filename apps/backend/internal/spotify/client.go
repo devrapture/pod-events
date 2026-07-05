@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/devrapture/pod-events/internal/config"
+	apperrors "github.com/devrapture/pod-events/internal/errors"
 	"go.uber.org/zap"
 )
 
@@ -93,7 +94,9 @@ func (c *SpotifyClient) SearchShows(ctx context.Context, accessToken, query stri
 func (c *SpotifyClient) GetShow(ctx context.Context, accessToken, spotifyShowID string) (*SpotifyShow, error) {
 	endpoint := fmt.Sprintf("/shows/%s", spotifyShowID)
 	var result SpotifyShow
-	c.get(ctx, accessToken, endpoint, &result)
+	if err := c.get(ctx, accessToken, endpoint, &result); err != nil {
+		return nil, err
+	}
 	return &result, nil
 }
 
@@ -193,7 +196,7 @@ func (c *SpotifyClient) get(ctx context.Context, accessToken, endpoint string, t
 		return &RateLimitError{RetryAfter: retryAfter}
 
 	case http.StatusNotFound:
-		return fmt.Errorf("spotify resource not found: %s", string(body))
+		return fmt.Errorf("%w: %s", apperrors.ErrSpotifyResourceNotFound, string(body))
 
 	case http.StatusUnauthorized:
 		return fmt.Errorf("spotify access token expired or invalid: %s", string(body))
