@@ -40,7 +40,14 @@ func Setup(db *gorm.DB, deps HandlerDependencies, cfg *config.Config, logger *za
 		shows := protected.Group("/shows")
 		shows.
 			GET("/saved", deps.ShowHandler.GetUserSavedShows).
-			GET("/search", deps.ShowHandler.SearchShows)
+			GET("/search", deps.ShowHandler.SearchShows).
+			POST("/:spotifyShowId/subscribe", deps.ShowHandler.Subscribe)
+
+		// subscriptions
+		subscriptions := protected.Group("/subscriptions")
+		subscriptions.
+			GET("", deps.ShowHandler.GetSubscriptions).
+			DELETE("/:id", deps.ShowHandler.Unsubscribe)
 
 		// webhooks
 		webhooks := v1.Group("/webhooks")
