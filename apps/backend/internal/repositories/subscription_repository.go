@@ -3,7 +3,6 @@ package repositories
 import (
 	"context"
 	"errors"
-	"log"
 
 	apperrors "github.com/devrapture/pod-events/internal/errors"
 	"github.com/devrapture/pod-events/internal/models"
@@ -34,7 +33,6 @@ func NewSubscriptionRepository(db *gorm.DB) SubscriptionRepository {
 // Returns an error if the user is already subscribed to this show.
 func (r *subscriptionRepository) Create(ctx context.Context, subscription *models.Subscription) error {
 	existing, err := r.GetByUserAndShow(ctx, subscription.UserID, subscription.PodcastShowID)
-	log.Println("subscriptionRepository.Create error", err)
 
 	if err != nil {
 		return err
