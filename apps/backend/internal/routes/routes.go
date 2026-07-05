@@ -35,6 +35,7 @@ func Setup(db *gorm.DB, deps HandlerDependencies, cfg *config.Config, logger *za
 
 		protected := v1.Group("")
 		protected.Use(middleware.AuthMiddleware(cfg))
+		protected.GET("/auth/me", deps.AuthHandler.Me)
 
 		// shows
 		shows := protected.Group("/shows")

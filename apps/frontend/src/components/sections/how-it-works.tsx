@@ -1,4 +1,10 @@
-import { ArrowDown, Bell, Headphones, ListMusic, RefreshCw } from "lucide-react";
+import {
+	ArrowDown,
+	Bell,
+	Headphones,
+	ListMusic,
+	RefreshCw,
+} from "lucide-react";
 
 import {
 	AnimatedSection,
@@ -12,28 +18,32 @@ const STEPS = [
 	{
 		icon: Headphones,
 		title: "Connect Spotify",
-		description: "Authenticate with OAuth 2.0 and link your Spotify account securely.",
+		description:
+			"Authenticate with OAuth 2.0 and link your Spotify account securely.",
 		color: "text-[#1DB954]",
 		bg: "bg-[#1DB954]/10 border-[#1DB954]/20",
 	},
 	{
 		icon: ListMusic,
 		title: "Choose podcasts to monitor",
-		description: "Pick engineering, AI, startup, or any niche shows your team follows.",
+		description:
+			"Pick engineering, AI, startup, or any niche shows your team follows.",
 		color: "text-violet-400",
 		bg: "bg-violet-500/10 border-violet-500/20",
 	},
 	{
 		icon: RefreshCw,
 		title: "PodEvents checks Spotify",
-		description: "Cron scheduling continuously scans for newly released episodes.",
+		description:
+			"Cron scheduling continuously scans for newly released episodes.",
 		color: "text-sky-400",
 		bg: "bg-sky-500/10 border-sky-500/20",
 	},
 	{
 		icon: Bell,
 		title: "Instant notifications",
-		description: "Your team receives alerts on Slack, Discord, Telegram, or WhatsApp.",
+		description:
+			"Your team receives alerts on Slack, Discord, Telegram, or WhatsApp.",
 		color: "text-emerald-400",
 		bg: "bg-emerald-500/10 border-emerald-500/20",
 	},
@@ -67,9 +77,13 @@ export function HowItWorks() {
 											<span className="font-mono text-emerald-500/60 text-xs">
 												0{i + 1}
 											</span>
-											<h3 className="font-semibold text-zinc-100">{step.title}</h3>
+											<h3 className="font-semibold text-zinc-100">
+												{step.title}
+											</h3>
 										</div>
-										<p className="mt-1 text-sm text-zinc-400">{step.description}</p>
+										<p className="mt-1 text-sm text-zinc-400">
+											{step.description}
+										</p>
 									</div>
 								</CardContent>
 							</Card>

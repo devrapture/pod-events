@@ -1,12 +1,16 @@
 package handler
 
 import (
+	"fmt"
 	"net/http"
+	"net/url"
 
 	"github.com/devrapture/pod-events/internal/config"
+	"github.com/devrapture/pod-events/internal/repositories"
 	"github.com/devrapture/pod-events/internal/services"
 	"github.com/devrapture/pod-events/pkg/response"
 	"github.com/gin-gonic/gin"
+	"github.com/google/uuid"
 	"go.uber.org/zap"
 )
 
@@ -16,14 +20,47 @@ type AuthHandler struct {
 	authService services.AuthService
 	logger      *zap.Logger
 	cfg         *config.Config
+	userRepo    repositories.UserRepository
 }
 
-func NewAuthHandler(authService services.AuthService, logger *zap.Logger, cfg *config.Config) *AuthHandler {
+func NewAuthHandler(authService services.AuthService, logger *zap.Logger, cfg *config.Config, userRepo repositories.UserRepository) *AuthHandler {
 	return &AuthHandler{
 		authService: authService,
 		logger:      logger,
 		cfg:         cfg,
+		userRepo:    userRepo,
 	}
+}
+
+// Me returns the authenticated user's profile.
+//
+// GET /auth/me
+func (h *AuthHandler) Me(c *gin.Context) {
+	userIDStr, exists := c.Get("userID")
+	if !exists {
+		response.ErrorResponse(c, http.StatusUnauthorized, "user not authenticated")
+		return
+	}
+
+	userID, err := uuid.Parse(userIDStr.(string))
+	if err != nil {
+		h.logger.Warn("invalid userID in context", zap.Error(err))
+		response.ErrorResponse(c, http.StatusInternalServerError, "invalid user ID")
+		return
+	}
+
+	user, err := h.userRepo.GetByID(c.Request.Context(), userID)
+	if err != nil {
+		h.logger.Error("failed to fetch user", zap.Error(err))
+		response.ErrorResponse(c, http.StatusInternalServerError, "failed to fetch user")
+		return
+	}
+	if user == nil {
+		response.ErrorResponse(c, http.StatusNotFound, "user not found")
+		return
+	}
+
+	response.SuccessResponse(c, http.StatusOK, "User fetched successfully", user, nil)
 }
 
 // SpotifyLogin generates a state token, stores it in a cookie, and
@@ -60,24 +97,26 @@ func (h *AuthHandler) SpotifyLogin(c *gin.Context) {
 func (h *AuthHandler) SpotifyCallback(c *gin.Context) {
 	code := c.Query("code")
 	state := c.Query("state")
-	spotifyError := c.Query("error") // Spotify sends "error=access_denied" if user rejects
+	spotifyError := c.Query("error")
 	if spotifyError != "" {
-		response.ErrorResponse(c, http.StatusUnauthorized, "Spotify login rejected")
+		redirectURL := fmt.Sprintf("%s/auth/callback?error=%s", h.cfg.FrontendURL, url.QueryEscape("Spotify login rejected"))
+		c.Redirect(http.StatusTemporaryRedirect, redirectURL)
 		return
 	}
 
 	if code == "" || state == "" {
-		response.ErrorResponse(c, http.StatusBadRequest, "missing code or state parameter")
+		redirectURL := fmt.Sprintf("%s/auth/callback?error=%s", h.cfg.FrontendURL, url.QueryEscape("Missing code or state parameter"))
+		c.Redirect(http.StatusTemporaryRedirect, redirectURL)
 		return
 	}
 	cookieState, err := c.Cookie(stateCookieName)
 	if err != nil {
 		h.logger.Warn("failed to get state cookie", zap.Error(err))
-		response.ErrorResponse(c, http.StatusUnauthorized, "invalid or expired oauth state")
+		redirectURL := fmt.Sprintf("%s/auth/callback?error=%s", h.cfg.FrontendURL, url.QueryEscape("Invalid or expired OAuth state"))
+		c.Redirect(http.StatusTemporaryRedirect, redirectURL)
 		return
 	}
 	secureCookie := h.cfg.IsProduction()
-	// Delete the state cookie (it's been used)
 	c.SetCookie(
 		stateCookieName,
 		"",
@@ -85,18 +124,17 @@ func (h *AuthHandler) SpotifyCallback(c *gin.Context) {
 		"/",
 		"",
 		secureCookie,
-		true, // httpOnly
+		true,
 	)
 
-	user, token, err := h.authService.HandleCallback(c.Request.Context(), code, state, cookieState)
+	_, token, err := h.authService.HandleCallback(c.Request.Context(), code, state, cookieState)
 	if err != nil {
 		h.logger.Warn("failed to authenticate with spotify", zap.Error(err))
-		response.ErrorResponse(c, http.StatusInternalServerError, "authentication failed")
+		redirectURL := fmt.Sprintf("%s/auth/callback?error=%s", h.cfg.FrontendURL, url.QueryEscape("Authentication failed"))
+		c.Redirect(http.StatusTemporaryRedirect, redirectURL)
 		return
 	}
 
-	response.SuccessResponse(c, http.StatusOK, "Successfully authenticated", gin.H{
-		"user":  user,
-		"token": token,
-	}, nil)
+	redirectURL := fmt.Sprintf("%s/auth/callback?token=%s", h.cfg.FrontendURL, token)
+	c.Redirect(http.StatusTemporaryRedirect, redirectURL)
 }

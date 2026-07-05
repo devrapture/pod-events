@@ -29,7 +29,10 @@ export function CardTitle({
 }: HTMLAttributes<HTMLHeadingElement>) {
 	return (
 		<h3
-			className={cn("font-semibold text-lg text-zinc-100 leading-none", className)}
+			className={cn(
+				"font-semibold text-lg text-zinc-100 leading-none",
+				className,
+			)}
 			{...props}
 		/>
 	);
@@ -40,7 +43,10 @@ export function CardDescription({
 	...props
 }: HTMLAttributes<HTMLParagraphElement>) {
 	return (
-		<p className={cn("text-sm text-zinc-400 leading-relaxed", className)} {...props} />
+		<p
+			className={cn("text-sm text-zinc-400 leading-relaxed", className)}
+			{...props}
+		/>
 	);
 }
 

@@ -71,15 +71,15 @@ export function Features() {
 						Production-ready from day one
 					</h2>
 					<p className="mt-4 text-zinc-400">
-						Everything you need to monitor podcasts reliably and notify your team
-						instantly.
+						Everything you need to monitor podcasts reliably and notify your
+						team instantly.
 					</p>
 				</div>
 
 				<StaggerGrid className="mt-14 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
 					{FEATURES.map((feature) => (
 						<StaggerItem key={feature.title}>
-							<Card className="h-full transition-all duration-300 hover:border-white/15 hover:bg-white/[0.05] hover:shadow-lg hover:shadow-emerald-500/5">
+							<Card className="h-full transition-all duration-300 hover:border-white/15 hover:bg-white/[0.05] hover:shadow-emerald-500/5 hover:shadow-lg">
 								<CardHeader>
 									<div className="mb-3 flex h-10 w-10 items-center justify-center rounded-lg border border-emerald-500/20 bg-emerald-500/10">
 										<feature.icon className="h-5 w-5 text-emerald-400" />

@@ -3,6 +3,7 @@ import "@/styles/globals.css";
 import type { Metadata } from "next";
 import { Geist } from "next/font/google";
 
+import { AuthProvider } from "@/components/auth-provider";
 import { LandingHeader } from "@/components/landing-header";
 import { Footer } from "@/components/sections/footer";
 import { SITE_URL } from "@/lib/constants";
@@ -67,9 +68,11 @@ export default function RootLayout({
 	return (
 		<html className={`${geist.variable} dark`} lang="en">
 			<body className="font-sans">
-				<LandingHeader />
-				<main>{children}</main>
-				<Footer />
+				<AuthProvider>
+					<LandingHeader />
+					<main>{children}</main>
+					<Footer />
+				</AuthProvider>
 			</body>
 		</html>
 	);

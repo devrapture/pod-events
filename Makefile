@@ -1,4 +1,4 @@
-.PHONY: dev db-up db-down db-logs generate-encryption-key
+.PHONY: dev db-up db-down db-logs generate-encryption-key frontend-install
 .PHONY: test test-verbose test-coverage
 .PHONY: migrate-diff migrate-up migrate-down migrate-status
 .PHONY: migrate-prod-up migrate-prod-down migrate-prod-status
@@ -34,6 +34,11 @@ db-logs:
 
 generate-encryption-key:                                              ## Generate a base64-encoded 32-byte AES-256 key for TOKEN_ENCRYPTION_KEY
 	@echo "TOKEN_ENCRYPTION_KEY=$$(openssl rand -base64 32)"
+
+# ── Frontend ────────────────────────────────────────
+
+frontend-install:                                                    ## Install frontend dependencies with bun
+	cd apps/frontend && bun install
 
 # ── Tests ──────────────────────────────────────────────────
 
