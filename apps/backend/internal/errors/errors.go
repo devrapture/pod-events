@@ -25,4 +25,10 @@ var (
 	ErrPodcastShowNotFound = errors.New("podcast show not found")
 	// ErrEpisodeNotFound is returned when an episode cannot be found
 	ErrEpisodeNotFound = errors.New("episode not found")
+	// ErrDeleteSubscriptionFailed is returned when a subscription cannot be deleted
+	ErrDeleteSubscriptionFailed = errors.New("failed to delete subscription")
+	// ErrSubscriptionAlreadyExists is returned when a subscription already exists
+	ErrSubscriptionAlreadyExists = errors.New("subscription already exists")
+	// ErrSubscriptionNotFound is returned when a subscription cannot be found
+	ErrSubscriptionNotFound = errors.New("subscription not found")
 )

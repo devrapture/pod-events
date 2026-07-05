@@ -13,7 +13,7 @@ import (
 )
 
 type ShowRepository interface {
-	GetOrCreate(ctx context.Context, show *models.PodcastShow) error 
+	GetOrCreate(ctx context.Context, show *models.PodcastShow) error
 	GetAllTracked(ctx context.Context) ([]models.PodcastShow, error)
 	GetByID(ctx context.Context, id uuid.UUID) (*models.PodcastShow, error)
 	GetBySpotifyID(ctx context.Context, spotifyShowID string) (*models.PodcastShow, error)
@@ -47,9 +47,16 @@ func (r *showRepository) GetOrCreate(ctx context.Context, show *models.PodcastSh
 			"latest_episode_published_at",
 		}),
 	}).Create(show).Error
+
 	if err != nil {
 		return fmt.Errorf("failed to upsert podcast show: %w", err)
 	}
+
+	existing, err := r.GetBySpotifyID(ctx, show.SpotifyShowID)
+	if err != nil {
+		return err
+	}
+	*show = *existing
 	return nil
 }
 

@@ -20,6 +20,7 @@ func main() {
 		&models.Episode{},
 		&models.PodcastShow{},
 		&models.Subscription{},
+		&models.NotificationLog{},
 	// add all model...
 	)
 	if err != nil {

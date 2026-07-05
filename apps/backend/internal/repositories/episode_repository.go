@@ -13,6 +13,8 @@ import (
 
 type EpisodeRepository interface {
 	Create(ctx context.Context, episode *models.Episode) error
+	GetByID(ctx context.Context, id uuid.UUID) (*models.Episode, error)
+	GetBySpotifyID(ctx context.Context, spotifyEpisodeID string) (*models.Episode, error)
 }
 
 type episodeRepository struct {

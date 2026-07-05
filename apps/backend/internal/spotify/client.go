@@ -89,7 +89,14 @@ func (c *SpotifyClient) SearchShows(ctx context.Context, accessToken, query stri
 	return &result, nil
 }
 
-// get podcasts saved by a user on spotify
+// GetShow fetches full details for a specific podcast show.
+func (c *SpotifyClient) GetShow(ctx context.Context, accessToken, spotifyShowID string) (*SpotifyShow, error) {
+	endpoint := fmt.Sprintf("/shows/%s", spotifyShowID)
+	var result SpotifyShow
+	c.get(ctx, accessToken, endpoint, &result)
+	return &result, nil
+}
+
 func (c *SpotifyClient) GetUserSavedShows(ctx context.Context, accessToken string, offset, limit int) (*SpotifySavedShowsResponse, error) {
 	endpoint := fmt.Sprintf("me/shows?offset=%d&limit=%d", offset, limit)
 	var show SpotifySavedShowsResponse
