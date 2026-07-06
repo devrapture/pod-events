@@ -22,8 +22,8 @@ export function DashboardShell({ children }: { children: ReactNode }) {
 
 	return (
 		<div className="flex min-h-screen bg-zinc-950">
-			<aside className="hidden w-64 shrink-0 flex-col border-white/[0.06] border-r bg-zinc-950 md:flex">
-				<div className="flex h-16 items-center gap-2.5 border-white/[0.06] border-b px-6">
+			<aside className="hidden w-64 shrink-0 flex-col border-white/6 border-r bg-zinc-950 md:flex">
+				<div className="flex h-16 items-center gap-2.5 border-white/6 border-b px-6">
 					<div className="flex h-8 w-8 items-center justify-center rounded-lg border border-emerald-500/20 bg-emerald-500/10">
 						<Radio className="h-4 w-4 text-emerald-400" />
 					</div>
@@ -55,7 +55,7 @@ export function DashboardShell({ children }: { children: ReactNode }) {
 					})}
 				</nav>
 
-				<div className="border-white/[0.06] border-t p-4">
+				<div className="border-white/6 border-t p-4">
 					{isLoading ? (
 						<div className="h-10 animate-pulse rounded-lg bg-white/5" />
 					) : user ? (
@@ -93,7 +93,7 @@ export function DashboardShell({ children }: { children: ReactNode }) {
 			</aside>
 
 			<div className="flex min-w-0 flex-1 flex-col">
-				<header className="flex h-16 items-center justify-between border-white/[0.06] border-b px-4 md:hidden">
+				<header className="flex h-16 items-center justify-between border-white/6 border-b px-4 md:hidden">
 					<div className="flex items-center gap-2.5">
 						<div className="flex h-8 w-8 items-center justify-center rounded-lg border border-emerald-500/20 bg-emerald-500/10">
 							<Radio className="h-4 w-4 text-emerald-400" />
@@ -117,7 +117,7 @@ export function DashboardShell({ children }: { children: ReactNode }) {
 				</header>
 
 				{mobileOpen && (
-					<div className="border-white/[0.06] border-b bg-zinc-950 px-4 py-4 md:hidden">
+					<div className="border-white/6 border-b bg-zinc-950 px-4 py-4 md:hidden">
 						<nav className="flex flex-col gap-1">
 							{NAV_ITEMS.map((item) => {
 								const isActive = pathname === item.href;
@@ -142,7 +142,7 @@ export function DashboardShell({ children }: { children: ReactNode }) {
 							})}
 						</nav>
 						{user && (
-							<div className="mt-4 flex items-center justify-between border-white/[0.06] border-t pt-4">
+							<div className="mt-4 flex items-center justify-between border-white/6 border-t pt-4">
 								<div className="flex items-center gap-3">
 									{user.avatar_url ? (
 										// biome-ignore lint/performance/noImgElement: dynamic avatar URL from Spotify
