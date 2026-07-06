@@ -5,6 +5,7 @@ import {
 	LayoutDashboard,
 	LogOut,
 	Menu,
+	Podcast,
 	Radio,
 	X,
 } from "lucide-react";
@@ -19,6 +20,12 @@ import { cn } from "@/lib/utils";
 
 const NAV_ITEMS = [
 	{ label: "Overview", href: "/dashboard", icon: LayoutDashboard, exact: true },
+	{
+		label: "My Subscriptions",
+		href: "/dashboard/subscriptions",
+		icon: Podcast,
+		exact: true,
+	},
 	{
 		label: "Import from Spotify",
 		href: "/dashboard/import",
