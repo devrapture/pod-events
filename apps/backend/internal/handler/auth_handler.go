@@ -6,6 +6,7 @@ import (
 	"net/url"
 
 	"github.com/devrapture/pod-events/internal/config"
+	"github.com/devrapture/pod-events/internal/dto"
 	"github.com/devrapture/pod-events/internal/repositories"
 	"github.com/devrapture/pod-events/internal/services"
 	"github.com/devrapture/pod-events/pkg/response"
@@ -21,9 +22,7 @@ type AuthHandler struct {
 	userRepo    repositories.UserRepository
 }
 
-type authExchangeRequest struct {
-	Code string `json:"code" binding:"required"`
-}
+type authExchangeRequest dto.AuthExchangeRequest
 
 const (
 	oauthStateCookieName   = "pod_events_oauth_state"
@@ -41,7 +40,13 @@ func NewAuthHandler(authService services.AuthService, logger *zap.Logger, cfg *c
 
 // Me returns the authenticated user's profile.
 //
-// GET /auth/me
+//	@Summary     Get current user
+//	@Description Get the authenticated user's profile
+//	@Tags        Auth
+//	@Security    BearerAuth
+//	@Success     200 {object} response.APIResponse "User fetched successfully"
+//	@Failure     401 {object} response.APIResponse "unauthorized"
+//	@Router      /auth/me [get]
 func (h *AuthHandler) Me(c *gin.Context) {
 	userID, _ := c.Get("userID")
 
@@ -62,7 +67,11 @@ func (h *AuthHandler) Me(c *gin.Context) {
 // SpotifyLogin generates a state token, stores it in a cookie, and
 // redirects the user to Spotify's authorization page.
 //
-// GET /auth/spotify/login
+//	@Summary     Initiate Spotify OAuth login
+//	@Description Generates an OAuth state token and redirects to Spotify's authorization page
+//	@Tags        Auth
+//	@Success     307
+//	@Router      /auth/spotify/login [get]
 func (h *AuthHandler) SpotifyLogin(c *gin.Context) {
 	state, err := h.authService.GenerateState()
 	if err != nil {
@@ -80,7 +89,13 @@ func (h *AuthHandler) SpotifyLogin(c *gin.Context) {
 // SpotifyCallback handles the redirect back from Spotify after the user logs in.
 // Spotify sends ?code=XXX&state=YYY as query parameters.
 //
-// GET /auth/spotify/callback?code=XXX&state=YYY
+//	@Summary     Spotify OAuth callback
+//	@Description Handles the redirect from Spotify after user authorization, exchanges code for tokens, and redirects to frontend with an exchange code
+//	@Tags        Auth
+//	@Param       code  query string true "Authorization code from Spotify"
+//	@Param       state query string true "OAuth state token for CSRF protection"
+//	@Success     307
+//	@Router      /auth/spotify/callback [get]
 func (h *AuthHandler) SpotifyCallback(c *gin.Context) {
 	code := c.Query("code")
 	state := c.Query("state")
@@ -119,6 +134,18 @@ func (h *AuthHandler) SpotifyCallback(c *gin.Context) {
 	c.Redirect(http.StatusTemporaryRedirect, redirectURL)
 }
 
+// ExchangeAuthCode exchanges a temporary auth code for a JWT token.
+//
+//	@Summary     Exchange auth code for JWT
+//	@Description Exchanges the temporary auth code (obtained from the frontend callback redirect) for a JWT token
+//	@Tags        Auth
+//	@Accept      json
+//	@Produce     json
+//	@Param       request body dto.AuthExchangeRequest true "Auth exchange request"
+//	@Success     200 {object} response.APIResponse "Authentication completed"
+//	@Failure     400 {object} response.APIResponse "missing auth exchange code"
+//	@Failure     401 {object} response.APIResponse "invalid or expired auth exchange code"
+//	@Router      /auth/exchange [post]
 func (h *AuthHandler) ExchangeAuthCode(c *gin.Context) {
 	var req authExchangeRequest
 	if err := c.ShouldBindJSON(&req); err != nil {

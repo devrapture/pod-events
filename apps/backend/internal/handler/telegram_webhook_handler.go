@@ -39,6 +39,16 @@ func NewTelegramWebHookHandler(cfg *config.Config, notifier *telegram.Notifier, 
 	}
 }
 
+// CreateConnectLink creates a one-time Telegram connection link.
+//
+//	@Summary     Generate Telegram connect link
+//	@Description Generate a one-time link to connect a Telegram chat to the user's PodEvents account
+//	@Tags        Telegram
+//	@Security    BearerAuth
+//	@Produce     json
+//	@Success     200 {object} response.APIResponse "Telegram connect link created"
+//	@Failure     409 {object} response.APIResponse "already have a Telegram channel"
+//	@Router      /telegram/generate-link [post]
 func (h *TelegramWebHookHandler) CreateConnectLink(c *gin.Context) {
 	userID, _ := c.Get("userID")
 	link, err := h.telegramConnectionService.CreateConnectLink(c.Request.Context(), userID.(uuid.UUID))
@@ -54,6 +64,16 @@ func (h *TelegramWebHookHandler) CreateConnectLink(c *gin.Context) {
 	response.SuccessResponse(c, http.StatusOK, "Telegram connect link created", gin.H{"url": link}, nil)
 }
 
+// Handle processes incoming Telegram webhook updates.
+//
+//	@Summary     Telegram webhook
+//	@Description Handle incoming updates from Telegram (bot commands, messages)
+//	@Tags        Telegram
+//	@Accept      json
+//	@Param       update body telegram.Update true "Telegram update"
+//	@Success     200
+//	@Failure     401 "invalid telegram secret"
+//	@Router      /webhooks/telegram [post]
 func (h *TelegramWebHookHandler) Handle(c *gin.Context) {
 	if !h.validSecret(c.GetHeader(telegramSecretHeader)) {
 		response.ErrorResponse(c, http.StatusUnauthorized, "invalid telegram secret")
