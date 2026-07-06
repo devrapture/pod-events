@@ -1,13 +1,13 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { Bell, BookOpen, Headphones, Loader2, Sparkles } from "lucide-react";
+import { Bell, Headphones, Loader2, Sparkles } from "lucide-react";
 
 import { useAuth } from "@/components/auth-provider";
 import { GitHubIcon } from "@/components/icons/github";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { DOCS_URL, GITHUB_URL, TECH_BADGES } from "@/lib/constants";
+import { GITHUB_URL, TECH_BADGES } from "@/lib/constants";
 
 function NotificationPreview() {
 	return (

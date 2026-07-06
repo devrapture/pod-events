@@ -74,8 +74,8 @@ export function LandingHeader() {
 								<span className="text-sm text-zinc-300">{user.name}</span>
 							</div>
 							<button
-								className="inline-flex h-8 items-center justify-center rounded-md px-3 font-medium text-xs text-zinc-400 transition-colors hover:text-zinc-100"
 								aria-label="Sign out"
+								className="inline-flex h-8 items-center justify-center rounded-md px-3 font-medium text-xs text-zinc-400 transition-colors hover:text-zinc-100"
 								onClick={logout}
 								type="button"
 							>
