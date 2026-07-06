@@ -49,6 +49,9 @@ export const useToggleChannel = createMutation({
 		const previousData = queryClient.getQueryData<
 			APIResponse<NotificationChannel[]>
 		>(channelKeys.list());
+		const previousIsActive = previousData?.data?.find(
+			(channel) => channel.id === variables.channelID,
+		)?.is_active;
 
 		if (previousData?.data) {
 			const optimised = previousData.data.map((channel) =>
@@ -62,11 +65,26 @@ export const useToggleChannel = createMutation({
 			});
 		}
 
-		return { previousData };
+		return { previousIsActive };
 	},
-	onError: (_err, _vars, context) => {
-		if (context?.previousData) {
-			queryClient.setQueryData(channelKeys.list(), context.previousData);
+	onError: (_err, variables, context) => {
+		if (context?.previousIsActive !== undefined) {
+			const previousIsActive = context.previousIsActive;
+			queryClient.setQueryData<APIResponse<NotificationChannel[]> | undefined>(
+				channelKeys.list(),
+				(currentData) => {
+					if (!currentData?.data) return currentData;
+
+					return {
+						...currentData,
+						data: currentData.data.map((channel) =>
+							channel.id === variables.channelID
+								? { ...channel, is_active: previousIsActive }
+								: channel,
+						),
+					};
+				},
+			);
 		}
 	},
 	onSettled: () => {
