@@ -31,8 +31,9 @@ export function OpenSource() {
 								PodEvents is completely open source
 							</h2>
 							<p className="mt-4 text-zinc-400 leading-relaxed">
-								Developers can self-host, contribute, build integrations, add new
-								notification providers, and deploy anywhere. No vendor lock-in.
+								Developers can self-host, contribute, build integrations, add
+								new notification providers, and deploy anywhere. No vendor
+								lock-in.
 							</p>
 							<Button asChild className="mt-8" size="lg">
 								<a href={GITHUB_URL} rel="noopener noreferrer" target="_blank">

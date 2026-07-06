@@ -3,9 +3,12 @@ package services
 import (
 	"context"
 	"crypto/rand"
+	"crypto/subtle"
 	"encoding/hex"
 	"errors"
 	"fmt"
+	"sync"
+	"time"
 
 	"github.com/devrapture/pod-events/internal/config"
 	apperrors "github.com/devrapture/pod-events/internal/errors"
@@ -14,14 +17,28 @@ import (
 	"github.com/devrapture/pod-events/internal/spotify"
 	"github.com/devrapture/pod-events/pkg/jwt"
 	"github.com/google/uuid"
+	gocache "github.com/patrickmn/go-cache"
 	"go.uber.org/zap"
 )
 
+const oauthStateCachePrefix = "oauth_state:"
+const oauthStateTTL = 5 * time.Minute
+const authExchangeCodeCachePrefix = "auth_exchange_code:"
+const authExchangeCodeTTL = 1 * time.Minute
+
+type AuthExchange struct {
+	Token string
+	User  *models.User
+}
+
 type AuthService interface {
 	GenerateState() (string, error)
+	RememberOAuthState(state string)
 	GetAuthorizationURL(state string) string
-	HandleCallback(ctx context.Context, code, state, cookieState string) (*models.User, string, error)
+	HandleCallback(ctx context.Context, code, state, browserState string) (*models.User, string, error)
 	GetValidAccessToken(ctx context.Context, userID uuid.UUID) (string, error)
+	CreateAuthExchangeCode(token string, user *models.User) (string, error)
+	ConsumeAuthExchangeCode(code string) (*AuthExchange, bool)
 }
 
 type authService struct {
@@ -29,15 +46,18 @@ type authService struct {
 	tokenRepository repositories.TokenRepository
 	userRepository  repositories.UserRepository
 	spotifyClient   *spotify.SpotifyClient
+	cache           *gocache.Cache
 	logger          *zap.Logger
+	oauthStateMu    sync.Mutex
 }
 
-func NewAuthService(cfg *config.Config, tr repositories.TokenRepository, ur repositories.UserRepository, sc *spotify.SpotifyClient, logger *zap.Logger) AuthService {
+func NewAuthService(cfg *config.Config, tr repositories.TokenRepository, ur repositories.UserRepository, sc *spotify.SpotifyClient, cache *gocache.Cache, logger *zap.Logger) AuthService {
 	return &authService{
 		cfg:             cfg,
 		tokenRepository: tr,
 		userRepository:  ur,
 		spotifyClient:   sc,
+		cache:           cache,
 		logger:          logger,
 	}
 }
@@ -52,12 +72,37 @@ func (s *authService) GenerateState() (string, error) {
 	return hex.EncodeToString(b), nil
 }
 
+func (s *authService) RememberOAuthState(state string) {
+	s.cache.Set(oauthStateCachePrefix+state, true, oauthStateTTL)
+}
+
 func (s *authService) GetAuthorizationURL(state string) string {
 	return s.spotifyClient.AuthorizationURL(state)
 }
 
-func (s *authService) HandleCallback(ctx context.Context, code, state, cookieState string) (*models.User, string, error) {
-	if state != cookieState || state == "" {
+func (s *authService) consumeOAuthState(state, browserState string) bool {
+	if state == "" || browserState == "" {
+		return false
+	}
+
+	if subtle.ConstantTimeCompare([]byte(state), []byte(browserState)) != 1 {
+		return false
+	}
+
+	cacheKey := oauthStateCachePrefix + state
+	s.oauthStateMu.Lock()
+	defer s.oauthStateMu.Unlock()
+
+	if _, found := s.cache.Get(cacheKey); !found {
+		return false
+	}
+
+	s.cache.Delete(cacheKey)
+	return true
+}
+
+func (s *authService) HandleCallback(ctx context.Context, code, state, browserState string) (*models.User, string, error) {
+	if !s.consumeOAuthState(state, browserState) {
 		return nil, "", fmt.Errorf("invalid state parameter - possible CSRF attack")
 	}
 
@@ -172,4 +217,32 @@ func (s *authService) GetValidAccessToken(ctx context.Context, userID uuid.UUID)
 		return "", fmt.Errorf("save refreshed spotify token: %w", err)
 	}
 	return refreshedToken.AccessToken, nil
+}
+
+func (s *authService) CreateAuthExchangeCode(token string, user *models.User) (string, error) {
+	b := make([]byte, 32)
+	if _, err := rand.Read(b); err != nil {
+		return "", fmt.Errorf("failed to generate auth exchange code: %w", err)
+	}
+
+	code := hex.EncodeToString(b)
+	s.cache.Set(authExchangeCodeCachePrefix+code, &AuthExchange{Token: token, User: user}, authExchangeCodeTTL)
+	return code, nil
+}
+
+func (s *authService) ConsumeAuthExchangeCode(code string) (*AuthExchange, bool) {
+	if code == "" {
+		return nil, false
+	}
+
+	cacheKey := authExchangeCodeCachePrefix + code
+	value, found := s.cache.Get(cacheKey)
+	if !found {
+		return nil, false
+	}
+
+	s.cache.Delete(cacheKey)
+
+	exchange, ok := value.(*AuthExchange)
+	return exchange, ok
 }

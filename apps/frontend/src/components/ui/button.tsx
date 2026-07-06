@@ -5,12 +5,12 @@ import type { ButtonHTMLAttributes } from "react";
 import { cn } from "@/lib/utils";
 
 const buttonVariants = cva(
-	"inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-lg text-sm font-medium transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/50 disabled:pointer-events-none disabled:opacity-50",
+	"inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-lg font-medium text-sm transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/50 disabled:pointer-events-none disabled:opacity-50",
 	{
 		variants: {
 			variant: {
 				default:
-					"bg-emerald-500 text-zinc-950 shadow-lg shadow-emerald-500/20 hover:bg-emerald-400 hover:shadow-emerald-500/30",
+					"bg-emerald-500 text-zinc-950 shadow-emerald-500/20 shadow-lg hover:bg-emerald-400 hover:shadow-emerald-500/30",
 				secondary:
 					"border border-white/10 bg-white/5 text-zinc-100 backdrop-blur-sm hover:border-white/20 hover:bg-white/10",
 				ghost: "text-zinc-400 hover:bg-white/5 hover:text-zinc-100",

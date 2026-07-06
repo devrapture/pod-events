@@ -19,6 +19,7 @@ type Config struct {
 	SpotifyClientSecret   string
 	SpotifyClientID       string
 	SpotifyRedirectURL    string
+	FrontendURL           string
 	JwtExpires            int
 	JwtSecret             string
 	TelegramBotToken      string
@@ -43,6 +44,7 @@ func Load() (*Config, error) {
 		SpotifyClientSecret:   mustGetEnv("SPOTIFY_CLIENT_SECRET"),
 		SpotifyClientID:       mustGetEnv("SPOTIFY_CLIENT_ID"),
 		SpotifyRedirectURL:    mustGetEnv("SPOTIFY_REDIRECT_URL"),
+		FrontendURL:           mustGetEnv("FRONTEND_URL"),
 		JwtExpires:            JwtExpires,
 		JwtSecret:             mustGetEnv("JWT_SECRET"),
 		TelegramBotToken:      mustGetEnv("TELEGRAM_BOT_TOKEN"),

@@ -17,7 +17,8 @@ const USE_CASES = [
 	{
 		icon: Code2,
 		title: "Engineering Teams",
-		description: "Track Go Time, Software Engineering Daily, Syntax, Changelog, and more.",
+		description:
+			"Track Go Time, Software Engineering Daily, Syntax, Changelog, and more.",
 		accent: "from-emerald-500/20 to-transparent",
 	},
 	{

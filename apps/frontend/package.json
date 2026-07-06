@@ -8,7 +8,7 @@
 		"check": "biome check .",
 		"check:unsafe": "biome check --write --unsafe .",
 		"check:write": "biome check --write .",
-		"dev": "next dev --turbo",
+		"dev": "portless podevents next dev --turbo",
 		"preview": "next build && next start",
 		"start": "next start",
 		"typecheck": "tsc --noEmit",
@@ -20,6 +20,7 @@
 		]
 	},
 	"dependencies": {
+		"@radix-ui/react-dialog": "^1.1.18",
 		"@radix-ui/react-slot": "^1.3.0",
 		"@t3-oss/env-nextjs": "^0.12.0",
 		"better-auth": "^1.3",
@@ -29,6 +30,7 @@
 		"lint-staged": "^17.0.7",
 		"lucide-react": "^0.511.0",
 		"next": "^15.2.3",
+		"portless": "^0.15.1",
 		"react": "^19.0.0",
 		"react-dom": "^19.0.0",
 		"tailwind-merge": "^3.6.0",

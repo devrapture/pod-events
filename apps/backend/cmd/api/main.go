@@ -61,13 +61,13 @@ func main() {
 	showRepository := repositories.NewShowRepository(db)
 
 	// ── Services ────────────────────────────────────────────────
-	authService := services.NewAuthService(cfg, tokenRepo, userRepo, spotifyClient, logger)
+	authService := services.NewAuthService(cfg, tokenRepo, userRepo, spotifyClient, appCache, logger)
 	showService := services.NewShowServices(spotifyClient, authService, cfg, appCache, subscriptionRepo, showRepository)
 	channelService := services.NewChannelServices(channelRepo)
 	telegramConnectionService := services.NewTelegramConnectionService(telegramConnectionRepo, channelRepo, cfg)
 
 	// ── Handlers ────────────────────────────────────────────────
-	authHandler := handlers.NewAuthHandler(authService, logger, cfg)
+	authHandler := handlers.NewAuthHandler(authService, logger, cfg, userRepo)
 	showHandler := handlers.NewShowHandler(showService, logger)
 	telegramHandler := handlers.NewTelegramWebHookHandler(cfg, telegramNotifier, telegramConnectionService, logger)
 	channelHandler := handlers.NewChannelHandler(channelService, logger)
