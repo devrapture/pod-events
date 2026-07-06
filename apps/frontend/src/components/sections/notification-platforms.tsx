@@ -43,7 +43,9 @@ const PLATFORMS = [
 		preview: (
 			<div className="mt-4 rounded-lg border border-[#26A5E4]/30 bg-[#26A5E4]/5 p-3 text-xs">
 				<p className="text-zinc-300">PodEvents Bot</p>
-				<p className="mt-1 text-zinc-400">Syntax FM just released a new episode.</p>
+				<p className="mt-1 text-zinc-400">
+					Syntax FM just released a new episode.
+				</p>
 			</div>
 		),
 	},
@@ -94,7 +96,9 @@ export function NotificationPlatforms() {
 										</div>
 										<div>
 											<CardTitle>{platform.name}</CardTitle>
-											<p className="text-sm text-zinc-400">{platform.description}</p>
+											<p className="text-sm text-zinc-400">
+												{platform.description}
+											</p>
 										</div>
 									</div>
 								</CardHeader>

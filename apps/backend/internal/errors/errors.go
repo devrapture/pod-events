@@ -21,4 +21,16 @@ var (
 	ErrNoExpiredTelegramConnectionsFound = errors.New("no expired telegram connections found")
 	// ErrTelegramChannelAlreadyExists is returned when a user already has a Telegram notification channel
 	ErrTelegramChannelAlreadyExists = errors.New("telegram channel already exists")
+	// ErrPodcastShowNotFound is returned when a podcast show cannot be found
+	ErrPodcastShowNotFound = errors.New("podcast show not found")
+	// ErrEpisodeNotFound is returned when an episode cannot be found
+	ErrEpisodeNotFound = errors.New("episode not found")
+	// ErrDeleteSubscriptionFailed is returned when a subscription cannot be deleted
+	ErrDeleteSubscriptionFailed = errors.New("failed to delete subscription")
+	// ErrSubscriptionAlreadyExists is returned when a subscription already exists
+	ErrSubscriptionAlreadyExists = errors.New("subscription already exists")
+	// ErrSubscriptionNotFound is returned when a subscription cannot be found
+	ErrSubscriptionNotFound = errors.New("subscription not found")
+	// ErrSpotifyResourceNotFound is returned when a spotify resource cannot be found
+	ErrSpotifyResourceNotFound = errors.New("spotify resource not found")
 )

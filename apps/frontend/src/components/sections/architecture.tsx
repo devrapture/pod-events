@@ -1,4 +1,10 @@
-import { ArrowDown, Database, KeyRound, Layers, ShieldCheck } from "lucide-react";
+import {
+	ArrowDown,
+	Database,
+	KeyRound,
+	Layers,
+	ShieldCheck,
+} from "lucide-react";
 
 import { AnimatedSection } from "@/components/animated-section";
 import { Badge } from "@/components/ui/badge";
@@ -28,7 +34,7 @@ function FlowNode({
 		<Card
 			className={`px-6 py-4 text-center transition-all duration-300 hover:border-white/15 ${
 				accent
-					? "border-emerald-500/30 bg-emerald-500/[0.06] shadow-lg shadow-emerald-500/10"
+					? "border-emerald-500/30 bg-emerald-500/[0.06] shadow-emerald-500/10 shadow-lg"
 					: ""
 			}`}
 		>
@@ -65,9 +71,16 @@ export function Architecture() {
 				<div className="mx-auto mt-14 max-w-md">
 					<FlowNode label="Spotify" sub="Podcast catalog & episodes API" />
 					<FlowArrow />
-					<FlowNode accent label="PodEvents" sub="Go API · OAuth · Middleware" />
+					<FlowNode
+						accent
+						label="PodEvents"
+						sub="Go API · OAuth · Middleware"
+					/>
 					<FlowArrow />
-					<FlowNode label="Episode Detection" sub="Cron scheduler · Idempotency" />
+					<FlowNode
+						label="Episode Detection"
+						sub="Cron scheduler · Idempotency"
+					/>
 					<FlowArrow />
 					<FlowNode label="Notification Engine" sub="Multi-channel dispatch" />
 					<FlowArrow />
@@ -89,10 +102,18 @@ export function Architecture() {
 							className="inline-flex items-center gap-1.5 rounded-full border border-white/10 bg-white/[0.03] px-3 py-1.5 text-xs text-zinc-400"
 							key={label}
 						>
-							{label === "OAuth" && <KeyRound className="h-3 w-3 text-emerald-400" />}
-							{label === "PostgreSQL" && <Database className="h-3 w-3 text-emerald-400" />}
-							{label === "AES Encryption" && <ShieldCheck className="h-3 w-3 text-emerald-400" />}
-							{label === "Notification Queue" && <Layers className="h-3 w-3 text-emerald-400" />}
+							{label === "OAuth" && (
+								<KeyRound className="h-3 w-3 text-emerald-400" />
+							)}
+							{label === "PostgreSQL" && (
+								<Database className="h-3 w-3 text-emerald-400" />
+							)}
+							{label === "AES Encryption" && (
+								<ShieldCheck className="h-3 w-3 text-emerald-400" />
+							)}
+							{label === "Notification Queue" && (
+								<Layers className="h-3 w-3 text-emerald-400" />
+							)}
 							{label}
 						</span>
 					))}
@@ -103,10 +124,12 @@ export function Architecture() {
 						<div className="h-2.5 w-2.5 rounded-full bg-red-500/80" />
 						<div className="h-2.5 w-2.5 rounded-full bg-yellow-500/80" />
 						<div className="h-2.5 w-2.5 rounded-full bg-green-500/80" />
-						<span className="ml-2 font-mono text-xs text-zinc-500">cron/episode-check</span>
+						<span className="ml-2 font-mono text-xs text-zinc-500">
+							cron/episode-check
+						</span>
 					</div>
 					<pre className="overflow-x-auto p-4 font-mono text-xs text-zinc-400 leading-relaxed">
-{`POST /api/v1/cron/check-episodes
+						{`POST /api/v1/cron/check-episodes
 Authorization: Bearer <cron-secret>
 
 → Fetch saved shows from PostgreSQL

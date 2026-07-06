@@ -1,17 +1,18 @@
 "use client";
 
-import { Menu, Radio, X } from "lucide-react";
+import { Loader2, LogOut, Menu, Radio, X } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 
-import { GitHubIcon } from "@/components/icons/github";
+import { useAuth } from "@/components/auth-provider";
 import { Button } from "@/components/ui/button";
-import { DOCS_URL, GITHUB_URL, NAV_LINKS } from "@/lib/constants";
+import { DOCS_URL, NAV_LINKS } from "@/lib/constants";
 import { cn } from "@/lib/utils";
 
 export function LandingHeader() {
 	const [scrolled, setScrolled] = useState(false);
 	const [mobileOpen, setMobileOpen] = useState(false);
+	const { user, isAuthenticated, isLoggingIn, login, logout } = useAuth();
 
 	useEffect(() => {
 		const onScroll = () => setScrolled(window.scrollY > 12);
@@ -25,7 +26,7 @@ export function LandingHeader() {
 			className={cn(
 				"fixed inset-x-0 top-0 z-50 transition-all duration-300",
 				scrolled
-					? "border-white/[0.06] border-b bg-zinc-950/80 backdrop-blur-xl"
+					? "border-white/6 border-b bg-zinc-950/80 backdrop-blur-xl"
 					: "bg-transparent",
 			)}
 		>
@@ -52,17 +53,54 @@ export function LandingHeader() {
 				</nav>
 
 				<div className="hidden items-center gap-3 md:flex">
-					<Button asChild size="sm" variant="ghost">
-						<a href={DOCS_URL} rel="noopener noreferrer" target="_blank">
-							Docs
-						</a>
-					</Button>
-					<Button asChild size="sm">
-						<a href={GITHUB_URL} rel="noopener noreferrer" target="_blank">
-							<GitHubIcon className="h-4 w-4" />
-							GitHub
-						</a>
-					</Button>
+					{isAuthenticated && user ? (
+						<>
+							<Button asChild size="sm" variant="ghost">
+								<Link href="/dashboard">Dashboard</Link>
+							</Button>
+							<div className="flex items-center gap-2 rounded-lg border border-white/10 bg-white/5 px-3 py-1.5">
+								{user.avatar_url ? (
+									// biome-ignore lint/performance/noImgElement: dynamic avatar URL from Spotify
+									<img
+										alt={user.name}
+										className="h-6 w-6 rounded-full"
+										src={user.avatar_url}
+									/>
+								) : (
+									<div className="flex h-6 w-6 items-center justify-center rounded-full bg-emerald-500/20 font-medium text-emerald-400 text-xs">
+										{user.name.charAt(0).toUpperCase()}
+									</div>
+								)}
+								<span className="text-sm text-zinc-300">{user.name}</span>
+							</div>
+							<button
+								aria-label="Sign out"
+								className="inline-flex h-8 items-center justify-center rounded-md px-3 font-medium text-xs text-zinc-400 transition-colors hover:text-zinc-100"
+								onClick={logout}
+								type="button"
+							>
+								<LogOut className="h-3.5 w-3.5" />
+							</button>
+						</>
+					) : (
+						<>
+							<Button asChild size="sm" variant="ghost">
+								<a href={DOCS_URL} rel="noopener noreferrer" target="_blank">
+									Docs
+								</a>
+							</Button>
+							<Button disabled={isLoggingIn} onClick={login} size="sm">
+								{isLoggingIn ? (
+									<>
+										<Loader2 className="h-3.5 w-3.5 animate-spin" />
+										Signing in...
+									</>
+								) : (
+									"Sign In"
+								)}
+							</Button>
+						</>
+					)}
 				</div>
 
 				<button
@@ -71,12 +109,16 @@ export function LandingHeader() {
 					onClick={() => setMobileOpen((v) => !v)}
 					type="button"
 				>
-					{mobileOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+					{mobileOpen ? (
+						<X className="h-5 w-5" />
+					) : (
+						<Menu className="h-5 w-5" />
+					)}
 				</button>
 			</div>
 
 			{mobileOpen && (
-				<div className="border-white/[0.06] border-t bg-zinc-950/95 px-6 py-4 backdrop-blur-xl md:hidden">
+				<div className="border-white/6 border-t bg-zinc-950/95 px-6 py-4 backdrop-blur-xl md:hidden">
 					<nav className="flex flex-col gap-4">
 						{NAV_LINKS.map((link) => (
 							<a
@@ -89,16 +131,61 @@ export function LandingHeader() {
 							</a>
 						))}
 						<div className="flex gap-3 pt-2">
-							<Button asChild className="flex-1" size="sm" variant="secondary">
-								<a href={DOCS_URL} rel="noopener noreferrer" target="_blank">
-									Docs
-								</a>
-							</Button>
-							<Button asChild className="flex-1" size="sm">
-								<a href={GITHUB_URL} rel="noopener noreferrer" target="_blank">
-									GitHub
-								</a>
-							</Button>
+							{isAuthenticated ? (
+								<>
+									<Button asChild className="flex-1" size="sm">
+										<Link
+											href="/dashboard"
+											onClick={() => setMobileOpen(false)}
+										>
+											Dashboard
+										</Link>
+									</Button>
+									<Button
+										className="flex-1"
+										onClick={() => {
+											logout();
+											setMobileOpen(false);
+										}}
+										size="sm"
+										variant="secondary"
+									>
+										Sign Out
+									</Button>
+								</>
+							) : (
+								<>
+									<Button
+										className="flex-1"
+										disabled={isLoggingIn}
+										onClick={login}
+										size="sm"
+									>
+										{isLoggingIn ? (
+											<>
+												<Loader2 className="h-3.5 w-3.5 animate-spin" />
+												Signing in...
+											</>
+										) : (
+											"Sign In"
+										)}
+									</Button>
+									<Button
+										asChild
+										className="flex-1"
+										size="sm"
+										variant="secondary"
+									>
+										<a
+											href={DOCS_URL}
+											rel="noopener noreferrer"
+											target="_blank"
+										>
+											Docs
+										</a>
+									</Button>
+								</>
+							)}
 						</div>
 					</nav>
 				</div>

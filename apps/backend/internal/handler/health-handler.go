@@ -9,6 +9,14 @@ import (
 	"gorm.io/gorm"
 )
 
+// HealthHandler checks database connectivity.
+//
+//	@Summary     Health check
+//	@Description Check if the database is reachable
+//	@Tags        Health
+//	@Success     200 {object} map[string]string "healthy"
+//	@Failure     503 {object} map[string]string "unhealthy"
+//	@Router      /health [get]
 func HealthHandler(db *gorm.DB) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		sqlDB, err := db.DB()

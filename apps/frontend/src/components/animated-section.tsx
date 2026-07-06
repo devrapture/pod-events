@@ -26,10 +26,10 @@ export function AnimatedSection({
 			className={className}
 			id={id}
 			initial="hidden"
-			whileInView="visible"
-			viewport={{ once: true, margin: "-80px" }}
 			transition={{ duration: 0.55, delay, ease: [0.21, 0.47, 0.32, 0.98] }}
 			variants={fadeUp}
+			viewport={{ once: true, margin: "-80px" }}
+			whileInView="visible"
 		>
 			{children}
 		</motion.section>
@@ -46,12 +46,12 @@ export function StaggerGrid({ children, className }: StaggerGridProps) {
 		<motion.div
 			className={className}
 			initial="hidden"
-			whileInView="visible"
-			viewport={{ once: true, margin: "-60px" }}
 			variants={{
 				hidden: {},
 				visible: { transition: { staggerChildren: 0.08 } },
 			}}
+			viewport={{ once: true, margin: "-60px" }}
+			whileInView="visible"
 		>
 			{children}
 		</motion.div>

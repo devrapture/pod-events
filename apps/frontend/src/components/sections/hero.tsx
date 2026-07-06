@@ -1,12 +1,13 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { ArrowRight, Bell, BookOpen, Sparkles } from "lucide-react";
+import { Bell, Headphones, Loader2, Sparkles } from "lucide-react";
 
+import { useAuth } from "@/components/auth-provider";
 import { GitHubIcon } from "@/components/icons/github";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { DOCS_URL, GITHUB_URL, TECH_BADGES } from "@/lib/constants";
+import { GITHUB_URL, TECH_BADGES } from "@/lib/constants";
 
 function NotificationPreview() {
 	return (
@@ -16,28 +17,46 @@ function NotificationPreview() {
 				<motion.div
 					animate={{ y: [0, -6, 0] }}
 					className="ml-auto max-w-xs rounded-xl border border-white/10 bg-zinc-900/90 p-4 shadow-2xl backdrop-blur-xl"
-					transition={{ duration: 4, repeat: Number.POSITIVE_INFINITY, ease: "easeInOut" }}
+					transition={{
+						duration: 4,
+						repeat: Number.POSITIVE_INFINITY,
+						ease: "easeInOut",
+					}}
 				>
 					<div className="mb-2 flex items-center gap-2">
 						<div className="h-2 w-2 rounded-full bg-[#E01E5A]" />
-						<span className="font-medium text-xs text-zinc-400">#engineering</span>
+						<span className="font-medium text-xs text-zinc-400">
+							#engineering
+						</span>
 					</div>
-					<p className="font-semibold text-sm text-zinc-100">🎙 New episode: Go Time</p>
+					<p className="font-semibold text-sm text-zinc-100">
+						🎙 New episode: Go Time
+					</p>
 					<p className="mt-1 text-xs text-zinc-400">
-						&quot;Building resilient APIs at scale&quot; just dropped on Spotify.
+						&quot;Building resilient APIs at scale&quot; just dropped on
+						Spotify.
 					</p>
 				</motion.div>
 
 				<motion.div
 					animate={{ y: [0, 6, 0] }}
 					className="max-w-xs rounded-xl border border-white/10 bg-zinc-900/90 p-4 shadow-2xl backdrop-blur-xl"
-					transition={{ duration: 5, repeat: Number.POSITIVE_INFINITY, ease: "easeInOut", delay: 0.5 }}
+					transition={{
+						duration: 5,
+						repeat: Number.POSITIVE_INFINITY,
+						ease: "easeInOut",
+						delay: 0.5,
+					}}
 				>
 					<div className="mb-2 flex items-center gap-2">
 						<div className="h-2 w-2 rounded-full bg-[#5865F2]" />
-						<span className="font-medium text-xs text-zinc-400">ai-research</span>
+						<span className="font-medium text-xs text-zinc-400">
+							ai-research
+						</span>
 					</div>
-					<p className="font-semibold text-sm text-zinc-100">Latent Space — new episode</p>
+					<p className="font-semibold text-sm text-zinc-100">
+						Latent Space — new episode
+					</p>
 					<p className="mt-1 text-xs text-zinc-400">
 						Agents, evals, and production ML. Listen now →
 					</p>
@@ -46,7 +65,12 @@ function NotificationPreview() {
 				<motion.div
 					animate={{ y: [0, -4, 0] }}
 					className="ml-8 max-w-[220px] rounded-xl border border-white/10 bg-zinc-900/90 p-3 shadow-2xl backdrop-blur-xl"
-					transition={{ duration: 3.5, repeat: Number.POSITIVE_INFINITY, ease: "easeInOut", delay: 1 }}
+					transition={{
+						duration: 3.5,
+						repeat: Number.POSITIVE_INFINITY,
+						ease: "easeInOut",
+						delay: 1,
+					}}
 				>
 					<div className="flex items-center gap-2">
 						<Bell className="h-3.5 w-3.5 text-emerald-400" />
@@ -59,6 +83,8 @@ function NotificationPreview() {
 }
 
 export function Hero() {
+	const { isAuthenticated, isLoggingIn, login } = useAuth();
+
 	return (
 		<section className="relative overflow-hidden pt-32 pb-20 md:pt-40 md:pb-28">
 			<div className="hero-glow pointer-events-none absolute inset-0" />
@@ -69,6 +95,7 @@ export function Hero() {
 					<motion.div
 						animate={{ opacity: 1, y: 0 }}
 						initial={{ opacity: 0, y: 20 }}
+						suppressHydrationWarning
 						transition={{ duration: 0.6 }}
 					>
 						<Badge className="mb-6 gap-1.5" variant="emerald">
@@ -81,23 +108,34 @@ export function Hero() {
 						</h1>
 
 						<p className="mt-6 max-w-xl text-lg text-zinc-400 leading-relaxed">
-							PodEvents monitors Spotify podcasts 24/7 and instantly delivers new
-							episode notifications to Slack, Discord, Telegram, and WhatsApp—so
-							your team never misses important industry conversations.
+							PodEvents monitors Spotify podcasts 24/7 and instantly delivers
+							new episode notifications to Slack, Discord, Telegram, and
+							WhatsApp—so your team never misses important industry
+							conversations.
 						</p>
 
 						<div className="mt-8 flex flex-wrap gap-3">
-							<Button asChild size="lg">
+							{isAuthenticated ? (
+								<Button asChild size="lg">
+									<a href="/dashboard">
+										<Headphones className="h-4 w-4" />
+										Go to Dashboard
+									</a>
+								</Button>
+							) : (
+								<Button disabled={isLoggingIn} onClick={login} size="lg">
+									{isLoggingIn ? (
+										<Loader2 className="h-4 w-4 animate-spin" />
+									) : (
+										<Headphones className="h-4 w-4" />
+									)}
+									{isLoggingIn ? "Signing in..." : "Sign in with Spotify"}
+								</Button>
+							)}
+							<Button asChild size="lg" variant="secondary">
 								<a href={GITHUB_URL} rel="noopener noreferrer" target="_blank">
 									<GitHubIcon className="h-4 w-4" />
 									View on GitHub
-									<ArrowRight className="h-4 w-4" />
-								</a>
-							</Button>
-							<Button asChild size="lg" variant="secondary">
-								<a href={DOCS_URL} rel="noopener noreferrer" target="_blank">
-									<BookOpen className="h-4 w-4" />
-									Documentation
 								</a>
 							</Button>
 						</div>
@@ -116,6 +154,7 @@ export function Hero() {
 					animate={{ opacity: 1, x: 0 }}
 					className="hidden lg:block"
 					initial={{ opacity: 0, x: 30 }}
+					suppressHydrationWarning
 					transition={{ duration: 0.7, delay: 0.2 }}
 				>
 					<NotificationPreview />

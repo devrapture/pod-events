@@ -1,3 +1,33 @@
+// @title           PodEvents API
+// @version         1.0
+// @description     API for PodEvents - podcast notification platform
+// @termsOfService  https://podevents.app/terms
+//
+// @contact.name   API Support
+// @contact.email  support@podevents.app
+//
+// @license.name  MIT
+// @license.url   https://opensource.org/licenses/MIT
+//
+// @host      localhost:8080
+// @BasePath  /api/v1
+//
+// @securityDefinitions.apikey BearerAuth
+// @in header
+// @name Authorization
+//
+// @tag.name Auth
+// @tag.description Authentication endpoints
+// @tag.name Shows
+// @tag.description Podcast show operations
+// @tag.name Subscriptions
+// @tag.description Subscription management
+// @tag.name Channels
+// @tag.description Notification channel management
+// @tag.name Telegram
+// @tag.description Telegram integration
+// @tag.name Health
+// @tag.description Service health check
 package main
 
 import (
@@ -57,15 +87,17 @@ func main() {
 	tokenRepo := repositories.NewTokenRepository(db, cfg.TokenEncryptionKey)
 	channelRepo := repositories.NewChannelRepository(db)
 	telegramConnectionRepo := repositories.NewTelegramConnectionRepository(db)
+	subscriptionRepo := repositories.NewSubscriptionRepository(db)
+	showRepository := repositories.NewShowRepository(db)
 
 	// ── Services ────────────────────────────────────────────────
-	authService := services.NewAuthService(cfg, tokenRepo, userRepo, spotifyClient, logger)
-	showService := services.NewShowServices(spotifyClient, authService, cfg, appCache)
+	authService := services.NewAuthService(cfg, tokenRepo, userRepo, spotifyClient, appCache, logger)
+	showService := services.NewShowServices(spotifyClient, authService, cfg, appCache, subscriptionRepo, showRepository)
 	channelService := services.NewChannelServices(channelRepo)
 	telegramConnectionService := services.NewTelegramConnectionService(telegramConnectionRepo, channelRepo, cfg)
 
 	// ── Handlers ────────────────────────────────────────────────
-	authHandler := handlers.NewAuthHandler(authService, logger, cfg)
+	authHandler := handlers.NewAuthHandler(authService, logger, cfg, userRepo)
 	showHandler := handlers.NewShowHandler(showService, logger)
 	telegramHandler := handlers.NewTelegramWebHookHandler(cfg, telegramNotifier, telegramConnectionService, logger)
 	channelHandler := handlers.NewChannelHandler(channelService, logger)

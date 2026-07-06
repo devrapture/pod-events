@@ -1,4 +1,4 @@
-.PHONY: dev db-up db-down db-logs generate-encryption-key
+.PHONY: dev db-up db-down db-logs generate-encryption-key frontend-install swagger-docs
 .PHONY: test test-verbose test-coverage
 .PHONY: migrate-diff migrate-up migrate-down migrate-status
 .PHONY: migrate-prod-up migrate-prod-down migrate-prod-status
@@ -6,7 +6,8 @@
 MIGRATE_DIR := apps/backend
 
 dev: db-up
-	cd apps/backend && air
+	cd apps/backend && air &
+	cd apps/frontend && bun dev
 
 db-up:
 	docker compose up -d
@@ -34,6 +35,16 @@ db-logs:
 
 generate-encryption-key:                                              ## Generate a base64-encoded 32-byte AES-256 key for TOKEN_ENCRYPTION_KEY
 	@echo "TOKEN_ENCRYPTION_KEY=$$(openssl rand -base64 32)"
+
+# ── Frontend ────────────────────────────────────────
+
+frontend-install:                                                    ## Install frontend dependencies with bun
+	cd apps/frontend && bun install
+
+# ── API Documentation ──────────────────────────────────────
+
+swagger-docs:                                                            ## Generate Swagger API documentation from Go annotations
+	cd apps/backend && swag init -g cmd/api/main.go -o docs --parseDependency --parseInternal
 
 # ── Tests ──────────────────────────────────────────────────
 
