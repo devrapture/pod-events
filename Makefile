@@ -6,7 +6,8 @@
 MIGRATE_DIR := apps/backend
 
 dev: db-up
-	cd apps/backend && air
+	cd apps/backend && air &
+	cd apps/frontend && bun run dev
 
 db-up:
 	docker compose up -d
