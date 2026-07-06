@@ -51,6 +51,8 @@ export interface ToggleActiveChannelRequest {
 	is_active: boolean;
 }
 
+export type TrackingStatus = "tracked" | "untracked";
+
 export interface SavedShowResponse {
 	id: string;
 	name: string;
@@ -59,6 +61,29 @@ export interface SavedShowResponse {
 	image_url: string;
 	spotify_url: string;
 	added_at: string;
+	is_tracked?: boolean;
+	tracking_status?: TrackingStatus;
+}
+
+export interface SavedShowWithTracking extends SavedShowResponse {
+	is_tracked: boolean;
+	tracking_status: TrackingStatus;
+}
+
+export interface BulkSubscribeRequest {
+	spotify_show_ids: string[];
+}
+
+export interface BulkSubscribeItemResult {
+	spotify_show_id: string;
+	success: boolean;
+	error?: string;
+}
+
+export interface BulkSubscribeResponse {
+	succeeded: number;
+	failed: number;
+	results: BulkSubscribeItemResult[];
 }
 
 export interface PodcastShowResponse {

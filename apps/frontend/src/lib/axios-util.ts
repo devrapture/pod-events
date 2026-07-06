@@ -1,20 +1,19 @@
 import type { AxiosError, InternalAxiosRequestConfig } from "axios";
 import axios from "axios";
 
+import { getNgrokHeaders } from "./api-headers";
 import { TOKEN_KEY } from "./auth";
 
 export const server = axios.create({
 	baseURL: process.env.NEXT_PUBLIC_API_URL,
 	responseType: "json",
 	timeout: 240_000,
-	withCredentials: true,
 });
 
 export const serverWithInterceptors = axios.create({
 	baseURL: process.env.NEXT_PUBLIC_API_URL,
 	responseType: "json",
 	timeout: 240_000,
-	withCredentials: true,
 });
 
 function getAuthToken(): string | null {
@@ -24,6 +23,19 @@ function getAuthToken(): string | null {
 	} catch {
 		return null;
 	}
+}
+
+function applyNgrokHeaders(config: InternalAxiosRequestConfig) {
+	for (const [key, value] of Object.entries(getNgrokHeaders())) {
+		config.headers.set(key, value);
+	}
+	return config;
+}
+
+for (const instance of [server, serverWithInterceptors]) {
+	instance.interceptors.request.use(applyNgrokHeaders, (error: AxiosError) =>
+		Promise.reject(error),
+	);
 }
 
 serverWithInterceptors.interceptors.request.use(

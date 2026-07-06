@@ -84,15 +84,20 @@ func Setup(db *gorm.DB, deps HandlerDependencies, cfg *config.Config, logger *za
 	return r
 }
 
-func corsMiddleware(frontendURL string) gin.HandlerFunc {
-	allowedOrigin := strings.TrimRight(frontendURL, "/")
+func corsMiddleware(allowedOrigin string) gin.HandlerFunc {
+	allowedOrigin = strings.TrimRight(strings.TrimSpace(allowedOrigin), "/")
 
 	return func(c *gin.Context) {
 		origin := c.GetHeader("Origin")
-		if strings.TrimRight(origin, "/") == allowedOrigin {
+		normalizedOrigin := strings.TrimRight(strings.TrimSpace(origin), "/")
+		matched := normalizedOrigin == allowedOrigin
+
+		if matched {
 			c.Header("Access-Control-Allow-Origin", origin)
+			c.Header("Access-Control-Allow-Credentials", "true")
 			c.Header("Access-Control-Allow-Methods", "GET,POST,DELETE,OPTIONS")
-			c.Header("Access-Control-Allow-Headers", "Authorization,Content-Type")
+			c.Header("Access-Control-Allow-Headers", "Authorization,Content-Type,ngrok-skip-browser-warning")
+			c.Header("Access-Control-Max-Age", "86400")
 			c.Header("Vary", "Origin")
 		}
 
