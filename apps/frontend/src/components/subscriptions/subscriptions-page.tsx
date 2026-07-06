@@ -123,7 +123,14 @@ export function SubscriptionsPage() {
 							>
 								Import podcasts from Spotify
 							</Link>{" "}
-							or search for podcasts to start tracking them.
+							or{" "}
+							<Link
+								className="text-emerald-400 hover:text-emerald-300"
+								href="/dashboard/search"
+							>
+								search for podcasts
+							</Link>{" "}
+							to start tracking them.
 						</p>
 					</div>
 				) : (
