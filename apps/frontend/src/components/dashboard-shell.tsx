@@ -7,6 +7,7 @@ import {
 	Menu,
 	Podcast,
 	Radio,
+	Search,
 	X,
 } from "lucide-react";
 import Link from "next/link";
@@ -24,6 +25,12 @@ const NAV_ITEMS = [
 		label: "My Subscriptions",
 		href: "/dashboard/subscriptions",
 		icon: Podcast,
+		exact: true,
+	},
+	{
+		label: "Search Podcasts",
+		href: "/dashboard/search",
+		icon: Search,
 		exact: true,
 	},
 	{
