@@ -57,10 +57,12 @@ func main() {
 	tokenRepo := repositories.NewTokenRepository(db, cfg.TokenEncryptionKey)
 	channelRepo := repositories.NewChannelRepository(db)
 	telegramConnectionRepo := repositories.NewTelegramConnectionRepository(db)
+	subscriptionRepo := repositories.NewSubscriptionRepository(db)
+	showRepository := repositories.NewShowRepository(db)
 
 	// ── Services ────────────────────────────────────────────────
 	authService := services.NewAuthService(cfg, tokenRepo, userRepo, spotifyClient, appCache, logger)
-	showService := services.NewShowServices(spotifyClient, authService, cfg, appCache)
+	showService := services.NewShowServices(spotifyClient, authService, cfg, appCache, subscriptionRepo, showRepository)
 	channelService := services.NewChannelServices(channelRepo)
 	telegramConnectionService := services.NewTelegramConnectionService(telegramConnectionRepo, channelRepo, cfg)
 

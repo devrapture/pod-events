@@ -2,11 +2,15 @@ package services
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"strings"
 
 	"github.com/devrapture/pod-events/internal/config"
 	"github.com/devrapture/pod-events/internal/dto"
+	apperrors "github.com/devrapture/pod-events/internal/errors"
+	"github.com/devrapture/pod-events/internal/models"
+	"github.com/devrapture/pod-events/internal/repositories"
 	"github.com/devrapture/pod-events/internal/spotify"
 	"github.com/google/uuid"
 	gocache "github.com/patrickmn/go-cache"
@@ -15,21 +19,28 @@ import (
 type ShowServices interface {
 	GetUserSavedShows(ctx context.Context, userID uuid.UUID, query string) ([]dto.SavedShowResponse, error)
 	SearchShows(ctx context.Context, userID uuid.UUID, query string, limit, offset int) ([]dto.SavedShowResponse, error)
+	GetSubscriptions(ctx context.Context, userID uuid.UUID) ([]models.Subscription, error)
+	Subscribe(ctx context.Context, userID uuid.UUID, spotifyShowID string) (*models.Subscription, error)
+	Unsubscribe(ctx context.Context, userID uuid.UUID, subscriptionID uuid.UUID) error
 }
 
 type showServices struct {
-	spotifyClient *spotify.SpotifyClient
-	authService   AuthService
-	cfg           *config.Config
-	cache         *gocache.Cache
+	spotifyClient          *spotify.SpotifyClient
+	authService            AuthService
+	cfg                    *config.Config
+	cache                  *gocache.Cache
+	subscriptionRepository repositories.SubscriptionRepository
+	showRepository         repositories.ShowRepository
 }
 
-func NewShowServices(sc *spotify.SpotifyClient, authService AuthService, cfg *config.Config, cache *gocache.Cache) ShowServices {
+func NewShowServices(sc *spotify.SpotifyClient, authService AuthService, cfg *config.Config, cache *gocache.Cache, subscriptionRepository repositories.SubscriptionRepository, showRepository repositories.ShowRepository) ShowServices {
 	return &showServices{
-		spotifyClient: sc,
-		authService:   authService,
-		cfg:           cfg,
-		cache:         cache,
+		spotifyClient:          sc,
+		authService:            authService,
+		cfg:                    cfg,
+		cache:                  cache,
+		subscriptionRepository: subscriptionRepository,
+		showRepository:         showRepository,
 	}
 }
 
@@ -87,4 +98,48 @@ func (s *showServices) SearchShows(ctx context.Context, userID uuid.UUID, query 
 	}
 	shows := result.ToSavedShows()
 	return shows, nil
+}
+
+// GetSubscriptions returns all of a user's subscriptions.
+func (s *showServices) GetSubscriptions(ctx context.Context, userID uuid.UUID) ([]models.Subscription, error) {
+	return s.subscriptionRepository.GetByUserID(ctx, userID)
+}
+
+func (s *showServices) Subscribe(ctx context.Context, userID uuid.UUID, spotifyShowID string) (*models.Subscription, error) {
+	accessToken, err := s.authService.GetValidAccessToken(ctx, userID)
+	if err != nil {
+		return nil, err
+	}
+	spotifyShow, err := s.spotifyClient.GetShow(ctx, accessToken, spotifyShowID)
+	if err != nil {
+		if errors.Is(err, apperrors.ErrSpotifyResourceNotFound) {
+			return nil, apperrors.ErrPodcastShowNotFound
+		}
+		return nil, err
+	}
+
+	show := &models.PodcastShow{
+		SpotifyShowID: spotifyShow.ID,
+		Name:          spotifyShow.Name,
+		Description:   spotifyShow.Description,
+		ImageURL:      spotifyShow.ImageURL(),
+		SpotifyURL:    spotifyShow.ExternalURLs.Spotify,
+	}
+	if err := s.showRepository.GetOrCreate(ctx, show); err != nil {
+		return nil, err
+	}
+
+	subscription := &models.Subscription{
+		UserID:        userID,
+		PodcastShowID: show.ID,
+	}
+	if err := s.subscriptionRepository.Create(ctx, subscription); err != nil {
+		return nil, err
+	}
+	subscription.PodcastShow = *show
+	return subscription, nil
+}
+
+func (s *showServices) Unsubscribe(ctx context.Context, userID uuid.UUID, subscriptionID uuid.UUID) error {
+	return s.subscriptionRepository.Delete(ctx, userID, subscriptionID)
 }
