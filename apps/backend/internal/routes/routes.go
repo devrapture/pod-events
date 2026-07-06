@@ -2,6 +2,7 @@ package routes
 
 import (
 	"net/http"
+	"strings"
 
 	"github.com/devrapture/pod-events/internal/config"
 	handlers "github.com/devrapture/pod-events/internal/handler"
@@ -27,7 +28,7 @@ func Setup(db *gorm.DB, deps HandlerDependencies, cfg *config.Config, logger *za
 	r := gin.New()
 	r.Use(middleware.RequestLogger(logger))
 	r.Use(gin.Recovery())
-	r.Use(corsMiddleware(cfg.FrontendURL, logger))
+	r.Use(corsMiddleware(cfg.FrontendURL))
 
 	r.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
 
@@ -83,18 +84,13 @@ func Setup(db *gorm.DB, deps HandlerDependencies, cfg *config.Config, logger *za
 	return r
 }
 
-func corsMiddleware(allowedOrigin string, logger *zap.Logger) gin.HandlerFunc {
+func corsMiddleware(allowedOrigin string) gin.HandlerFunc {
+	allowedOrigin = strings.TrimRight(strings.TrimSpace(allowedOrigin), "/")
+
 	return func(c *gin.Context) {
 		origin := c.GetHeader("Origin")
-		matched := origin == allowedOrigin
-
-		logger.Debug("CORS check",
-			zap.String("origin", origin),
-			zap.String("allowed_origin", allowedOrigin),
-			zap.Bool("matched", matched),
-			zap.String("method", c.Request.Method),
-			zap.String("path", c.Request.URL.Path),
-		)
+		normalizedOrigin := strings.TrimRight(strings.TrimSpace(origin), "/")
+		matched := normalizedOrigin == allowedOrigin
 
 		if matched {
 			c.Header("Access-Control-Allow-Origin", origin)
