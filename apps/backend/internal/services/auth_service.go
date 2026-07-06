@@ -3,9 +3,11 @@ package services
 import (
 	"context"
 	"crypto/rand"
+	"crypto/subtle"
 	"encoding/hex"
 	"errors"
 	"fmt"
+	"sync"
 	"time"
 
 	"github.com/devrapture/pod-events/internal/config"
@@ -33,7 +35,7 @@ type AuthService interface {
 	GenerateState() (string, error)
 	RememberOAuthState(state string)
 	GetAuthorizationURL(state string) string
-	HandleCallback(ctx context.Context, code, state string) (*models.User, string, error)
+	HandleCallback(ctx context.Context, code, state, browserState string) (*models.User, string, error)
 	GetValidAccessToken(ctx context.Context, userID uuid.UUID) (string, error)
 	CreateAuthExchangeCode(token string, user *models.User) (string, error)
 	ConsumeAuthExchangeCode(code string) (*AuthExchange, bool)
@@ -46,6 +48,7 @@ type authService struct {
 	spotifyClient   *spotify.SpotifyClient
 	cache           *gocache.Cache
 	logger          *zap.Logger
+	oauthStateMu    sync.Mutex
 }
 
 func NewAuthService(cfg *config.Config, tr repositories.TokenRepository, ur repositories.UserRepository, sc *spotify.SpotifyClient, cache *gocache.Cache, logger *zap.Logger) AuthService {
@@ -77,12 +80,19 @@ func (s *authService) GetAuthorizationURL(state string) string {
 	return s.spotifyClient.AuthorizationURL(state)
 }
 
-func (s *authService) consumeOAuthState(state string) bool {
-	if state == "" {
+func (s *authService) consumeOAuthState(state, browserState string) bool {
+	if state == "" || browserState == "" {
+		return false
+	}
+
+	if subtle.ConstantTimeCompare([]byte(state), []byte(browserState)) != 1 {
 		return false
 	}
 
 	cacheKey := oauthStateCachePrefix + state
+	s.oauthStateMu.Lock()
+	defer s.oauthStateMu.Unlock()
+
 	if _, found := s.cache.Get(cacheKey); !found {
 		return false
 	}
@@ -91,8 +101,8 @@ func (s *authService) consumeOAuthState(state string) bool {
 	return true
 }
 
-func (s *authService) HandleCallback(ctx context.Context, code, state string) (*models.User, string, error) {
-	if !s.consumeOAuthState(state) {
+func (s *authService) HandleCallback(ctx context.Context, code, state, browserState string) (*models.User, string, error) {
+	if !s.consumeOAuthState(state, browserState) {
 		return nil, "", fmt.Errorf("invalid state parameter - possible CSRF attack")
 	}
 

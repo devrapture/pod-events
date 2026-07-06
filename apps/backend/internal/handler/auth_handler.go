@@ -25,6 +25,11 @@ type authExchangeRequest struct {
 	Code string `json:"code" binding:"required"`
 }
 
+const (
+	oauthStateCookieName   = "pod_events_oauth_state"
+	oauthStateCookieMaxAge = 5 * 60
+)
+
 func NewAuthHandler(authService services.AuthService, logger *zap.Logger, cfg *config.Config, userRepo repositories.UserRepository) *AuthHandler {
 	return &AuthHandler{
 		authService: authService,
@@ -66,6 +71,7 @@ func (h *AuthHandler) SpotifyLogin(c *gin.Context) {
 		return
 	}
 	h.authService.RememberOAuthState(state)
+	h.setOAuthStateCookie(c, state)
 
 	authURL := h.authService.GetAuthorizationURL(state)
 	c.Redirect(http.StatusTemporaryRedirect, authURL)
@@ -79,6 +85,9 @@ func (h *AuthHandler) SpotifyCallback(c *gin.Context) {
 	code := c.Query("code")
 	state := c.Query("state")
 	spotifyError := c.Query("error")
+	browserState, _ := c.Cookie(oauthStateCookieName)
+	h.clearOAuthStateCookie(c)
+
 	if spotifyError != "" {
 		redirectURL := fmt.Sprintf("%s/auth/callback?error=%s", h.cfg.FrontendURL, url.QueryEscape("Spotify login rejected"))
 		c.Redirect(http.StatusTemporaryRedirect, redirectURL)
@@ -90,7 +99,7 @@ func (h *AuthHandler) SpotifyCallback(c *gin.Context) {
 		c.Redirect(http.StatusTemporaryRedirect, redirectURL)
 		return
 	}
-	user, token, err := h.authService.HandleCallback(c.Request.Context(), code, state)
+	user, token, err := h.authService.HandleCallback(c.Request.Context(), code, state, browserState)
 	if err != nil {
 		h.logger.Warn("failed to authenticate with spotify", zap.Error(err))
 		redirectURL := fmt.Sprintf("%s/auth/callback?error=%s", h.cfg.FrontendURL, url.QueryEscape("Authentication failed"))
@@ -127,4 +136,18 @@ func (h *AuthHandler) ExchangeAuthCode(c *gin.Context) {
 		"token": exchange.Token,
 		"user":  exchange.User,
 	}, nil)
+}
+
+func (h *AuthHandler) setOAuthStateCookie(c *gin.Context, state string) {
+	c.SetSameSite(http.SameSiteLaxMode)
+	c.SetCookie(oauthStateCookieName, state, oauthStateCookieMaxAge, "/", "", h.secureCookie(c), true)
+}
+
+func (h *AuthHandler) clearOAuthStateCookie(c *gin.Context) {
+	c.SetSameSite(http.SameSiteLaxMode)
+	c.SetCookie(oauthStateCookieName, "", -1, "/", "", h.secureCookie(c), true)
+}
+
+func (h *AuthHandler) secureCookie(c *gin.Context) bool {
+	return h.cfg.IsProduction() || c.Request.TLS != nil || c.GetHeader("X-Forwarded-Proto") == "https"
 }
