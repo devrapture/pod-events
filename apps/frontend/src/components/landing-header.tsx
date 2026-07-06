@@ -1,6 +1,6 @@
 "use client";
 
-import { LogOut, Menu, Radio, X } from "lucide-react";
+import { Loader2, LogOut, Menu, Radio, X } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 
@@ -13,7 +13,7 @@ import { cn } from "@/lib/utils";
 export function LandingHeader() {
 	const [scrolled, setScrolled] = useState(false);
 	const [mobileOpen, setMobileOpen] = useState(false);
-	const { user, isAuthenticated, login, logout } = useAuth();
+	const { user, isAuthenticated, isLoggingIn, login, logout } = useAuth();
 
 	useEffect(() => {
 		const onScroll = () => setScrolled(window.scrollY > 12);
@@ -89,8 +89,15 @@ export function LandingHeader() {
 									Docs
 								</a>
 							</Button>
-							<Button onClick={login} size="sm">
-								Sign In
+							<Button disabled={isLoggingIn} onClick={login} size="sm">
+								{isLoggingIn ? (
+									<>
+										<Loader2 className="h-3.5 w-3.5 animate-spin" />
+										Signing in...
+									</>
+								) : (
+									"Sign In"
+								)}
 							</Button>
 						</>
 					)}
@@ -150,13 +157,18 @@ export function LandingHeader() {
 								<>
 									<Button
 										className="flex-1"
-										onClick={() => {
-											login();
-											setMobileOpen(false);
-										}}
+										disabled={isLoggingIn}
+										onClick={login}
 										size="sm"
 									>
-										Sign In
+										{isLoggingIn ? (
+											<>
+												<Loader2 className="h-3.5 w-3.5 animate-spin" />
+												Signing in...
+											</>
+										) : (
+											"Sign In"
+										)}
 									</Button>
 									<Button
 										asChild

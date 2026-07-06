@@ -6,6 +6,7 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
+	"time"
 
 	"github.com/devrapture/pod-events/internal/config"
 	apperrors "github.com/devrapture/pod-events/internal/errors"
@@ -14,13 +15,18 @@ import (
 	"github.com/devrapture/pod-events/internal/spotify"
 	"github.com/devrapture/pod-events/pkg/jwt"
 	"github.com/google/uuid"
+	gocache "github.com/patrickmn/go-cache"
 	"go.uber.org/zap"
 )
 
+const oauthStateCachePrefix = "oauth_state:"
+const oauthStateTTL = 5 * time.Minute
+
 type AuthService interface {
 	GenerateState() (string, error)
+	RememberOAuthState(state string)
 	GetAuthorizationURL(state string) string
-	HandleCallback(ctx context.Context, code, state, cookieState string) (*models.User, string, error)
+	HandleCallback(ctx context.Context, code, state string) (*models.User, string, error)
 	GetValidAccessToken(ctx context.Context, userID uuid.UUID) (string, error)
 }
 
@@ -29,15 +35,17 @@ type authService struct {
 	tokenRepository repositories.TokenRepository
 	userRepository  repositories.UserRepository
 	spotifyClient   *spotify.SpotifyClient
+	cache           *gocache.Cache
 	logger          *zap.Logger
 }
 
-func NewAuthService(cfg *config.Config, tr repositories.TokenRepository, ur repositories.UserRepository, sc *spotify.SpotifyClient, logger *zap.Logger) AuthService {
+func NewAuthService(cfg *config.Config, tr repositories.TokenRepository, ur repositories.UserRepository, sc *spotify.SpotifyClient, cache *gocache.Cache, logger *zap.Logger) AuthService {
 	return &authService{
 		cfg:             cfg,
 		tokenRepository: tr,
 		userRepository:  ur,
 		spotifyClient:   sc,
+		cache:           cache,
 		logger:          logger,
 	}
 }
@@ -52,12 +60,30 @@ func (s *authService) GenerateState() (string, error) {
 	return hex.EncodeToString(b), nil
 }
 
+func (s *authService) RememberOAuthState(state string) {
+	s.cache.Set(oauthStateCachePrefix+state, true, oauthStateTTL)
+}
+
 func (s *authService) GetAuthorizationURL(state string) string {
 	return s.spotifyClient.AuthorizationURL(state)
 }
 
-func (s *authService) HandleCallback(ctx context.Context, code, state, cookieState string) (*models.User, string, error) {
-	if state != cookieState || state == "" {
+func (s *authService) consumeOAuthState(state string) bool {
+	if state == "" {
+		return false
+	}
+
+	cacheKey := oauthStateCachePrefix + state
+	if _, found := s.cache.Get(cacheKey); !found {
+		return false
+	}
+
+	s.cache.Delete(cacheKey)
+	return true
+}
+
+func (s *authService) HandleCallback(ctx context.Context, code, state string) (*models.User, string, error) {
+	if !s.consumeOAuthState(state) {
 		return nil, "", fmt.Errorf("invalid state parameter - possible CSRF attack")
 	}
 

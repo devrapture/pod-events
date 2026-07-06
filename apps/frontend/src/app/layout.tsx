@@ -4,8 +4,6 @@ import type { Metadata } from "next";
 import { Geist } from "next/font/google";
 
 import { AuthProvider } from "@/components/auth-provider";
-import { LandingHeader } from "@/components/landing-header";
-import { Footer } from "@/components/sections/footer";
 import { SITE_URL } from "@/lib/constants";
 
 const geist = Geist({
@@ -66,13 +64,9 @@ export default function RootLayout({
 	children,
 }: Readonly<{ children: React.ReactNode }>) {
 	return (
-		<html className={`${geist.variable} dark`} lang="en">
+		<html className={`${geist.variable} dark`} lang="en" suppressHydrationWarning>
 			<body className="font-sans">
-				<AuthProvider>
-					<LandingHeader />
-					<main>{children}</main>
-					<Footer />
-				</AuthProvider>
+				<AuthProvider>{children}</AuthProvider>
 			</body>
 		</html>
 	);

@@ -1,4 +1,4 @@
-const TOKEN_KEY = "pod_events_token";
+export const TOKEN_KEY = "pod_events_token";
 
 export interface User {
 	id: string;

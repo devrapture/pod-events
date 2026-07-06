@@ -14,8 +14,6 @@ import (
 	"go.uber.org/zap"
 )
 
-const stateCookieName = "spotify_oauth_state"
-
 type AuthHandler struct {
 	authService services.AuthService
 	logger      *zap.Logger
@@ -74,17 +72,7 @@ func (h *AuthHandler) SpotifyLogin(c *gin.Context) {
 		response.ErrorResponse(c, http.StatusInternalServerError, "failed to generate spotify oauth state")
 		return
 	}
-	secureCookie := h.cfg.IsProduction()
-
-	c.SetCookie(
-		stateCookieName,
-		state,
-		300, // 5 minutes
-		"/",
-		"",
-		secureCookie,
-		true, // httpOnly
-	)
+	h.authService.RememberOAuthState(state)
 
 	authURL := h.authService.GetAuthorizationURL(state)
 	c.Redirect(http.StatusTemporaryRedirect, authURL)
@@ -109,25 +97,7 @@ func (h *AuthHandler) SpotifyCallback(c *gin.Context) {
 		c.Redirect(http.StatusTemporaryRedirect, redirectURL)
 		return
 	}
-	cookieState, err := c.Cookie(stateCookieName)
-	if err != nil {
-		h.logger.Warn("failed to get state cookie", zap.Error(err))
-		redirectURL := fmt.Sprintf("%s/auth/callback?error=%s", h.cfg.FrontendURL, url.QueryEscape("Invalid or expired OAuth state"))
-		c.Redirect(http.StatusTemporaryRedirect, redirectURL)
-		return
-	}
-	secureCookie := h.cfg.IsProduction()
-	c.SetCookie(
-		stateCookieName,
-		"",
-		-1,
-		"/",
-		"",
-		secureCookie,
-		true,
-	)
-
-	_, token, err := h.authService.HandleCallback(c.Request.Context(), code, state, cookieState)
+	_, token, err := h.authService.HandleCallback(c.Request.Context(), code, state)
 	if err != nil {
 		h.logger.Warn("failed to authenticate with spotify", zap.Error(err))
 		redirectURL := fmt.Sprintf("%s/auth/callback?error=%s", h.cfg.FrontendURL, url.QueryEscape("Authentication failed"))
@@ -135,6 +105,6 @@ func (h *AuthHandler) SpotifyCallback(c *gin.Context) {
 		return
 	}
 
-	redirectURL := fmt.Sprintf("%s/auth/callback?token=%s", h.cfg.FrontendURL, token)
+	redirectURL := fmt.Sprintf("%s/auth/callback?token=%s", h.cfg.FrontendURL, url.QueryEscape(token))
 	c.Redirect(http.StatusTemporaryRedirect, redirectURL)
 }

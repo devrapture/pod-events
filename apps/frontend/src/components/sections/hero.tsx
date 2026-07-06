@@ -1,7 +1,7 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { Bell, BookOpen, Headphones, Sparkles } from "lucide-react";
+import { Bell, BookOpen, Headphones, Loader2, Sparkles } from "lucide-react";
 
 import { useAuth } from "@/components/auth-provider";
 import { GitHubIcon } from "@/components/icons/github";
@@ -83,7 +83,7 @@ function NotificationPreview() {
 }
 
 export function Hero() {
-	const { isAuthenticated, login } = useAuth();
+	const { isAuthenticated, isLoggingIn, login } = useAuth();
 
 	return (
 		<section className="relative overflow-hidden pt-32 pb-20 md:pt-40 md:pb-28">
@@ -95,6 +95,7 @@ export function Hero() {
 					<motion.div
 						animate={{ opacity: 1, y: 0 }}
 						initial={{ opacity: 0, y: 20 }}
+						suppressHydrationWarning
 						transition={{ duration: 0.6 }}
 					>
 						<Badge className="mb-6 gap-1.5" variant="emerald">
@@ -122,9 +123,13 @@ export function Hero() {
 									</a>
 								</Button>
 							) : (
-								<Button onClick={login} size="lg">
-									<Headphones className="h-4 w-4" />
-									Sign in with Spotify
+								<Button disabled={isLoggingIn} onClick={login} size="lg">
+									{isLoggingIn ? (
+										<Loader2 className="h-4 w-4 animate-spin" />
+									) : (
+										<Headphones className="h-4 w-4" />
+									)}
+									{isLoggingIn ? "Signing in..." : "Sign in with Spotify"}
 								</Button>
 							)}
 							<Button asChild size="lg" variant="secondary">
@@ -149,6 +154,7 @@ export function Hero() {
 					animate={{ opacity: 1, x: 0 }}
 					className="hidden lg:block"
 					initial={{ opacity: 0, x: 30 }}
+					suppressHydrationWarning
 					transition={{ duration: 0.7, delay: 0.2 }}
 				>
 					<NotificationPreview />

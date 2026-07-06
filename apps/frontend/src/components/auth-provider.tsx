@@ -21,6 +21,7 @@ import {
 interface AuthContextValue {
 	user: User | null;
 	isLoading: boolean;
+	isLoggingIn: boolean;
 	isAuthenticated: boolean;
 	login: () => void;
 	logout: () => void;
@@ -32,14 +33,17 @@ const AuthContext = createContext<AuthContextValue | null>(null);
 export function AuthProvider({ children }: { children: ReactNode }) {
 	const [user, setUser] = useState<User | null>(null);
 	const [isLoading, setIsLoading] = useState(true);
+	const [isLoggingIn, setIsLoggingIn] = useState(false);
 
 	const login = useCallback(() => {
+		setIsLoggingIn(true);
 		window.location.href = LOGIN_URL;
 	}, []);
 
 	const logout = useCallback(() => {
 		removeToken();
 		setUser(null);
+		window.location.href = "/";
 	}, []);
 
 	const setToken = useCallback(async (token: string) => {
@@ -71,6 +75,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 			value={{
 				user,
 				isLoading,
+				isLoggingIn,
 				isAuthenticated: !!user,
 				login,
 				logout,
