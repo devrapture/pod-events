@@ -1,9 +1,13 @@
+import type { AxiosError } from "axios";
+
 import { server, serverWithInterceptors } from "@/lib/axios-util";
 
 import type {
 	APIResponse,
 	AuthExchangeRequest,
 	AuthExchangeResponse,
+	BulkSubscribeItemResult,
+	BulkSubscribeResponse,
 	CreateChannelRequest,
 	HealthResponse,
 	NotificationChannel,
@@ -12,6 +16,29 @@ import type {
 	TelegramLinkResponse,
 	ToggleActiveChannelRequest,
 } from "./types";
+
+async function subscribeShow(
+	spotifyShowId: string,
+): Promise<BulkSubscribeItemResult> {
+	try {
+		await serverWithInterceptors.post<APIResponse<SubscriptionResponse>>(
+			`/shows/${spotifyShowId}/subscribe`,
+		);
+		return { spotify_show_id: spotifyShowId, success: true };
+	} catch (error) {
+		const axiosError = error as AxiosError<APIResponse>;
+		if (axiosError.response?.status === 409) {
+			return { spotify_show_id: spotifyShowId, success: true };
+		}
+		return {
+			spotify_show_id: spotifyShowId,
+			success: false,
+			error:
+				axiosError.response?.data?.error?.message ??
+				"Failed to subscribe to show",
+		};
+	}
+}
 
 export const apis = {
 	auth: {
@@ -45,6 +72,23 @@ export const apis = {
 			serverWithInterceptors.post<APIResponse<SubscriptionResponse>>(
 				`/shows/${spotifyShowId}/subscribe`,
 			),
+
+		// TODO: swap to POST /shows/subscribe/bulk when backend ships
+		bulkSubscribe: async (
+			spotifyShowIds: string[],
+		): Promise<{ data: APIResponse<BulkSubscribeResponse> }> => {
+			const results = await Promise.all(
+				spotifyShowIds.map((id) => subscribeShow(id)),
+			);
+			const succeeded = results.filter((r) => r.success).length;
+			const failed = results.length - succeeded;
+			return {
+				data: {
+					success: true,
+					data: { succeeded, failed, results },
+				},
+			};
+		},
 	},
 
 	subscriptions: {

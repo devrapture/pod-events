@@ -1,3 +1,5 @@
+import { getNgrokHeaders } from "./api-headers";
+
 export const TOKEN_KEY = "pod_events_token";
 
 export interface User {
@@ -28,7 +30,7 @@ export function removeToken(): void {
 export async function getCurrentUser(token: string): Promise<User | null> {
 	try {
 		const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/auth/me`, {
-			headers: { Authorization: `Bearer ${token}` },
+			headers: { ...getNgrokHeaders(), Authorization: `Bearer ${token}` },
 		});
 		if (!res.ok) return null;
 		const body = await res.json();

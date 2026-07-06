@@ -1,6 +1,13 @@
 "use client";
 
-import { LayoutDashboard, LogOut, Menu, Radio, X } from "lucide-react";
+import {
+	Download,
+	LayoutDashboard,
+	LogOut,
+	Menu,
+	Radio,
+	X,
+} from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import type { ReactNode } from "react";
@@ -11,8 +18,19 @@ import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { cn } from "@/lib/utils";
 
 const NAV_ITEMS = [
-	{ label: "Overview", href: "/dashboard", icon: LayoutDashboard },
+	{ label: "Overview", href: "/dashboard", icon: LayoutDashboard, exact: true },
+	{
+		label: "Import from Spotify",
+		href: "/dashboard/import",
+		icon: Download,
+		exact: false,
+	},
 ] as const;
+
+function isNavActive(pathname: string, href: string, exact: boolean) {
+	if (exact) return pathname === href;
+	return pathname === href || pathname.startsWith(`${href}/`);
+}
 
 export function DashboardShell({ children }: { children: ReactNode }) {
 	const pathname = usePathname();
@@ -21,8 +39,8 @@ export function DashboardShell({ children }: { children: ReactNode }) {
 	const [confirmSignOut, setConfirmSignOut] = useState(false);
 
 	return (
-		<div className="flex min-h-screen bg-zinc-950">
-			<aside className="hidden w-64 shrink-0 flex-col border-white/6 border-r bg-zinc-950 md:flex">
+		<div className="min-h-screen bg-zinc-950 md:h-screen md:overflow-hidden">
+			<aside className="fixed inset-y-0 left-0 z-40 hidden w-64 flex-col border-white/6 border-r bg-zinc-950 md:flex">
 				<div className="flex h-16 items-center gap-2.5 border-white/6 border-b px-6">
 					<div className="flex h-8 w-8 items-center justify-center rounded-lg border border-emerald-500/20 bg-emerald-500/10">
 						<Radio className="h-4 w-4 text-emerald-400" />
@@ -34,7 +52,7 @@ export function DashboardShell({ children }: { children: ReactNode }) {
 
 				<nav className="flex flex-1 flex-col gap-1 p-4">
 					{NAV_ITEMS.map((item) => {
-						const isActive = pathname === item.href;
+						const isActive = isNavActive(pathname, item.href, item.exact);
 						const Icon = item.icon;
 
 						return (
@@ -92,7 +110,7 @@ export function DashboardShell({ children }: { children: ReactNode }) {
 				</div>
 			</aside>
 
-			<div className="flex min-w-0 flex-1 flex-col">
+			<div className="flex min-h-screen min-w-0 flex-col md:ml-64 md:h-screen md:overflow-hidden">
 				<header className="flex h-16 items-center justify-between border-white/6 border-b px-4 md:hidden">
 					<div className="flex items-center gap-2.5">
 						<div className="flex h-8 w-8 items-center justify-center rounded-lg border border-emerald-500/20 bg-emerald-500/10">
@@ -120,7 +138,7 @@ export function DashboardShell({ children }: { children: ReactNode }) {
 					<div className="border-white/6 border-b bg-zinc-950 px-4 py-4 md:hidden">
 						<nav className="flex flex-col gap-1">
 							{NAV_ITEMS.map((item) => {
-								const isActive = pathname === item.href;
+								const isActive = isNavActive(pathname, item.href, item.exact);
 								const Icon = item.icon;
 
 								return (
@@ -173,7 +191,9 @@ export function DashboardShell({ children }: { children: ReactNode }) {
 					</div>
 				)}
 
-				<main className="flex-1 overflow-auto p-6 md:p-8">{children}</main>
+				<main className="flex min-h-0 flex-1 flex-col overflow-hidden p-6 md:p-8">
+					{children}
+				</main>
 			</div>
 
 			<ConfirmDialog

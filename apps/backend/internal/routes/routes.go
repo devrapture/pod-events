@@ -2,7 +2,6 @@ package routes
 
 import (
 	"net/http"
-	"strings"
 
 	"github.com/devrapture/pod-events/internal/config"
 	handlers "github.com/devrapture/pod-events/internal/handler"
@@ -28,7 +27,7 @@ func Setup(db *gorm.DB, deps HandlerDependencies, cfg *config.Config, logger *za
 	r := gin.New()
 	r.Use(middleware.RequestLogger(logger))
 	r.Use(gin.Recovery())
-	r.Use(corsMiddleware(cfg.FrontendURL))
+	r.Use(corsMiddleware(cfg.FrontendURL, logger))
 
 	r.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
 
@@ -84,15 +83,25 @@ func Setup(db *gorm.DB, deps HandlerDependencies, cfg *config.Config, logger *za
 	return r
 }
 
-func corsMiddleware(frontendURL string) gin.HandlerFunc {
-	allowedOrigin := strings.TrimRight(frontendURL, "/")
-
+func corsMiddleware(allowedOrigin string, logger *zap.Logger) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		origin := c.GetHeader("Origin")
-		if strings.TrimRight(origin, "/") == allowedOrigin {
+		matched := origin == allowedOrigin
+
+		logger.Debug("CORS check",
+			zap.String("origin", origin),
+			zap.String("allowed_origin", allowedOrigin),
+			zap.Bool("matched", matched),
+			zap.String("method", c.Request.Method),
+			zap.String("path", c.Request.URL.Path),
+		)
+
+		if matched {
 			c.Header("Access-Control-Allow-Origin", origin)
+			c.Header("Access-Control-Allow-Credentials", "true")
 			c.Header("Access-Control-Allow-Methods", "GET,POST,DELETE,OPTIONS")
-			c.Header("Access-Control-Allow-Headers", "Authorization,Content-Type")
+			c.Header("Access-Control-Allow-Headers", "Authorization,Content-Type,ngrok-skip-browser-warning")
+			c.Header("Access-Control-Max-Age", "86400")
 			c.Header("Vary", "Origin")
 		}
 

@@ -4,6 +4,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useRef, useState } from "react";
 
 import { useAuth } from "@/components/auth-provider";
+import { getNgrokHeaders } from "@/lib/api-headers";
 import type { User } from "@/lib/auth";
 
 type AuthExchangeData = {
@@ -39,7 +40,7 @@ function CallbackContent() {
 
 		fetch(`${process.env.NEXT_PUBLIC_API_URL}/auth/exchange`, {
 			method: "POST",
-			headers: { "Content-Type": "application/json" },
+			headers: { ...getNgrokHeaders(), "Content-Type": "application/json" },
 			body: JSON.stringify({ code }),
 		})
 			.then(async (res) => {
