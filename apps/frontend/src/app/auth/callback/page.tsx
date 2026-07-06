@@ -1,18 +1,25 @@
 "use client";
 
 import { useRouter, useSearchParams } from "next/navigation";
-import { Suspense, useEffect, useState } from "react";
+import { Suspense, useEffect, useRef, useState } from "react";
 
 import { useAuth } from "@/components/auth-provider";
+import type { User } from "@/lib/auth";
+
+type AuthExchangeData = {
+	token: string;
+	user: User;
+};
 
 function CallbackContent() {
 	const router = useRouter();
 	const searchParams = useSearchParams();
 	const { setToken } = useAuth();
 	const [error, setError] = useState<string | null>(null);
+	const handledCodeRef = useRef<string | null>(null);
 
 	useEffect(() => {
-		const token = searchParams.get("token");
+		const code = searchParams.get("code");
 		const errorParam = searchParams.get("error");
 
 		if (errorParam) {
@@ -20,14 +27,35 @@ function CallbackContent() {
 			return;
 		}
 
-		if (!token) {
-			setError("No token received from authentication");
+		if (!code) {
+			setError("No authentication code received");
 			return;
 		}
 
-		setToken(token).then(() => {
-			router.replace("/dashboard");
-		});
+		if (handledCodeRef.current === code) {
+			return;
+		}
+		handledCodeRef.current = code;
+
+		fetch(`${process.env.NEXT_PUBLIC_API_URL}/auth/exchange`, {
+			method: "POST",
+			headers: { "Content-Type": "application/json" },
+			body: JSON.stringify({ code }),
+		})
+			.then(async (res) => {
+				const body = await res.json();
+				if (!res.ok)
+					throw new Error(body.error?.message ?? "Authentication failed");
+				return body.data as AuthExchangeData;
+			})
+			.then(({ token, user }) => setToken(token, user))
+			.then((signedIn) => {
+				if (!signedIn) {
+					throw new Error("Unable to verify your account");
+				}
+				router.replace("/dashboard");
+			})
+			.catch((err) => setError(err.message));
 	}, [searchParams, setToken, router]);
 
 	if (error) {

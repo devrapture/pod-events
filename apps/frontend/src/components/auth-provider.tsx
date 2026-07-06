@@ -25,7 +25,7 @@ interface AuthContextValue {
 	isAuthenticated: boolean;
 	login: () => void;
 	logout: () => void;
-	setToken: (token: string) => Promise<void>;
+	setToken: (token: string, user?: User) => Promise<boolean>;
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null);
@@ -34,6 +34,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 	const [user, setUser] = useState<User | null>(null);
 	const [isLoading, setIsLoading] = useState(true);
 	const [isLoggingIn, setIsLoggingIn] = useState(false);
+
+	const redirectHome = useCallback(() => {
+		if (window.location.pathname !== "/") {
+			window.location.replace("/");
+		}
+	}, []);
 
 	const login = useCallback(() => {
 		setIsLoggingIn(true);
@@ -46,11 +52,26 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 		window.location.href = "/";
 	}, []);
 
-	const setToken = useCallback(async (token: string) => {
-		storeToken(token);
-		const fetchedUser = await getCurrentUser(token);
-		setUser(fetchedUser);
-	}, []);
+	const setToken = useCallback(
+		async (token: string, authenticatedUser?: User) => {
+			storeToken(token);
+			if (authenticatedUser) {
+				setUser(authenticatedUser);
+				return true;
+			}
+
+			const fetchedUser = await getCurrentUser(token);
+			if (!fetchedUser) {
+				removeToken();
+				setUser(null);
+				redirectHome();
+				return false;
+			}
+			setUser(fetchedUser);
+			return true;
+		},
+		[redirectHome],
+	);
 
 	useEffect(() => {
 		const token = getToken();
@@ -61,14 +82,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
 		getCurrentUser(token)
 			.then((fetchedUser) => {
+				if (!fetchedUser) {
+					removeToken();
+					redirectHome();
+				}
 				setUser(fetchedUser);
 				setIsLoading(false);
 			})
 			.catch(() => {
 				removeToken();
+				redirectHome();
 				setIsLoading(false);
 			});
-	}, []);
+	}, [redirectHome]);
 
 	return (
 		<AuthContext.Provider

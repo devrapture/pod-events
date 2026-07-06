@@ -17,12 +17,12 @@ export function getToken(): string | null {
 
 export function setToken(token: string): void {
 	localStorage.setItem(TOKEN_KEY, token);
-	document.cookie = `${TOKEN_KEY}=${token}; path=/; max-age=86400; SameSite=Lax`;
+	document.cookie = `${TOKEN_KEY}=${token}; path=/; max-age=86400; SameSite=Lax; Secure`;
 }
 
 export function removeToken(): void {
 	localStorage.removeItem(TOKEN_KEY);
-	document.cookie = `${TOKEN_KEY}=; path=/; max-age=0; SameSite=Lax`;
+	document.cookie = `${TOKEN_KEY}=; path=/; max-age=0; SameSite=Lax; Secure`;
 }
 
 export async function getCurrentUser(token: string): Promise<User | null> {

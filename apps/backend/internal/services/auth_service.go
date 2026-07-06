@@ -21,6 +21,13 @@ import (
 
 const oauthStateCachePrefix = "oauth_state:"
 const oauthStateTTL = 5 * time.Minute
+const authExchangeCodeCachePrefix = "auth_exchange_code:"
+const authExchangeCodeTTL = 1 * time.Minute
+
+type AuthExchange struct {
+	Token string
+	User  *models.User
+}
 
 type AuthService interface {
 	GenerateState() (string, error)
@@ -28,6 +35,8 @@ type AuthService interface {
 	GetAuthorizationURL(state string) string
 	HandleCallback(ctx context.Context, code, state string) (*models.User, string, error)
 	GetValidAccessToken(ctx context.Context, userID uuid.UUID) (string, error)
+	CreateAuthExchangeCode(token string, user *models.User) (string, error)
+	ConsumeAuthExchangeCode(code string) (*AuthExchange, bool)
 }
 
 type authService struct {
@@ -198,4 +207,32 @@ func (s *authService) GetValidAccessToken(ctx context.Context, userID uuid.UUID)
 		return "", fmt.Errorf("save refreshed spotify token: %w", err)
 	}
 	return refreshedToken.AccessToken, nil
+}
+
+func (s *authService) CreateAuthExchangeCode(token string, user *models.User) (string, error) {
+	b := make([]byte, 32)
+	if _, err := rand.Read(b); err != nil {
+		return "", fmt.Errorf("failed to generate auth exchange code: %w", err)
+	}
+
+	code := hex.EncodeToString(b)
+	s.cache.Set(authExchangeCodeCachePrefix+code, &AuthExchange{Token: token, User: user}, authExchangeCodeTTL)
+	return code, nil
+}
+
+func (s *authService) ConsumeAuthExchangeCode(code string) (*AuthExchange, bool) {
+	if code == "" {
+		return nil, false
+	}
+
+	cacheKey := authExchangeCodeCachePrefix + code
+	value, found := s.cache.Get(cacheKey)
+	if !found {
+		return nil, false
+	}
+
+	s.cache.Delete(cacheKey)
+
+	exchange, ok := value.(*AuthExchange)
+	return exchange, ok
 }

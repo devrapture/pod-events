@@ -1,6 +1,9 @@
 package routes
 
 import (
+	"net/http"
+	"strings"
+
 	"github.com/devrapture/pod-events/internal/config"
 	handlers "github.com/devrapture/pod-events/internal/handler"
 	"github.com/devrapture/pod-events/internal/middleware"
@@ -21,6 +24,7 @@ func Setup(db *gorm.DB, deps HandlerDependencies, cfg *config.Config, logger *za
 	r := gin.New()
 	r.Use(middleware.RequestLogger(logger))
 	r.Use(gin.Recovery())
+	r.Use(corsMiddleware(cfg.FrontendURL))
 	v1 := r.Group("/api/v1")
 
 	{
@@ -31,7 +35,8 @@ func Setup(db *gorm.DB, deps HandlerDependencies, cfg *config.Config, logger *za
 
 		auth.
 			GET("/spotify/login", deps.AuthHandler.SpotifyLogin).
-			GET("/spotify/callback", deps.AuthHandler.SpotifyCallback)
+			GET("/spotify/callback", deps.AuthHandler.SpotifyCallback).
+			POST("/exchange", deps.AuthHandler.ExchangeAuthCode)
 
 		protected := v1.Group("")
 		protected.Use(middleware.AuthMiddleware(cfg))
@@ -70,4 +75,25 @@ func Setup(db *gorm.DB, deps HandlerDependencies, cfg *config.Config, logger *za
 	}
 
 	return r
+}
+
+func corsMiddleware(frontendURL string) gin.HandlerFunc {
+	allowedOrigin := strings.TrimRight(frontendURL, "/")
+
+	return func(c *gin.Context) {
+		origin := c.GetHeader("Origin")
+		if strings.TrimRight(origin, "/") == allowedOrigin {
+			c.Header("Access-Control-Allow-Origin", origin)
+			c.Header("Access-Control-Allow-Methods", "GET,POST,DELETE,OPTIONS")
+			c.Header("Access-Control-Allow-Headers", "Authorization,Content-Type")
+			c.Header("Vary", "Origin")
+		}
+
+		if c.Request.Method == http.MethodOptions {
+			c.AbortWithStatus(http.StatusNoContent)
+			return
+		}
+
+		c.Next()
+	}
 }

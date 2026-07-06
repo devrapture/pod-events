@@ -21,6 +21,10 @@ type AuthHandler struct {
 	userRepo    repositories.UserRepository
 }
 
+type authExchangeRequest struct {
+	Code string `json:"code" binding:"required"`
+}
+
 func NewAuthHandler(authService services.AuthService, logger *zap.Logger, cfg *config.Config, userRepo repositories.UserRepository) *AuthHandler {
 	return &AuthHandler{
 		authService: authService,
@@ -34,20 +38,9 @@ func NewAuthHandler(authService services.AuthService, logger *zap.Logger, cfg *c
 //
 // GET /auth/me
 func (h *AuthHandler) Me(c *gin.Context) {
-	userIDStr, exists := c.Get("userID")
-	if !exists {
-		response.ErrorResponse(c, http.StatusUnauthorized, "user not authenticated")
-		return
-	}
+	userID, _ := c.Get("userID")
 
-	userID, err := uuid.Parse(userIDStr.(string))
-	if err != nil {
-		h.logger.Warn("invalid userID in context", zap.Error(err))
-		response.ErrorResponse(c, http.StatusInternalServerError, "invalid user ID")
-		return
-	}
-
-	user, err := h.userRepo.GetByID(c.Request.Context(), userID)
+	user, err := h.userRepo.GetByID(c.Request.Context(), userID.(uuid.UUID))
 	if err != nil {
 		h.logger.Error("failed to fetch user", zap.Error(err))
 		response.ErrorResponse(c, http.StatusInternalServerError, "failed to fetch user")
@@ -97,7 +90,7 @@ func (h *AuthHandler) SpotifyCallback(c *gin.Context) {
 		c.Redirect(http.StatusTemporaryRedirect, redirectURL)
 		return
 	}
-	_, token, err := h.authService.HandleCallback(c.Request.Context(), code, state)
+	user, token, err := h.authService.HandleCallback(c.Request.Context(), code, state)
 	if err != nil {
 		h.logger.Warn("failed to authenticate with spotify", zap.Error(err))
 		redirectURL := fmt.Sprintf("%s/auth/callback?error=%s", h.cfg.FrontendURL, url.QueryEscape("Authentication failed"))
@@ -105,6 +98,33 @@ func (h *AuthHandler) SpotifyCallback(c *gin.Context) {
 		return
 	}
 
-	redirectURL := fmt.Sprintf("%s/auth/callback?token=%s", h.cfg.FrontendURL, url.QueryEscape(token))
+	exchangeCode, err := h.authService.CreateAuthExchangeCode(token, user)
+	if err != nil {
+		h.logger.Error("failed to create auth exchange code", zap.Error(err))
+		redirectURL := fmt.Sprintf("%s/auth/callback?error=%s", h.cfg.FrontendURL, url.QueryEscape("Authentication failed"))
+		c.Redirect(http.StatusTemporaryRedirect, redirectURL)
+		return
+	}
+
+	redirectURL := fmt.Sprintf("%s/auth/callback?code=%s", h.cfg.FrontendURL, url.QueryEscape(exchangeCode))
 	c.Redirect(http.StatusTemporaryRedirect, redirectURL)
+}
+
+func (h *AuthHandler) ExchangeAuthCode(c *gin.Context) {
+	var req authExchangeRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		response.ErrorResponse(c, http.StatusBadRequest, "missing auth exchange code")
+		return
+	}
+
+	exchange, ok := h.authService.ConsumeAuthExchangeCode(req.Code)
+	if !ok {
+		response.ErrorResponse(c, http.StatusUnauthorized, "invalid or expired auth exchange code")
+		return
+	}
+
+	response.SuccessResponse(c, http.StatusOK, "Authentication completed", gin.H{
+		"token": exchange.Token,
+		"user":  exchange.User,
+	}, nil)
 }

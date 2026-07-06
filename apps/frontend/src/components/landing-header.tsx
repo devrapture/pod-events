@@ -5,9 +5,8 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 
 import { useAuth } from "@/components/auth-provider";
-import { GitHubIcon } from "@/components/icons/github";
 import { Button } from "@/components/ui/button";
-import { DOCS_URL, GITHUB_URL, NAV_LINKS } from "@/lib/constants";
+import { DOCS_URL, NAV_LINKS } from "@/lib/constants";
 import { cn } from "@/lib/utils";
 
 export function LandingHeader() {
@@ -27,7 +26,7 @@ export function LandingHeader() {
 			className={cn(
 				"fixed inset-x-0 top-0 z-50 transition-all duration-300",
 				scrolled
-					? "border-white/[0.06] border-b bg-zinc-950/80 backdrop-blur-xl"
+					? "border-white/6 border-b bg-zinc-950/80 backdrop-blur-xl"
 					: "bg-transparent",
 			)}
 		>
@@ -76,6 +75,7 @@ export function LandingHeader() {
 							</div>
 							<button
 								className="inline-flex h-8 items-center justify-center rounded-md px-3 font-medium text-xs text-zinc-400 transition-colors hover:text-zinc-100"
+								aria-label="Sign out"
 								onClick={logout}
 								type="button"
 							>
@@ -118,7 +118,7 @@ export function LandingHeader() {
 			</div>
 
 			{mobileOpen && (
-				<div className="border-white/[0.06] border-t bg-zinc-950/95 px-6 py-4 backdrop-blur-xl md:hidden">
+				<div className="border-white/6 border-t bg-zinc-950/95 px-6 py-4 backdrop-blur-xl md:hidden">
 					<nav className="flex flex-col gap-4">
 						{NAV_LINKS.map((link) => (
 							<a
