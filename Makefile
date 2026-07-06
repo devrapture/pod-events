@@ -1,4 +1,4 @@
-.PHONY: dev db-up db-down db-logs generate-encryption-key frontend-install
+.PHONY: dev db-up db-down db-logs generate-encryption-key frontend-install swagger-docs
 .PHONY: test test-verbose test-coverage
 .PHONY: migrate-diff migrate-up migrate-down migrate-status
 .PHONY: migrate-prod-up migrate-prod-down migrate-prod-status
@@ -40,6 +40,11 @@ generate-encryption-key:                                              ## Generat
 
 frontend-install:                                                    ## Install frontend dependencies with bun
 	cd apps/frontend && bun install
+
+# ── API Documentation ──────────────────────────────────────
+
+swagger-docs:                                                            ## Generate Swagger API documentation from Go annotations
+	cd apps/backend && swag init -g cmd/api/main.go -o docs --parseDependency --parseInternal
 
 # ── Tests ──────────────────────────────────────────────────
 

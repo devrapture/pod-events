@@ -9,6 +9,7 @@ import (
 	"github.com/google/uuid"
 )
 
+// PodcastShowResponse represents a podcast show entity.
 type PodcastShowResponse struct {
 	ID                       uuid.UUID  `json:"id"`
 	SpotifyShowID            string     `json:"spotify_show_id"`
@@ -20,6 +21,7 @@ type PodcastShowResponse struct {
 	LatestEpisodePublishedAt *time.Time `json:"latest_episode_published_at,omitempty"`
 }
 
+// SubscriptionResponse represents a user's subscription to a podcast show.
 type SubscriptionResponse struct {
 	ID            uuid.UUID           `json:"id"`
 	UserID        uuid.UUID           `json:"user_id"`

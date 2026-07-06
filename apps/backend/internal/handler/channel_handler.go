@@ -26,6 +26,18 @@ func NewChannelHandler(channelService services.ChannelServices, logger *zap.Logg
 	}
 }
 
+// CreateChannel creates a new notification channel.
+//
+//	@Summary     Create notification channel
+//	@Description Create a new notification channel for the current user
+//	@Tags        Channels
+//	@Security    BearerAuth
+//	@Accept      json
+//	@Produce     json
+//	@Param       channel body dto.CreateChannelRequest true "Channel details"
+//	@Success     200 {object} response.APIResponse "Channel created"
+//	@Failure     422 {object} response.APIResponse "validation error"
+//	@Router      /channels [post]
 func (h *ChannelHandler) CreateChannel(c *gin.Context) {
 	userID, _ := c.Get("userID")
 	var req dto.CreateChannelRequest
@@ -46,6 +58,15 @@ func (h *ChannelHandler) CreateChannel(c *gin.Context) {
 	response.SuccessResponse(c, http.StatusOK, "Channel created", channel, nil)
 }
 
+// GetChannels returns all notification channels for the current user.
+//
+//	@Summary     List notification channels
+//	@Description Get all notification channels for the current user
+//	@Tags        Channels
+//	@Security    BearerAuth
+//	@Produce     json
+//	@Success     200 {object} response.APIResponse "Channels fetched"
+//	@Router      /channels [get]
 func (h *ChannelHandler) GetChannels(c *gin.Context) {
 	userID, _ := c.Get("userID")
 	channels, err := h.channelService.GetByUser(c.Request.Context(), userID.(uuid.UUID))
@@ -56,6 +77,19 @@ func (h *ChannelHandler) GetChannels(c *gin.Context) {
 	response.SuccessResponse(c, http.StatusOK, "Channels fetched", channels, nil)
 }
 
+// ToggleActive enables or disables a notification channel.
+//
+//	@Summary     Toggle notification channel
+//	@Description Enable or disable a notification channel by its UUID
+//	@Tags        Channels
+//	@Security    BearerAuth
+//	@Accept      json
+//	@Produce     json
+//	@Param       channelID path string true "Channel UUID"
+//	@Param       body body dto.ToggleActiveChannelRequest true "Toggle active status"
+//	@Success     200 {object} response.APIResponse "Channel status updated"
+//	@Failure     404 {object} response.APIResponse "Channel not found"
+//	@Router      /channels/{channelID}/toggle [post]
 func (h *ChannelHandler) ToggleActive(c *gin.Context) {
 	userID, _ := c.Get("userID")
 	channelIDStr := c.Param("channelID")
@@ -82,6 +116,17 @@ func (h *ChannelHandler) ToggleActive(c *gin.Context) {
 	response.SuccessResponse(c, http.StatusOK, "Channel status updated", nil, nil)
 }
 
+// Delete removes a notification channel.
+//
+//	@Summary     Delete notification channel
+//	@Description Delete a notification channel by its UUID
+//	@Tags        Channels
+//	@Security    BearerAuth
+//	@Produce     json
+//	@Param       channelID path string true "Channel UUID"
+//	@Success     200 {object} response.APIResponse "Channel deleted"
+//	@Failure     404 {object} response.APIResponse "Channel not found"
+//	@Router      /channels/{channelID} [delete]
 func (h *ChannelHandler) Delete(c *gin.Context) {
 	userID, _ := c.Get("userID")
 	channelIDStr := c.Param("channelID")

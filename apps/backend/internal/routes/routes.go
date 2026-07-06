@@ -8,6 +8,10 @@ import (
 	handlers "github.com/devrapture/pod-events/internal/handler"
 	"github.com/devrapture/pod-events/internal/middleware"
 	"github.com/gin-gonic/gin"
+	swaggerFiles "github.com/swaggo/files"
+	ginSwagger "github.com/swaggo/gin-swagger"
+
+	_ "github.com/devrapture/pod-events/docs"
 	"go.uber.org/zap"
 	"gorm.io/gorm"
 )
@@ -25,6 +29,9 @@ func Setup(db *gorm.DB, deps HandlerDependencies, cfg *config.Config, logger *za
 	r.Use(middleware.RequestLogger(logger))
 	r.Use(gin.Recovery())
 	r.Use(corsMiddleware(cfg.FrontendURL))
+
+	r.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
+
 	v1 := r.Group("/api/v1")
 
 	{

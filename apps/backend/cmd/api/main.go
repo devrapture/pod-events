@@ -1,3 +1,33 @@
+// @title           PodEvents API
+// @version         1.0
+// @description     API for PodEvents - podcast notification platform
+// @termsOfService  https://podevents.app/terms
+//
+// @contact.name   API Support
+// @contact.email  support@podevents.app
+//
+// @license.name  MIT
+// @license.url   https://opensource.org/licenses/MIT
+//
+// @host      localhost:8080
+// @BasePath  /api/v1
+//
+// @securityDefinitions.apikey BearerAuth
+// @in header
+// @name Authorization
+//
+// @tag.name Auth
+// @tag.description Authentication endpoints
+// @tag.name Shows
+// @tag.description Podcast show operations
+// @tag.name Subscriptions
+// @tag.description Subscription management
+// @tag.name Channels
+// @tag.description Notification channel management
+// @tag.name Telegram
+// @tag.description Telegram integration
+// @tag.name Health
+// @tag.description Service health check
 package main
 
 import (
