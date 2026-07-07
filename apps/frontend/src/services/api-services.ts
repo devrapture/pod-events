@@ -9,6 +9,7 @@ import type {
 	BulkSubscribeItemResult,
 	BulkSubscribeResponse,
 	CreateChannelRequest,
+	DashboardSummary,
 	HealthResponse,
 	NotificationChannel,
 	SavedShowResponse,
@@ -132,5 +133,12 @@ export const apis = {
 
 	health: {
 		check: () => server.get<HealthResponse>("/health"),
+	},
+
+	dashboard: {
+		summary: () =>
+			serverWithInterceptors.get<APIResponse<DashboardSummary>>(
+				"/dashboard/summary",
+			),
 	},
 };

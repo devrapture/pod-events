@@ -20,6 +20,7 @@ type DashboardStatsResponse struct {
 }
 
 type DashboardItems struct {
+	Key       string `json:"key"`
 	Label     string `json:"label"`
 	Completed bool   `json:"completed"`
 }

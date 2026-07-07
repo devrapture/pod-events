@@ -125,6 +125,31 @@ export interface HealthResponse {
 	status: string;
 }
 
+export interface DashboardSetupItem {
+	key: string;
+	label: string;
+	completed: boolean;
+}
+
+export interface DashboardSetup {
+	completed: number;
+	total: number;
+	percent: number;
+	items: DashboardSetupItem[];
+}
+
+export interface DashboardStats {
+	podcasts_tracked: number;
+	active_channels: number;
+	new_episodes_this_week: number;
+	notification_sent: number;
+}
+
+export interface DashboardSummary {
+	setup: DashboardSetup;
+	stats: DashboardStats;
+}
+
 export interface ShowSearchParams {
 	q: string;
 	limit?: number;

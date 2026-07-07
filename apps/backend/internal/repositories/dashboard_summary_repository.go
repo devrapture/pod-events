@@ -2,9 +2,11 @@ package repositories
 
 import (
 	"context"
+	"errors"
 	"time"
 
 	"github.com/devrapture/pod-events/internal/dto"
+	apperrors "github.com/devrapture/pod-events/internal/errors"
 	"github.com/devrapture/pod-events/internal/models"
 	"github.com/google/uuid"
 	"gorm.io/gorm"
@@ -15,12 +17,14 @@ type DashboardSummaryRepository interface {
 }
 
 type dasboardSummaryRepository struct {
-	db *gorm.DB
+	db        *gorm.DB
+	tokenRepo TokenRepository
 }
 
-func NewDashboardSummaryRepository(db *gorm.DB) DashboardSummaryRepository {
+func NewDashboardSummaryRepository(db *gorm.DB, tokenRepo TokenRepository) DashboardSummaryRepository {
 	return &dasboardSummaryRepository{
-		db: db,
+		db:        db,
+		tokenRepo: tokenRepo,
 	}
 }
 
@@ -48,24 +52,37 @@ func (r *dasboardSummaryRepository) GetDashboardSummary(ctx context.Context, use
 		return nil, err
 	}
 
+	hasSpotifyToken := false
+	_, err := r.tokenRepo.GetByUserID(ctx, userID)
+	if err == nil {
+		hasSpotifyToken = true
+	} else if !errors.Is(err, apperrors.ErrorSpotifyTokenNotFound) {
+		return nil, err
+	}
+
 	setupItems := []dto.DashboardItems{
 		{
+			Key:       "connect_spotify",
 			Label:     "Connect Spotify",
-			Completed: true,
+			Completed: hasSpotifyToken,
 		},
 		{
+			Key:       "import_spotify",
+			Label:     "Import Spotify Podcasts",
+			Completed: hasSpotifyToken,
+		},
+		{
+			Key:       "subscribe_podcast",
 			Label:     "Subscribe to at least one podcast",
 			Completed: podcastTracked > 0,
 		},
 		{
+			Key:       "add_channel",
 			Label:     "Add a notification channel",
 			Completed: activeChannels > 0,
 		},
 		{
-			Label:     "New Episodes This Week",
-			Completed: newEpisodesThisWeek > 0,
-		},
-		{
+			Key:       "receive_notification",
 			Label:     "Receive first notification",
 			Completed: notificationSent > 0,
 		},
@@ -81,7 +98,6 @@ func (r *dasboardSummaryRepository) GetDashboardSummary(ctx context.Context, use
 		}
 	}
 	if total > 0 {
-		// percent = (completed / total) * 100
 		percent = int(float64(completed) / float64(total) * 100)
 	}
 

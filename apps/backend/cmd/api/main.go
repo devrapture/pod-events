@@ -91,7 +91,7 @@ func main() {
 	telegramConnectionRepo := repositories.NewTelegramConnectionRepository(db)
 	subscriptionRepo := repositories.NewSubscriptionRepository(db)
 	showRepository := repositories.NewShowRepository(db)
-	dashboardSummaryRepo := repositories.NewDashboardSummaryRepository(db)
+	dashboardSummaryRepo := repositories.NewDashboardSummaryRepository(db, tokenRepo)
 
 	// ── Services ────────────────────────────────────────────────
 	authService := services.NewAuthService(cfg, tokenRepo, userRepo, spotifyClient, appCache, logger)
