@@ -36,6 +36,8 @@ definitions:
     properties:
       completed:
         type: boolean
+      key:
+        type: string
       label:
         type: string
     type: object

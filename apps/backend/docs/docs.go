@@ -739,6 +739,9 @@ const docTemplate = `{
                 "completed": {
                     "type": "boolean"
                 },
+                "key": {
+                    "type": "string"
+                },
                 "label": {
                     "type": "string"
                 }
