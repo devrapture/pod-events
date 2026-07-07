@@ -28,6 +28,8 @@
 // @tag.description Telegram integration
 // @tag.name Health
 // @tag.description Service health check
+// @tag.name Dashboard
+// @tag.description Dashboard overview
 package main
 
 import (
