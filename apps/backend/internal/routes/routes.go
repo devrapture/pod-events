@@ -17,10 +17,11 @@ import (
 )
 
 type HandlerDependencies struct {
-	AuthHandler     *handlers.AuthHandler
-	ShowHandler     *handlers.ShowHandler
-	TelegramHandler *handlers.TelegramWebHookHandler
-	ChannelHandler  *handlers.ChannelHandler
+	AuthHandler      *handlers.AuthHandler
+	ShowHandler      *handlers.ShowHandler
+	TelegramHandler  *handlers.TelegramWebHookHandler
+	ChannelHandler   *handlers.ChannelHandler
+	DashboardHandler *handlers.DashboardShowHandler
 }
 
 func Setup(db *gorm.DB, deps HandlerDependencies, cfg *config.Config, logger *zap.Logger) *gin.Engine {
@@ -48,6 +49,11 @@ func Setup(db *gorm.DB, deps HandlerDependencies, cfg *config.Config, logger *za
 		protected := v1.Group("")
 		protected.Use(middleware.AuthMiddleware(cfg))
 		protected.GET("/auth/me", deps.AuthHandler.Me)
+
+		// dashboard
+		dashboard := protected.Group("/dashboard")
+		dashboard.
+			GET("/summary", deps.DashboardHandler.GetDashboardSummary)
 
 		// shows
 		shows := protected.Group("/shows")

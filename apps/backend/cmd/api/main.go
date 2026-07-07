@@ -28,6 +28,8 @@
 // @tag.description Telegram integration
 // @tag.name Health
 // @tag.description Service health check
+// @tag.name Dashboard
+// @tag.description Dashboard overview
 package main
 
 import (
@@ -89,24 +91,28 @@ func main() {
 	telegramConnectionRepo := repositories.NewTelegramConnectionRepository(db)
 	subscriptionRepo := repositories.NewSubscriptionRepository(db)
 	showRepository := repositories.NewShowRepository(db)
+	dashboardSummaryRepo := repositories.NewDashboardSummaryRepository(db, tokenRepo)
 
 	// ── Services ────────────────────────────────────────────────
 	authService := services.NewAuthService(cfg, tokenRepo, userRepo, spotifyClient, appCache, logger)
 	showService := services.NewShowServices(spotifyClient, authService, cfg, appCache, subscriptionRepo, showRepository)
 	channelService := services.NewChannelServices(channelRepo)
 	telegramConnectionService := services.NewTelegramConnectionService(telegramConnectionRepo, channelRepo, cfg)
+	dashboardService := services.NewDashboardSummaryService(dashboardSummaryRepo)
 
 	// ── Handlers ────────────────────────────────────────────────
 	authHandler := handlers.NewAuthHandler(authService, logger, cfg, userRepo)
 	showHandler := handlers.NewShowHandler(showService, logger)
 	telegramHandler := handlers.NewTelegramWebHookHandler(cfg, telegramNotifier, telegramConnectionService, logger)
 	channelHandler := handlers.NewChannelHandler(channelService, logger)
+	dashboardHandler := handlers.NewDashboardShowHandler(dashboardService, logger)
 
 	deps := routes.HandlerDependencies{
-		AuthHandler:     authHandler,
-		ShowHandler:     showHandler,
-		TelegramHandler: telegramHandler,
-		ChannelHandler:  channelHandler,
+		AuthHandler:      authHandler,
+		ShowHandler:      showHandler,
+		TelegramHandler:  telegramHandler,
+		ChannelHandler:   channelHandler,
+		DashboardHandler: dashboardHandler,
 	}
 
 	addr := fmt.Sprintf(":%s", cfg.Port)
