@@ -1,0 +1,34 @@
+package handler
+
+import (
+	"net/http"
+
+	"github.com/devrapture/pod-events/internal/services"
+	"github.com/devrapture/pod-events/pkg/response"
+	"github.com/gin-gonic/gin"
+	"github.com/google/uuid"
+	"go.uber.org/zap"
+)
+
+type DashboardShowHandler struct {
+	dashboardShowService services.DashboardSummaryService
+	logger               *zap.Logger
+}
+
+func NewDashboardShowHandler(dashboardShowService services.DashboardSummaryService, logger *zap.Logger) *DashboardShowHandler {
+	return &DashboardShowHandler{
+		dashboardShowService: dashboardShowService,
+		logger:               logger,
+	}
+}
+
+func (h *DashboardShowHandler) GetDashboardSummary(c *gin.Context) {
+	userID, _ := c.Get("userID")
+	summary, err := h.dashboardShowService.GetDashboardSummary(c.Request.Context(), userID.(uuid.UUID))
+	if err != nil {
+		h.logger.Error("failed to get dashboard summary", zap.Error(err))
+		response.ErrorResponse(c, http.StatusInternalServerError, "failed to get dashboard summary")
+		return
+	}
+	response.SuccessResponse(c, http.StatusOK, "dashboard summary fetched successfully", summary, nil)
+}
