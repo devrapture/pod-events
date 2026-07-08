@@ -91,7 +91,7 @@ export function AddChannelForm({ onSuccess }: AddChannelFormProps) {
 					toast.error("Failed to generate Telegram link. Please try again.");
 					return;
 				}
-				window.location.href = url;
+				window.open(url, "_blank", "noopener,noreferrer");
 			},
 			onError: () => {
 				toast.error("Failed to connect Telegram. Please try again.");
@@ -237,7 +237,7 @@ export function AddChannelForm({ onSuccess }: AddChannelFormProps) {
 					<div className="space-y-3">
 						<p className="text-sm text-zinc-400 leading-relaxed">
 							Connect your Telegram account to receive new episode alerts.
-							You&apos;ll be redirected to Telegram to start our bot.
+							Telegram will open in a new tab so you can start our bot.
 						</p>
 						<Button
 							disabled={isPending}
