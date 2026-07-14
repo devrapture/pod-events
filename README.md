@@ -82,7 +82,7 @@ The API runs at `http://localhost:8080` and the frontend at `http://localhost:30
 
 | Variable | Description |
 |---|---|
-| `NEXT_PUBLIC_API_URL` | Backend API URL (e.g. ngrok tunnel in dev) |
+| `NEXT_PUBLIC_API_URL` | Backend API URL including `/api/v1` prefix (e.g. `https://your-ngrok-url.ngrok-free.dev/api/v1`) |
 
 ## Development
 
@@ -151,8 +151,10 @@ DATABASE_URL=... DEV_DATABASE_URL=... make migrate-prod-up
 ```
 User → /auth/spotify/login → redirect to Spotify → authorize
 → callback with code+state → exchange for Spotify tokens
-→ encrypt tokens, store in DB → create JWT → redirect to frontend
-→ frontend calls POST /auth/exchange → receives JWT
+→ encrypt tokens, store in DB → create temporary exchange code
+→ redirect to frontend /auth/callback?code={exchangeCode}
+→ frontend calls POST ${NEXT_PUBLIC_API_URL}/auth/exchange with code
+→ backend returns JWT + user
 ```
 
 ## Project Structure

@@ -25,7 +25,7 @@ Frontend (Next.js 15) --> Backend (Gin + GORM) --> PostgreSQL 17
                          Notifications (Slack/Discord/Telegram/WhatsApp)
 ```
 
-Auth flow: User logs in via Spotify OAuth on the backend, receives a JWT, which is stored in the frontend and attached to API requests via Bearer token.
+Auth flow: User logs in via Spotify OAuth on the backend, receives a temporary exchange code, then the frontend exchanges it for a JWT which is stored and attached to API requests via Bearer token.
 
 ## Repository Structure
 
