@@ -59,7 +59,7 @@ pod-events/
 │       │   ├── app/            # Next.js App Router pages
 │       │   │   ├── (marketing)/    # Landing page (route group)
 │       │   │   ├── dashboard/      # Dashboard pages (import, search, subscriptions)
-│       │   │   └── api/auth/       # OAuth callback routes
+│       │   │   ├── auth/           # OAuth callback route
 │       │   ├── components/
 │       │   │   ├── ui/         # Shared UI primitives (shadcn/ui pattern: button, card, badge, toast)
 │       │   │   ├── {feature}/  # Feature-specific components (overview, search, import, subscriptions)
@@ -68,8 +68,7 @@ pod-events/
 │       │   │   ├── keys/       # TanStack Query key factories
 │       │   │   ├── queries/    # TanStack Query query hooks
 │       │   │   └── mutations/  # TanStack Query mutation hooks
-│       │   ├── lib/            # Utilities, Axios setup, constants, auth helpers
-│       │   ├── server/         # Server-side code (auth config)
+│       │   ├── lib/            # Utilities, auth helpers, Axios setup, constants
 │       │   ├── services/       # Centralized API client + TypeScript types
 │       │   └── styles/         # globals.css (Tailwind v4)
 │       └── biome.jsonc         # Biome linter/formatter config
