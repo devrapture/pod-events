@@ -12,7 +12,7 @@ Guide for AI coding agents working on this repository.
 |---|---|
 | Frontend | Next.js 15 (App Router), React 19, TypeScript 5.8, Tailwind CSS v4, Bun |
 | Backend | Go 1.25, Gin (HTTP), GORM (ORM), PostgreSQL 17 |
-| Auth | Better Auth (GitHub OAuth, frontend), JWT (backend), Spotify OAuth (backend) |
+| Auth | Spotify OAuth (backend), JWT (backend), custom React auth context (frontend) |
 | Database | PostgreSQL 17 (Docker), Atlas (schema migrations from GORM models) |
 | Tooling | Biome (lint/format), Husky + lint-staged, Air (Go hot-reload), Docker Compose |
 | Validation | Zod (frontend env), go-playground/validator (backend) |
@@ -25,7 +25,7 @@ Frontend (Next.js 15) --> Backend (Gin + GORM) --> PostgreSQL 17
                          Notifications (Slack/Discord/Telegram/WhatsApp)
 ```
 
-Dual OAuth: Spotify OAuth on the backend (podcast data), GitHub OAuth on the frontend via Better Auth (user identity).
+Auth flow: User logs in via Spotify OAuth on the backend, receives a JWT, which is stored in the frontend and attached to API requests via Bearer token.
 
 ## Repository Structure
 
@@ -59,7 +59,7 @@ pod-events/
 │       │   ├── app/            # Next.js App Router pages
 │       │   │   ├── (marketing)/    # Landing page (route group)
 │       │   │   ├── dashboard/      # Dashboard pages (import, search, subscriptions)
-│       │   │   └── api/auth/       # Better Auth API routes
+│       │   │   └── api/auth/       # OAuth callback routes
 │       │   ├── components/
 │       │   │   ├── ui/         # Shared UI primitives (shadcn/ui pattern: button, card, badge, toast)
 │       │   │   ├── {feature}/  # Feature-specific components (overview, search, import, subscriptions)
@@ -69,7 +69,7 @@ pod-events/
 │       │   │   ├── queries/    # TanStack Query query hooks
 │       │   │   └── mutations/  # TanStack Query mutation hooks
 │       │   ├── lib/            # Utilities, Axios setup, constants, auth helpers
-│       │   ├── server/         # Server-side code (Better Auth config)
+│       │   ├── server/         # Server-side code (auth config)
 │       │   ├── services/       # Centralized API client + TypeScript types
 │       │   └── styles/         # globals.css (Tailwind v4)
 │       └── biome.jsonc         # Biome linter/formatter config
