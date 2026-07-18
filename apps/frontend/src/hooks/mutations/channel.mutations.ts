@@ -5,6 +5,7 @@ import type {
 	APIResponse,
 	CreateChannelRequest,
 	NotificationChannel,
+	TelegramLinkResponse,
 	ToggleActiveChannelRequest,
 } from "@/services/types";
 
@@ -92,8 +93,12 @@ export const useToggleChannel = createMutation({
 	},
 });
 
-export const useGenerateTelegramLink = createMutation({
-	mutationFn: async (): Promise<APIResponse> => {
+export const useGenerateTelegramLink = createMutation<
+	APIResponse<TelegramLinkResponse>,
+	void,
+	Error
+>({
+	mutationFn: async () => {
 		const response = await apis.telegram.generateLink();
 		return response.data;
 	},

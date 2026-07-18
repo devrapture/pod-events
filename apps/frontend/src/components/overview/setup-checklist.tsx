@@ -18,7 +18,7 @@ const CHECKLIST_LINKS: Record<string, string | null> = {
 	connect_spotify: LOGIN_URL,
 	import_spotify: "/dashboard/import",
 	subscribe_podcast: "/dashboard/search",
-	add_channel: "/dashboard/search",
+	add_channel: "/dashboard/channels",
 	receive_notification: null,
 };
 
