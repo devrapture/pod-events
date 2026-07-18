@@ -132,6 +132,7 @@ func (h *TelegramWebHookHandler) Handle(c *gin.Context) {
 		}
 
 		appURL := h.cfg.FrontendURL
+		appURL = strings.TrimSuffix(appURL, "/")
 		message := fmt.Sprintf("Hi %s, PodEvents is now connected to this Telegram chat. You can now receive notifications in this chat. You can manage your connection in the app at %s/dashboard/channels", name, appURL)
 		_ = h.notifier.SendToChatID(c.Request.Context(), message, chatID)
 		c.Status(http.StatusOK)

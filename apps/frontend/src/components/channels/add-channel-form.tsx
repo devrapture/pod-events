@@ -67,6 +67,25 @@ export function AddChannelForm({ onSuccess }: AddChannelFormProps) {
 			return;
 		}
 
+		if (channelType === "slack_webhook" || channelType === "discord_webhook") {
+			try {
+				const parsed = new URL(trimmed);
+				if (parsed.protocol !== "https:") {
+					setValidationError("Webhook URL must use https.");
+					return;
+				}
+			} catch {
+				setValidationError("Please enter a valid webhook URL.");
+				return;
+			}
+		}
+
+		if (channelType === "whatsapp") {
+			if (!/^\[1-9]\d{1,14}$/.test(trimmed)) {
+				setValidationError("Use E.164 format, e.g. 2348012345678.");
+				return;
+			}
+		}
 		setValidationError(null);
 		createChannel(
 			{ channel_type: channelType, destination: trimmed },
@@ -92,6 +111,12 @@ export function AddChannelForm({ onSuccess }: AddChannelFormProps) {
 					return;
 				}
 				window.open(url, "_blank", "noopener,noreferrer");
+				const win = window.open(url, "_blank", "noopener,noreferrer");
+				if (!win) {
+					toast.error(
+						"Popup blocked. Please allow popups to connect Telegram.",
+					);
+				}
 			},
 			onError: () => {
 				toast.error("Failed to connect Telegram. Please try again.");
@@ -140,7 +165,10 @@ export function AddChannelForm({ onSuccess }: AddChannelFormProps) {
 								Slack webhook URL
 							</label>
 							<input
-								className={cn(INPUT_CLASS, validationError && "border-red-500/50")}
+								className={cn(
+									INPUT_CLASS,
+									validationError && "border-red-500/50",
+								)}
 								id="slack-webhook"
 								onChange={(e) => {
 									setDestination(e.target.value);
@@ -175,7 +203,10 @@ export function AddChannelForm({ onSuccess }: AddChannelFormProps) {
 								Discord webhook URL
 							</label>
 							<input
-								className={cn(INPUT_CLASS, validationError && "border-red-500/50")}
+								className={cn(
+									INPUT_CLASS,
+									validationError && "border-red-500/50",
+								)}
 								id="discord-webhook"
 								onChange={(e) => {
 									setDestination(e.target.value);
@@ -209,7 +240,10 @@ export function AddChannelForm({ onSuccess }: AddChannelFormProps) {
 								WhatsApp phone number
 							</label>
 							<input
-								className={cn(INPUT_CLASS, validationError && "border-red-500/50")}
+								className={cn(
+									INPUT_CLASS,
+									validationError && "border-red-500/50",
+								)}
 								id="whatsapp-contact"
 								onChange={(e) => {
 									setDestination(e.target.value);

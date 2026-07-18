@@ -52,6 +52,9 @@ export function maskDestination(
 		case "slack_webhook":
 		case "discord_webhook":
 			return maskWebhookUrl(destination);
+		case "whatsapp":
+			if (destination.length <= 4) return destination;
+			return `${"*".repeat(destination.length - 4)}${destination.slice(-4)}`;
 		case "telegram":
 			return "Connected";
 		default:
