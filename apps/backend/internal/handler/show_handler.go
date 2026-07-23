@@ -3,7 +3,6 @@ package handler
 import (
 	"errors"
 	"net/http"
-	"regexp"
 	"strconv"
 	"strings"
 
@@ -27,8 +26,6 @@ func NewShowHandler(showService services.ShowServices, logger *zap.Logger) *Show
 		logger:      logger,
 	}
 }
-
-var spotifyShowIDPattern = regexp.MustCompile(`^[A-Za-z0-9]{22}$`)
 
 // GetUserSavedShows returns a list of shows saved by a user on Spotify.
 //
@@ -115,17 +112,13 @@ func (h *ShowHandler) SearchShows(c *gin.Context) {
 //	@Router      /shows/{spotifyShowId}/subscribe [post]
 func (h *ShowHandler) Subscribe(c *gin.Context) {
 	userID, _ := c.Get("userID")
-	spotifyShowID := strings.TrimSpace(c.Param("spotifyShowId"))
-	if spotifyShowID == "" {
-		response.ErrorResponse(c, http.StatusBadRequest, "spotify show ID is required")
+	var req dto.SubscribeShowsRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		response.ErrorResponse(c, http.StatusBadRequest, "invalid request")
 		return
 	}
 
-	if !spotifyShowIDPattern.MatchString(spotifyShowID) {
-		response.ErrorResponse(c, http.StatusBadRequest, "invalid spotify show ID")
-		return
-	}
-	subscription, err := h.showService.Subscribe(c.Request.Context(), userID.(uuid.UUID), spotifyShowID)
+	_, err := h.showService.Subscribe(c.Request.Context(), userID.(uuid.UUID), req.SpotifyShowIDs)
 	if err != nil {
 
 		if errors.Is(err, apperrors.ErrPodcastShowNotFound) {
@@ -142,7 +135,7 @@ func (h *ShowHandler) Subscribe(c *gin.Context) {
 		response.ErrorResponse(c, http.StatusInternalServerError, "failed to subscribe")
 		return
 	}
-	response.SuccessResponse(c, http.StatusOK, "subscribed successfully", dto.ToSubscriptionResponse(*subscription), nil)
+	response.SuccessResponse(c, http.StatusOK, "subscribed successfully", nil, nil)
 }
 
 // Unsubscribe removes a subscription by its UUID.

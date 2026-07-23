@@ -29,7 +29,7 @@ func NewChannelRepository(db *gorm.DB) ChannelRepository {
 }
 
 func (r *channelRepository) Create(ctx context.Context, channel *models.NotificationChannel) error {
-	result := r.db.WithContext(ctx).Create(channel)
+	result := dbFromCtx(ctx, r.db).WithContext(ctx).Create(channel)
 	if result.Error != nil {
 		return fmt.Errorf("failed to create notification channel: %w", result.Error)
 	}
@@ -38,7 +38,7 @@ func (r *channelRepository) Create(ctx context.Context, channel *models.Notifica
 
 func (r *channelRepository) GetByUserID(ctx context.Context, userID uuid.UUID) ([]models.NotificationChannel, error) {
 	var channel []models.NotificationChannel
-	if err := r.db.WithContext(ctx).Where("user_id = ?", userID).Find(&channel).Error; err != nil {
+	if err := dbFromCtx(ctx, r.db).WithContext(ctx).Where("user_id = ?", userID).Find(&channel).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, apperrors.ErrUserNotFound
 		}
@@ -48,7 +48,7 @@ func (r *channelRepository) GetByUserID(ctx context.Context, userID uuid.UUID) (
 }
 
 func (r *channelRepository) ToggleActive(ctx context.Context, userID, channelID uuid.UUID, isActive bool) error {
-	result := r.db.WithContext(ctx).
+	result := dbFromCtx(ctx, r.db).WithContext(ctx).
 		Model(&models.NotificationChannel{}).
 		Where("id = ? AND user_id = ?", channelID, userID).
 		Update("is_active", isActive)
@@ -62,7 +62,7 @@ func (r *channelRepository) ToggleActive(ctx context.Context, userID, channelID 
 }
 
 func (r *channelRepository) Delete(ctx context.Context, userID, channelID uuid.UUID) error {
-	result := r.db.WithContext(ctx).Where("id = ? AND user_id = ?", channelID, userID).Delete(&models.NotificationChannel{})
+	result := dbFromCtx(ctx, r.db).WithContext(ctx).Where("id = ? AND user_id = ?", channelID, userID).Delete(&models.NotificationChannel{})
 	if result.Error != nil {
 		return fmt.Errorf("failed to delete notification channel: %w", result.Error)
 	}

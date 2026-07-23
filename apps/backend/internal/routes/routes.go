@@ -25,7 +25,6 @@ type HandlerDependencies struct {
 }
 
 func Setup(db *gorm.DB, deps HandlerDependencies, cfg *config.Config, logger *zap.Logger) *gin.Engine {
-
 	r := gin.New()
 	r.Use(middleware.RequestLogger(logger))
 	r.Use(gin.Recovery())
@@ -60,7 +59,7 @@ func Setup(db *gorm.DB, deps HandlerDependencies, cfg *config.Config, logger *za
 		shows.
 			GET("/saved", deps.ShowHandler.GetUserSavedShows).
 			GET("/search", deps.ShowHandler.SearchShows).
-			POST("/:spotifyShowId/subscribe", deps.ShowHandler.Subscribe)
+			POST("/subscribe", deps.ShowHandler.Subscribe)
 
 		// subscriptions
 		subscriptions := protected.Group("/subscriptions")

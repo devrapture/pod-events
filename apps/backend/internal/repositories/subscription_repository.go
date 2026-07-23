@@ -42,7 +42,7 @@ func (r *subscriptionRepository) Create(ctx context.Context, subscription *model
 		return apperrors.ErrSubscriptionAlreadyExists
 	}
 
-	if err := r.db.WithContext(ctx).Create(subscription).Error; err != nil {
+	if err := dbFromCtx(ctx, r.db).WithContext(ctx).Create(subscription).Error; err != nil {
 		if isUniqueViolation(err) {
 			return apperrors.ErrSubscriptionAlreadyExists
 		}
@@ -54,7 +54,7 @@ func (r *subscriptionRepository) Create(ctx context.Context, subscription *model
 // GetByID fetches a subscription by UUID.
 func (r *subscriptionRepository) GetByID(ctx context.Context, id uuid.UUID) (*models.Subscription, error) {
 	var subscription models.Subscription
-	result := r.db.WithContext(ctx).Where("id = ?", id).Preload("PodcastShow").First(&subscription)
+	result := dbFromCtx(ctx, r.db).WithContext(ctx).Where("id = ?", id).Preload("PodcastShow").First(&subscription)
 	if result.Error != nil {
 		if errors.Is(result.Error, gorm.ErrRecordNotFound) {
 			return nil, nil
@@ -67,7 +67,7 @@ func (r *subscriptionRepository) GetByID(ctx context.Context, id uuid.UUID) (*mo
 // GetByUserID returns all subscriptions for a user, with show data loaded.
 func (r *subscriptionRepository) GetByUserID(ctx context.Context, userID uuid.UUID) ([]models.Subscription, error) {
 	var subscription []models.Subscription
-	result := r.db.WithContext(ctx).Where("user_id = ?", userID).Preload("PodcastShow").Find(&subscription)
+	result := dbFromCtx(ctx, r.db).WithContext(ctx).Where("user_id = ?", userID).Preload("PodcastShow").Find(&subscription)
 	if result.Error != nil {
 		if errors.Is(result.Error, gorm.ErrRecordNotFound) {
 			return nil, nil
@@ -81,7 +81,7 @@ func (r *subscriptionRepository) GetByUserID(ctx context.Context, userID uuid.UU
 // Used by the cron job to know who to notify about a new episode.
 func (r *subscriptionRepository) GetSubscribedUsersByShowID(ctx context.Context, showID uuid.UUID) ([]models.User, error) {
 	var users []models.User
-	result := r.db.WithContext(ctx).Joins("JOIN subscriptions ON subscriptions.user_id = users.id").Where("subscriptions.podcast_show_id = ?", showID).Find(&users)
+	result := dbFromCtx(ctx, r.db).WithContext(ctx).Joins("JOIN subscriptions ON subscriptions.user_id = users.id").Where("subscriptions.podcast_show_id = ?", showID).Find(&users)
 	if result.Error != nil {
 		return nil, result.Error
 	}
@@ -92,7 +92,7 @@ func (r *subscriptionRepository) GetSubscribedUsersByShowID(ctx context.Context,
 // Returns (nil, nil) if not subscribed.
 func (r *subscriptionRepository) GetByUserAndShow(ctx context.Context, userID, showID uuid.UUID) (*models.Subscription, error) {
 	var subscription models.Subscription
-	result := r.db.WithContext(ctx).Where("podcast_show_id = ? AND user_id = ?", showID, userID).First(&subscription)
+	result := dbFromCtx(ctx, r.db).WithContext(ctx).Where("podcast_show_id = ? AND user_id = ?", showID, userID).First(&subscription)
 	if errors.Is(result.Error, gorm.ErrRecordNotFound) {
 		return nil, nil
 	}
@@ -104,7 +104,7 @@ func (r *subscriptionRepository) GetByUserAndShow(ctx context.Context, userID, s
 
 // Delete removes a subscription by ID, verifying the user owns it.
 func (r *subscriptionRepository) Delete(ctx context.Context, userID, subscriptionID uuid.UUID) error {
-	result := r.db.WithContext(ctx).Where("user_id = ? AND id = ?", userID, subscriptionID).Unscoped().Delete(&models.Subscription{})
+	result := dbFromCtx(ctx, r.db).WithContext(ctx).Where("user_id = ? AND id = ?", userID, subscriptionID).Unscoped().Delete(&models.Subscription{})
 	if result.Error != nil {
 		return result.Error
 	}

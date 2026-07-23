@@ -29,7 +29,7 @@ func NewTelegramConnectionRepository(db *gorm.DB) TelegramConnectionRepository {
 }
 
 func (r *telegramConnectionRepository) Create(ctx context.Context, conn *models.TelegramConnection) error {
-	result := r.db.WithContext(ctx).Create(conn)
+	result := dbFromCtx(ctx, r.db).WithContext(ctx).Create(conn)
 	if result.Error != nil {
 		return fmt.Errorf("failed to create telegram connection: %w", result.Error)
 	}
@@ -38,7 +38,7 @@ func (r *telegramConnectionRepository) Create(ctx context.Context, conn *models.
 
 func (r *telegramConnectionRepository) CompleteConnection(ctx context.Context, tokenHash string, chatID int64) (*models.NotificationChannel, error) {
 	now := time.Now()
-	if err := r.db.WithContext(ctx).
+	if err := dbFromCtx(ctx, r.db).WithContext(ctx).
 		Unscoped().
 		Where("token_hash = ? AND (consumed = ? OR expires_at <= ?)", tokenHash, true, now).
 		Delete(&models.TelegramConnection{}).Error; err != nil {
@@ -46,7 +46,7 @@ func (r *telegramConnectionRepository) CompleteConnection(ctx context.Context, t
 	}
 
 	var channel models.NotificationChannel
-	err := r.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+	err := dbFromCtx(ctx, r.db).WithContext(ctx).Transaction(func(tx *gorm.DB) error {
 		var conn models.TelegramConnection
 		if err := tx.Clauses(clause.Locking{Strength: "UPDATE"}).
 			Where("token_hash = ? AND consumed = ? AND expires_at > ?", tokenHash, false, now).
@@ -83,7 +83,7 @@ func (r *telegramConnectionRepository) CompleteConnection(ctx context.Context, t
 }
 
 func (r *telegramConnectionRepository) DeleteExpired(ctx context.Context) error {
-	result := r.db.WithContext(ctx).
+	result := dbFromCtx(ctx, r.db).WithContext(ctx).
 		Unscoped().
 		Where("expires_at < ? OR consumed = ?", time.Now(), true).
 		Delete(&models.TelegramConnection{})
