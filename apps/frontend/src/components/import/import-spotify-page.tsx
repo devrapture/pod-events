@@ -12,9 +12,11 @@ import { useSavedShows } from "@/hooks/queries/show.queries";
 import { useSubscriptions } from "@/hooks/queries/subscription.queries";
 import { useDebouncedValue } from "@/hooks/use-debounced-value";
 import { useToast } from "@/hooks/use-toast";
+import { getAPIErrorMessage } from "@/lib/api-error";
 import { enrichShowsWithTracking } from "@/lib/show-utils";
 import { cn } from "@/lib/utils";
-import type { APIResponse, BulkSubscribeResponse } from "@/services/types";
+
+const MAX_SHOWS_PER_SUBSCRIPTION_REQUEST = 50;
 
 function PodcastCardSkeleton() {
 	return (
@@ -70,6 +72,16 @@ export function ImportSpotifyPage() {
 			const show = enrichedShows.find((s) => s.id === id);
 			if (!show || show.is_tracked) return;
 
+			if (
+				!selectedIds.has(id) &&
+				selectedIds.size >= MAX_SHOWS_PER_SUBSCRIPTION_REQUEST
+			) {
+				toast.error(
+					`You can track up to ${MAX_SHOWS_PER_SUBSCRIPTION_REQUEST} podcasts at once`,
+				);
+				return;
+			}
+
 			setSelectedIds((prev) => {
 				const next = new Set(prev);
 				if (next.has(id)) next.delete(id);
@@ -77,12 +89,22 @@ export function ImportSpotifyPage() {
 				return next;
 			});
 		},
-		[enrichedShows],
+		[enrichedShows, selectedIds, toast],
 	);
 
 	const selectAllUntracked = useCallback(() => {
-		setSelectedIds(new Set(untrackedShows.map((show) => show.id)));
-	}, [untrackedShows]);
+		const ids = untrackedShows
+			.slice(0, MAX_SHOWS_PER_SUBSCRIPTION_REQUEST)
+			.map((show) => show.id);
+
+		setSelectedIds(new Set(ids));
+
+		if (untrackedShows.length > MAX_SHOWS_PER_SUBSCRIPTION_REQUEST) {
+			toast.error(
+				`You can track up to ${MAX_SHOWS_PER_SUBSCRIPTION_REQUEST} podcasts at once`,
+			);
+		}
+	}, [toast, untrackedShows]);
 
 	const clearSelection = useCallback(() => {
 		setSelectedIds(new Set());
@@ -95,27 +117,19 @@ export function ImportSpotifyPage() {
 		trackShows(
 			{ spotifyShowIds: ids },
 			{
-				onSuccess: (response: APIResponse<BulkSubscribeResponse>) => {
-					const result = response.data;
-					if (!result) {
-						toast.error("Failed to track podcasts. Please try again.");
-						return;
-					}
-
-					if (result.failed === 0) {
-						toast.success(
-							`Tracked ${result.succeeded} podcast${result.succeeded === 1 ? "" : "s"}`,
-						);
-					} else if (result.succeeded === 0) {
-						toast.error("Failed to track podcasts. Please try again.");
-					} else {
-						toast.error(`Tracked ${result.succeeded}, ${result.failed} failed`);
-					}
-
+				onSuccess: () => {
+					toast.success(
+						`Tracked ${ids.length} podcast${ids.length === 1 ? "" : "s"}`,
+					);
 					setSelectedIds(new Set());
 				},
-				onError: () => {
-					toast.error("Failed to track podcasts. Please try again.");
+				onError: (error) => {
+					toast.error(
+						getAPIErrorMessage(
+							error,
+							"Failed to track podcasts. Please try again.",
+						),
+					);
 				},
 			},
 		);

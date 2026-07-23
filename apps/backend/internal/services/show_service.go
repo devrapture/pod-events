@@ -114,18 +114,15 @@ func (s *showServices) Subscribe(ctx context.Context, userID uuid.UUID, spotifyS
 	uniqueIDs := cleanShowIDs(spotifyShowIDs)
 
 	if len(uniqueIDs) == 0 {
-		return nil, fmt.Errorf("at least one valid spotify show id is required")
+		return nil, apperrors.ErrInvalidSpotifyShowIDs
 	}
 
 	if len(uniqueIDs) > maxSpotifyShowIDs {
-		return nil, fmt.Errorf("maximum of %d spotify ids are allowed,got %d", maxSpotifyShowIDs, len(uniqueIDs))
+		return nil, fmt.Errorf("%w: maximum is %d, got %d", apperrors.ErrTooManySpotifyShowIDs, maxSpotifyShowIDs, len(uniqueIDs))
 	}
 	accessToken, err := s.authService.GetValidAccessToken(ctx, userID)
 	if err != nil {
 		return nil, err
-	}
-	if len(spotifyShowIDs) == 0 {
-		return nil, fmt.Errorf("at least one spotify show ID is required")
 	}
 
 	showsData, err := s.fetchShowsFromSpotify(ctx, accessToken, uniqueIDs)
@@ -133,7 +130,7 @@ func (s *showServices) Subscribe(ctx context.Context, userID uuid.UUID, spotifyS
 		if errors.Is(err, apperrors.ErrSpotifyResourceNotFound) {
 			return nil, apperrors.ErrPodcastShowNotFound
 		}
-		return nil, err
+		return nil, fmt.Errorf("%w: %w", apperrors.ErrSpotifyUnavailable, err)
 	}
 
 	modelsData := make([]showModelData, 0, len(showsData))
@@ -151,16 +148,18 @@ func (s *showServices) Subscribe(ctx context.Context, userID uuid.UUID, spotifyS
 		})
 	}
 
-	// TODO: have a batch operation for GetOrCreate
-	for _, md := range modelsData {
-		if err := s.showRepository.GetOrCreate(ctx, md.model); err != nil {
-			return nil, err
-		}
+	showModels := make([]*models.PodcastShow, len(modelsData))
+	for i, md := range modelsData {
+		showModels[i] = md.model
+	}
+
+	if err := s.showRepository.BatchGetOrCreate(ctx, showModels); err != nil {
+		return nil, err
 	}
 
 	var subscriptions []models.Subscription
 
-	err = s.txManager.WithinTransaction(ctx, func(txCtx context.Context) error {
+	txErr := s.txManager.WithinTransaction(ctx, func(txCtx context.Context) error {
 		for _, md := range modelsData {
 			show := md.model
 
@@ -176,6 +175,9 @@ func (s *showServices) Subscribe(ctx context.Context, userID uuid.UUID, spotifyS
 		}
 		return nil
 	})
+	if txErr != nil {
+		return nil, txErr
+	}
 	return subscriptions, nil
 }
 

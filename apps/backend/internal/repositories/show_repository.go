@@ -13,6 +13,7 @@ import (
 )
 
 type ShowRepository interface {
+	BatchGetOrCreate(ctx context.Context, shows []*models.PodcastShow) error
 	GetOrCreate(ctx context.Context, show *models.PodcastShow) error
 	GetAllTracked(ctx context.Context) ([]models.PodcastShow, error)
 	GetByID(ctx context.Context, id uuid.UUID) (*models.PodcastShow, error)
@@ -28,6 +29,56 @@ func NewShowRepository(db *gorm.DB) ShowRepository {
 	return &showRepository{
 		db: db,
 	}
+}
+
+func (r *showRepository) BatchGetOrCreate(ctx context.Context, shows []*models.PodcastShow) error {
+	if len(shows) == 0 {
+		return nil
+	}
+	err := dbFromCtx(ctx, r.db).WithContext(ctx).Clauses(clause.OnConflict{
+		Columns: []clause.Column{{
+			Name: "spotify_show_id",
+		}},
+		DoUpdates: clause.AssignmentColumns([]string{
+			"name",
+			"description",
+			"image_url",
+			"spotify_url",
+			"latest_episode_id",
+			"latest_episode_published_at",
+		}),
+	}).Create(shows).Error
+
+	if err != nil {
+		return fmt.Errorf("failed to upsert podcast show: %w", err)
+	}
+
+	spotifyIDs := make([]string, len(shows))
+	for i, s := range shows {
+		spotifyIDs[i] = s.SpotifyShowID
+	}
+
+	var existing []models.PodcastShow
+	if err := dbFromCtx(ctx, r.db).WithContext(ctx).
+		Where("spotify_show_id IN ?", spotifyIDs).
+		Find(&existing).Error; err != nil {
+		return fmt.Errorf("failed to refetch podcast shows: %w", err)
+	}
+
+	bySpotifyID := make(map[string]models.PodcastShow, len(existing))
+	for _, e := range existing {
+		bySpotifyID[e.SpotifyShowID] = e
+	}
+
+	for _, s := range shows {
+		full, ok := bySpotifyID[s.SpotifyShowID]
+		if !ok {
+			return fmt.Errorf("podcast show %s missing after upsert", s.SpotifyShowID)
+		}
+		*s = full
+	}
+
+	return nil
 }
 
 // GetOrCreate finds a show by Spotify ID or creates it if it doesn't exist.

@@ -33,4 +33,12 @@ var (
 	ErrSubscriptionNotFound = errors.New("subscription not found")
 	// ErrSpotifyResourceNotFound is returned when a spotify resource cannot be found
 	ErrSpotifyResourceNotFound = errors.New("spotify resource not found")
+	// ErrSpotifyAuthorizationRequired is returned when Spotify authorization is missing or expired
+	ErrSpotifyAuthorizationRequired = errors.New("spotify authorization required")
+	// ErrSpotifyUnavailable is returned when Spotify cannot process a request
+	ErrSpotifyUnavailable = errors.New("spotify is unavailable")
+	// ErrInvalidSpotifyShowIDs is returned when no valid Spotify show IDs are provided
+	ErrInvalidSpotifyShowIDs = errors.New("at least one valid spotify show id is required")
+	// ErrTooManySpotifyShowIDs is returned when a subscription batch exceeds the allowed size
+	ErrTooManySpotifyShowIDs = errors.New("too many spotify show ids")
 )

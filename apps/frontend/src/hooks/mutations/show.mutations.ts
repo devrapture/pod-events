@@ -1,11 +1,7 @@
 import { createMutation } from "react-query-kit";
 import { queryClient } from "@/lib/query-client";
 import { apis } from "@/services/api-services";
-import type {
-	APIResponse,
-	BulkSubscribeResponse,
-	SubscriptionResponse,
-} from "@/services/types";
+import type { APIResponse } from "@/services/types";
 
 import { showKeys } from "../keys/show.keys";
 import { subscriptionKeys } from "../keys/subscription.keys";
@@ -13,8 +9,8 @@ import { subscriptionKeys } from "../keys/subscription.keys";
 export const useSubscribeToShow = createMutation({
 	mutationFn: async (variables: {
 		spotifyShowId: string;
-	}): Promise<APIResponse<SubscriptionResponse>> => {
-		const response = await apis.shows.subscribe(variables.spotifyShowId);
+	}): Promise<APIResponse> => {
+		const response = await apis.shows.subscribe([variables.spotifyShowId]);
 		return response.data;
 	},
 	onSuccess: () => {
@@ -26,8 +22,8 @@ export const useSubscribeToShow = createMutation({
 export const useBulkTrackShows = createMutation({
 	mutationFn: async (variables: {
 		spotifyShowIds: string[];
-	}): Promise<APIResponse<BulkSubscribeResponse>> => {
-		const response = await apis.shows.bulkSubscribe(variables.spotifyShowIds);
+	}): Promise<APIResponse> => {
+		const response = await apis.shows.subscribe(variables.spotifyShowIds);
 		return response.data;
 	},
 	onSuccess: () => {
