@@ -84,9 +84,6 @@ func main() {
 	// ── Notifier ────────────────────────────────────────────────
 	telegramNotifier := telegram.NewNotifier(cfg)
 
-	// ── Transaction Manager ────────────────────────────────────────────────
-	txManager := database.NewGORMTransactionManager(db)
-
 	// ── Repositories ────────────────────────────────────────────────
 	userRepo := repositories.NewUserRepository(db)
 	tokenRepo := repositories.NewTokenRepository(db, cfg.TokenEncryptionKey)
@@ -98,7 +95,7 @@ func main() {
 
 	// ── Services ────────────────────────────────────────────────
 	authService := services.NewAuthService(cfg, tokenRepo, userRepo, spotifyClient, appCache, logger)
-	showService := services.NewShowServices(spotifyClient, authService, cfg, appCache, subscriptionRepo, showRepository, txManager)
+	showService := services.NewShowServices(spotifyClient, authService, appCache, subscriptionRepo, showRepository)
 	channelService := services.NewChannelServices(channelRepo)
 	telegramConnectionService := services.NewTelegramConnectionService(telegramConnectionRepo, channelRepo, cfg)
 	dashboardService := services.NewDashboardSummaryService(dashboardSummaryRepo)

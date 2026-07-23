@@ -13,6 +13,7 @@ import (
 
 type SubscriptionRepository interface {
 	Create(ctx context.Context, subscription *models.Subscription) error
+	CreateBatch(ctx context.Context, subscriptions []models.Subscription) error
 	GetByID(ctx context.Context, id uuid.UUID) (*models.Subscription, error)
 	GetByUserID(ctx context.Context, userID uuid.UUID) ([]models.Subscription, error)
 	GetSubscribedUsersByShowID(ctx context.Context, showID uuid.UUID) ([]models.User, error)
@@ -48,6 +49,22 @@ func (r *subscriptionRepository) Create(ctx context.Context, subscription *model
 		}
 		return err
 	}
+	return nil
+}
+
+// CreateBatch creates all subscriptions in one atomic insert.
+func (r *subscriptionRepository) CreateBatch(ctx context.Context, subscriptions []models.Subscription) error {
+	if len(subscriptions) == 0 {
+		return nil
+	}
+
+	if err := dbFromCtx(ctx, r.db).WithContext(ctx).Create(&subscriptions).Error; err != nil {
+		if isUniqueViolation(err) {
+			return apperrors.ErrSubscriptionAlreadyExists
+		}
+		return err
+	}
+
 	return nil
 }
 
