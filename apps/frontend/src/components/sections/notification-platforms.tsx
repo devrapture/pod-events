@@ -1,4 +1,9 @@
-import { MessageCircle, MessageSquare, Send, SquareTerminal } from "lucide-react";
+import {
+	MessageCircle,
+	MessageSquare,
+	Send,
+	SquareTerminal,
+} from "lucide-react";
 
 import {
 	AnimatedSection,
