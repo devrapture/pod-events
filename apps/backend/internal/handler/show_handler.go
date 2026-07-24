@@ -108,6 +108,7 @@ func (h *ShowHandler) SearchShows(c *gin.Context) {
 //	@Security    BearerAuth
 //	@Param       request body dto.SubscribeShowsRequest true "Spotify show IDs"
 //	@Success     200 {object} response.APIResponse "subscribed successfully"
+//	@Failure     400 {object} response.APIResponse "invalid or too many Spotify show IDs"
 //	@Failure     422 {object} response.APIResponse "invalid request"
 //	@Failure     404 {object} response.APIResponse "podcast show not found"
 //	@Failure     409 {object} response.APIResponse "already subscribed"

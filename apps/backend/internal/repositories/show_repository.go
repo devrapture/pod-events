@@ -44,8 +44,6 @@ func (r *showRepository) BatchGetOrCreate(ctx context.Context, shows []*models.P
 			"description",
 			"image_url",
 			"spotify_url",
-			"latest_episode_id",
-			"latest_episode_published_at",
 		}),
 	}).Create(shows).Error
 
@@ -94,8 +92,6 @@ func (r *showRepository) GetOrCreate(ctx context.Context, show *models.PodcastSh
 			"description",
 			"image_url",
 			"spotify_url",
-			"latest_episode_id",
-			"latest_episode_published_at",
 		}),
 	}).Create(show).Error
 	if err != nil {
