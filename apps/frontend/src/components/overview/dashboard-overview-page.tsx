@@ -9,6 +9,21 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { useDashboardSummary } from "@/hooks/queries/dashboard.queries";
 
+const SETUP_CHECKLIST_SKELETON_KEYS = [
+	"connect-spotify",
+	"import-spotify",
+	"subscribe-podcast",
+	"add-channel",
+	"receive-notification",
+] as const;
+
+const STATS_CARDS_SKELETON_KEYS = [
+	"podcasts-tracked",
+	"active-channels",
+	"new-episodes",
+	"notifications-sent",
+] as const;
+
 function SetupChecklistSkeleton() {
 	return (
 		<Card>
@@ -19,8 +34,8 @@ function SetupChecklistSkeleton() {
 				</div>
 				<div className="h-2 animate-pulse rounded-full bg-white/10" />
 				<div className="space-y-3">
-					{Array.from({ length: 5 }).map((_, i) => (
-						<div key={i} className="flex items-center gap-3">
+					{SETUP_CHECKLIST_SKELETON_KEYS.map((key) => (
+						<div className="flex items-center gap-3" key={key}>
 							<div className="h-5 w-5 animate-pulse rounded-full bg-white/10" />
 							<div className="h-4 flex-1 animate-pulse rounded bg-white/10" />
 						</div>
@@ -34,8 +49,8 @@ function SetupChecklistSkeleton() {
 function StatsCardsSkeleton() {
 	return (
 		<div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-			{Array.from({ length: 4 }).map((_, i) => (
-				<Card key={i}>
+			{STATS_CARDS_SKELETON_KEYS.map((key) => (
+				<Card key={key}>
 					<CardContent className="space-y-2 p-6">
 						<div className="h-4 w-24 animate-pulse rounded bg-white/10" />
 						<div className="h-8 w-16 animate-pulse rounded bg-white/10" />
@@ -47,8 +62,9 @@ function StatsCardsSkeleton() {
 }
 
 export function DashboardOverviewPage() {
-	const { data, isLoading, isError, refetch, isFetching } =
-		useDashboardSummary({});
+	const { data, isLoading, isError, refetch, isFetching } = useDashboardSummary(
+		{},
+	);
 
 	const summary = data?.data;
 
@@ -69,10 +85,8 @@ export function DashboardOverviewPage() {
 						<p className="text-zinc-400">
 							Failed to load dashboard summary. Please try again.
 						</p>
-						<Button variant="outline" onClick={() => refetch()}>
-							<RefreshCw
-								className={isFetching ? "animate-spin" : undefined}
-							/>
+						<Button onClick={() => refetch()} variant="outline">
+							<RefreshCw className={isFetching ? "animate-spin" : undefined} />
 							Retry
 						</Button>
 					</CardContent>

@@ -61,7 +61,7 @@ export function SetupChecklist({ setup }: SetupChecklistProps) {
 
 				<ul className="space-y-3">
 					{setup.items.map((item) => (
-						<li key={item.key} className="flex items-center gap-3">
+						<li className="flex items-center gap-3" key={item.key}>
 							<span
 								className={cn(
 									"flex h-6 w-6 shrink-0 items-center justify-center rounded-full",
@@ -86,18 +86,19 @@ export function SetupChecklist({ setup }: SetupChecklistProps) {
 					))}
 				</ul>
 
-				{ctaHref && ctaLabel &&
+				{ctaHref &&
+					ctaLabel &&
 					(nextItem?.key === "connect_spotify" ? (
 						<a
-							href={ctaHref}
 							className="inline-flex items-center gap-1 font-medium text-emerald-400 text-sm transition-colors hover:text-emerald-300"
+							href={ctaHref}
 						>
 							{ctaLabel} →
 						</a>
 					) : (
 						<Link
-							href={ctaHref}
 							className="inline-flex items-center gap-1 font-medium text-emerald-400 text-sm transition-colors hover:text-emerald-300"
+							href={ctaHref}
 						>
 							{ctaLabel} →
 						</Link>
