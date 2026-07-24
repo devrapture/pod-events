@@ -1,4 +1,4 @@
-import { MessageCircle, MessageSquare, Send, Slack } from "lucide-react";
+import { MessageCircle, MessageSquare, Send, SquareTerminal } from "lucide-react";
 
 import {
 	AnimatedSection,
@@ -10,7 +10,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 const PLATFORMS = [
 	{
-		icon: Slack,
+		icon: SquareTerminal,
 		name: "Slack",
 		description: "Rich Block Kit notifications.",
 		color: "#E01E5A",
