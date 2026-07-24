@@ -10,6 +10,7 @@
 		"check:write": "biome check --write .",
 		"dev": "next dev --turbo",
 		"dev-portless": "portless podevents next dev --turbo",
+		"format": "biome format --write .",
 		"preview": "next build && next start",
 		"start": "next start",
 		"typecheck": "tsc --noEmit",

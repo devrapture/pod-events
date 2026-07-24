@@ -1,7 +1,6 @@
 "use client";
 
 import { useAuth } from "@/components/auth-provider";
-import { Badge } from "@/components/ui/badge";
 import { getTimeGreeting } from "@/lib/utils";
 
 export function OverviewHeader() {

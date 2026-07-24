@@ -1,7 +1,7 @@
 "use client";
 
-import { Hash, Phone, Send } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
+import { Hash, Phone, Send } from "lucide-react";
 
 import { DiscordIcon } from "@/components/icons/discord";
 import { Badge } from "@/components/ui/badge";
@@ -10,10 +10,7 @@ import { Card } from "@/components/ui/card";
 import { getChannelTypeLabel, maskDestination } from "@/lib/utils";
 import type { ChannelType, NotificationChannel } from "@/services/types";
 
-const CHANNEL_ICONS: Record<
-	ChannelType,
-	LucideIcon | typeof DiscordIcon
-> = {
+const CHANNEL_ICONS: Record<ChannelType, LucideIcon | typeof DiscordIcon> = {
 	slack_webhook: Hash,
 	discord_webhook: DiscordIcon,
 	whatsapp: Phone,
@@ -43,11 +40,7 @@ function ChannelTypeIcon({
 	return <LucideComponent className={className} />;
 }
 
-export function ChannelCard({
-	channel,
-	onToggle,
-	onRemove,
-}: ChannelCardProps) {
+export function ChannelCard({ channel, onToggle, onRemove }: ChannelCardProps) {
 	const channelName = getChannelTypeLabel(channel.channel_type);
 	const isDiscord = channel.channel_type === "discord_webhook";
 

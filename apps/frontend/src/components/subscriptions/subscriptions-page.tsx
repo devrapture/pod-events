@@ -2,8 +2,8 @@
 
 import { Loader2, Podcast, RefreshCw } from "lucide-react";
 import Link from "next/link";
-import { useCallback, useState } from "react";
 import pluralize from "pluralize";
+import { useCallback, useState } from "react";
 
 import { SubscriptionCard } from "@/components/subscriptions/subscription-card";
 import { Button } from "@/components/ui/button";
@@ -40,13 +40,9 @@ export function SubscriptionsPage() {
 	const [pendingId, setPendingId] = useState<string | null>(null);
 	const { toast } = useToast();
 
-	const {
-		data,
-		isLoading,
-		isFetching,
-		isError,
-		refetch,
-	} = useSubscriptions({});
+	const { data, isLoading, isFetching, isError, refetch } = useSubscriptions(
+		{},
+	);
 
 	const { mutate: unsubscribe, isPending: isUnsubscribing } = useUnsubscribe();
 

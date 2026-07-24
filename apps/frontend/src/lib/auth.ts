@@ -19,11 +19,13 @@ export function getToken(): string | null {
 
 export function setToken(token: string): void {
 	localStorage.setItem(TOKEN_KEY, token);
+	// biome-ignore lint/suspicious/noDocumentCookie: Middleware authentication requires a synchronous cookie mirror.
 	document.cookie = `${TOKEN_KEY}=${token}; path=/; max-age=86400; SameSite=Lax; Secure`;
 }
 
 export function removeToken(): void {
 	localStorage.removeItem(TOKEN_KEY);
+	// biome-ignore lint/suspicious/noDocumentCookie: Middleware authentication requires synchronous cookie removal.
 	document.cookie = `${TOKEN_KEY}=; path=/; max-age=0; SameSite=Lax; Secure`;
 }
 

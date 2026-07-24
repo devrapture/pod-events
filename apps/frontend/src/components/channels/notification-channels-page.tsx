@@ -39,13 +39,7 @@ export function NotificationChannelsPage() {
 	const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
 	const { toast } = useToast();
 
-	const {
-		data,
-		isLoading,
-		isFetching,
-		isError,
-		refetch,
-	} = useChannels({});
+	const { data, isLoading, isFetching, isError, refetch } = useChannels({});
 
 	const { mutate: toggleChannel, isPending: isToggling } = useToggleChannel();
 	const { mutate: deleteChannel, isPending: isDeleting } = useDeleteChannel();
@@ -121,9 +115,7 @@ export function NotificationChannelsPage() {
 
 			<div className="mt-6 min-h-0 flex-1 overflow-y-auto">
 				{showAddSection && (
-					<AddChannelForm
-						onSuccess={() => setShowAddSection(false)}
-					/>
+					<AddChannelForm onSuccess={() => setShowAddSection(false)} />
 				)}
 
 				{isLoading ? (
@@ -161,10 +153,7 @@ export function NotificationChannelsPage() {
 							Add a channel to start receiving new episode alerts via Slack,
 							Discord, WhatsApp, or Telegram.
 						</p>
-						<Button
-							className="mt-6"
-							onClick={() => setShowAddSection(true)}
-						>
+						<Button className="mt-6" onClick={() => setShowAddSection(true)}>
 							<Plus className="h-4 w-4" />
 							Add Channel
 						</Button>
@@ -173,8 +162,8 @@ export function NotificationChannelsPage() {
 					<div className="space-y-4">
 						{channels.map((channel) => (
 							<ChannelCard
-								key={channel.id}
 								channel={channel}
+								key={channel.id}
 								onRemove={setPendingDeleteId}
 								onToggle={setPendingToggle}
 							/>
