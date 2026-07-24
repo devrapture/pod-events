@@ -56,6 +56,7 @@ jobs:
         run: bun run build
         env:
           NEXT_TELEMETRY_DISABLED: 1
+          NEXT_PUBLIC_API_URL: ${{ secrets.NEXT_PUBLIC_API_URL }}
 
   backend:
     name: Backend
