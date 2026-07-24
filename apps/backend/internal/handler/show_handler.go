@@ -2,14 +2,15 @@ package handler
 
 import (
 	"errors"
+	"fmt"
 	"net/http"
-	"regexp"
 	"strconv"
 	"strings"
 
 	"github.com/devrapture/pod-events/internal/dto"
 	apperrors "github.com/devrapture/pod-events/internal/errors"
 	"github.com/devrapture/pod-events/internal/services"
+	"github.com/devrapture/pod-events/internal/spotify"
 	"github.com/devrapture/pod-events/pkg/response"
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
@@ -27,8 +28,6 @@ func NewShowHandler(showService services.ShowServices, logger *zap.Logger) *Show
 		logger:      logger,
 	}
 }
-
-var spotifyShowIDPattern = regexp.MustCompile(`^[A-Za-z0-9]{22}$`)
 
 // GetUserSavedShows returns a list of shows saved by a user on Spotify.
 //
@@ -101,48 +100,68 @@ func (h *ShowHandler) SearchShows(c *gin.Context) {
 	response.SuccessResponse(c, http.StatusOK, "show fetched successfully", show, nil)
 }
 
-// Subscribe subscribes the current user to a podcast show.
+// Subscribe subscribes the current user to one or more podcast shows.
 //
-//	@Summary     Subscribe to a show
-//	@Description Subscribe the current user to a podcast show by Spotify show ID
+//	@Summary     Subscribe to shows
+//	@Description Subscribe the current user to one or more podcast shows by Spotify show ID
 //	@Tags        Subscriptions
 //	@Security    BearerAuth
-//	@Param       spotifyShowId path string true "Spotify show ID (22 characters)"
-//	@Success     200 {object} response.APIResponse{data=dto.SubscriptionResponse} "subscribed successfully"
-//	@Failure     400 {object} response.APIResponse "invalid spotify show ID"
+//	@Param       request body dto.SubscribeShowsRequest true "Spotify show IDs"
+//	@Success     200 {object} response.APIResponse "subscribed successfully"
+//	@Failure     400 {object} response.APIResponse "invalid or too many Spotify show IDs"
+//	@Failure     422 {object} response.APIResponse "invalid request"
 //	@Failure     404 {object} response.APIResponse "podcast show not found"
 //	@Failure     409 {object} response.APIResponse "already subscribed"
-//	@Router      /shows/{spotifyShowId}/subscribe [post]
+//	@Failure     424 {object} response.APIResponse "Spotify authorization required"
+//	@Failure     429 {object} response.APIResponse "Spotify rate limit exceeded"
+//	@Failure     503 {object} response.APIResponse "Spotify unavailable"
+//	@Failure     500 {object} response.APIResponse "internal server error"
+//	@Router      /shows/subscribe [post]
 func (h *ShowHandler) Subscribe(c *gin.Context) {
 	userID, _ := c.Get("userID")
-	spotifyShowID := strings.TrimSpace(c.Param("spotifyShowId"))
-	if spotifyShowID == "" {
-		response.ErrorResponse(c, http.StatusBadRequest, "spotify show ID is required")
+	var req dto.SubscribeShowsRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		response.ValidationError(c, err)
 		return
 	}
 
-	if !spotifyShowIDPattern.MatchString(spotifyShowID) {
-		response.ErrorResponse(c, http.StatusBadRequest, "invalid spotify show ID")
-		return
-	}
-	subscription, err := h.showService.Subscribe(c.Request.Context(), userID.(uuid.UUID), spotifyShowID)
+	_, err := h.showService.Subscribe(c.Request.Context(), userID.(uuid.UUID), req.SpotifyShowIDs)
 	if err != nil {
-
-		if errors.Is(err, apperrors.ErrPodcastShowNotFound) {
+		switch {
+		case errors.Is(err, apperrors.ErrInvalidSpotifyShowIDs):
+			response.ErrorResponse(c, http.StatusBadRequest, "provide at least one valid Spotify show ID")
+			return
+		case errors.Is(err, apperrors.ErrTooManySpotifyShowIDs):
+			response.ErrorResponse(c, http.StatusBadRequest, "you can subscribe to up to 50 shows at once")
+			return
+		case errors.Is(err, apperrors.ErrPodcastShowNotFound):
 			response.ErrorResponse(c, http.StatusNotFound, "podcast show not found")
+			return
+		case errors.Is(err, apperrors.ErrSubscriptionAlreadyExists):
+			response.ErrorResponse(c, http.StatusConflict, "you are already subscribed to one or more selected shows")
+			return
+		case errors.Is(err, apperrors.ErrorSpotifyTokenNotFound), errors.Is(err, apperrors.ErrSpotifyAuthorizationRequired):
+			response.ErrorResponse(c, http.StatusFailedDependency, "your Spotify connection has expired; reconnect Spotify and try again")
 			return
 		}
 
-		if errors.Is(err, apperrors.ErrSubscriptionAlreadyExists) {
-			response.ErrorResponse(c, http.StatusConflict, "already subscribed to this show")
+		var rateLimitErr *spotify.RateLimitError
+		if errors.As(err, &rateLimitErr) {
+			c.Header("Retry-After", strconv.Itoa(rateLimitErr.RetryAfter))
+			response.ErrorResponse(c, http.StatusTooManyRequests, fmt.Sprintf("Spotify is rate limiting requests; try again in %d seconds", rateLimitErr.RetryAfter))
+			return
+		}
+
+		if errors.Is(err, apperrors.ErrSpotifyUnavailable) {
+			response.ErrorResponse(c, http.StatusServiceUnavailable, "Spotify could not process the request; try again later")
 			return
 		}
 
 		h.logger.Error("failed to subscribe", zap.Error(err))
-		response.ErrorResponse(c, http.StatusInternalServerError, "failed to subscribe")
+		response.ErrorResponse(c, http.StatusInternalServerError, "subscriptions could not be saved because of an internal server error; try again later")
 		return
 	}
-	response.SuccessResponse(c, http.StatusOK, "subscribed successfully", dto.ToSubscriptionResponse(*subscription), nil)
+	response.SuccessResponse(c, http.StatusOK, "subscribed successfully", nil, nil)
 }
 
 // Unsubscribe removes a subscription by its UUID.

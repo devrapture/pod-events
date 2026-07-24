@@ -36,19 +36,19 @@ func (r *dasboardSummaryRepository) GetDashboardSummary(ctx context.Context, use
 	var newEpisodesThisWeek int64
 	var notificationSent int64
 
-	if err := r.db.WithContext(ctx).Model(&models.Subscription{}).Where("user_id = ?", userID).Count(&podcastTracked).Error; err != nil {
+	if err := dbFromCtx(ctx, r.db).WithContext(ctx).Model(&models.Subscription{}).Where("user_id = ?", userID).Count(&podcastTracked).Error; err != nil {
 		return nil, err
 	}
 
-	if err := r.db.WithContext(ctx).Model(&models.NotificationChannel{}).Where("user_id = ? AND is_active = true", userID).Count(&activeChannels).Error; err != nil {
+	if err := dbFromCtx(ctx, r.db).WithContext(ctx).Model(&models.NotificationChannel{}).Where("user_id = ? AND is_active = true", userID).Count(&activeChannels).Error; err != nil {
 		return nil, err
 	}
 
-	if err := r.db.WithContext(ctx).Model(&models.Episode{}).Joins("JOIN subscriptions ON subscriptions.podcast_show_id = episodes.podcast_show_id").Where("subscriptions.user_id = ? AND episodes.created_at >= ?", userID, weekStart).Count(&newEpisodesThisWeek).Error; err != nil {
+	if err := dbFromCtx(ctx, r.db).WithContext(ctx).Model(&models.Episode{}).Joins("JOIN subscriptions ON subscriptions.podcast_show_id = episodes.podcast_show_id").Where("subscriptions.user_id = ? AND episodes.created_at >= ?", userID, weekStart).Count(&newEpisodesThisWeek).Error; err != nil {
 		return nil, err
 	}
 
-	if err := r.db.WithContext(ctx).Model(&models.NotificationLog{}).Where("user_id = ? AND status = ?", userID, models.NotificationStatusSent).Count(&notificationSent).Error; err != nil {
+	if err := dbFromCtx(ctx, r.db).WithContext(ctx).Model(&models.NotificationLog{}).Where("user_id = ? AND status = ?", userID, models.NotificationStatusSent).Count(&notificationSent).Error; err != nil {
 		return nil, err
 	}
 

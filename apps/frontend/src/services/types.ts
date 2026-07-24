@@ -70,20 +70,8 @@ export interface SavedShowWithTracking extends SavedShowResponse {
 	tracking_status: TrackingStatus;
 }
 
-export interface BulkSubscribeRequest {
+export interface SubscribeShowsRequest {
 	spotify_show_ids: string[];
-}
-
-export interface BulkSubscribeItemResult {
-	spotify_show_id: string;
-	success: boolean;
-	error?: string;
-}
-
-export interface BulkSubscribeResponse {
-	succeeded: number;
-	failed: number;
-	results: BulkSubscribeItemResult[];
 }
 
 export interface PodcastShowResponse {

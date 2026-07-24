@@ -9,6 +9,10 @@ import (
 	"github.com/google/uuid"
 )
 
+type SubscribeShowsRequest struct {
+	SpotifyShowIDs []string `json:"spotify_show_ids" binding:"required,min=1,max=50,dive,required"`
+}
+
 // PodcastShowResponse represents a podcast show entity.
 type PodcastShowResponse struct {
 	ID                       uuid.UUID  `json:"id"`
@@ -25,10 +29,10 @@ type PodcastShowResponse struct {
 type SubscriptionResponse struct {
 	ID            uuid.UUID           `json:"id"`
 	UserID        uuid.UUID           `json:"user_id"`
-	PodcastShowID uuid.UUID          `json:"podcast_show_id"`
+	PodcastShowID uuid.UUID           `json:"podcast_show_id"`
 	PodcastShow   PodcastShowResponse `json:"podcast_show"`
-	CreatedAt     time.Time          `json:"created_at"`
-	UpdatedAt     time.Time          `json:"updated_at"`
+	CreatedAt     time.Time           `json:"created_at"`
+	UpdatedAt     time.Time           `json:"updated_at"`
 }
 
 func ToSubscriptionResponse(subscription models.Subscription) SubscriptionResponse {

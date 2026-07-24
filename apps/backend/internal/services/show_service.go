@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/devrapture/pod-events/internal/config"
 	"github.com/devrapture/pod-events/internal/dto"
 	apperrors "github.com/devrapture/pod-events/internal/errors"
 	"github.com/devrapture/pod-events/internal/models"
@@ -14,30 +13,35 @@ import (
 	"github.com/devrapture/pod-events/internal/spotify"
 	"github.com/google/uuid"
 	gocache "github.com/patrickmn/go-cache"
+	"golang.org/x/sync/errgroup"
 )
 
 type ShowServices interface {
 	GetUserSavedShows(ctx context.Context, userID uuid.UUID, query string) ([]dto.SavedShowResponse, error)
 	SearchShows(ctx context.Context, userID uuid.UUID, query string, limit, offset int) ([]dto.SavedShowResponse, error)
 	GetSubscriptions(ctx context.Context, userID uuid.UUID) ([]models.Subscription, error)
-	Subscribe(ctx context.Context, userID uuid.UUID, spotifyShowID string) (*models.Subscription, error)
+	Subscribe(ctx context.Context, userID uuid.UUID, spotifyShowIDs []string) ([]models.Subscription, error)
 	Unsubscribe(ctx context.Context, userID uuid.UUID, subscriptionID uuid.UUID) error
 }
 
 type showServices struct {
 	spotifyClient          *spotify.SpotifyClient
 	authService            AuthService
-	cfg                    *config.Config
 	cache                  *gocache.Cache
 	subscriptionRepository repositories.SubscriptionRepository
 	showRepository         repositories.ShowRepository
 }
 
-func NewShowServices(sc *spotify.SpotifyClient, authService AuthService, cfg *config.Config, cache *gocache.Cache, subscriptionRepository repositories.SubscriptionRepository, showRepository repositories.ShowRepository) ShowServices {
+const (
+	maxSpotifyShowIDs                = 50
+	maxConcurrentSpotifyShowRequests = 8
+	spotifyShowCachePrefix           = "spotify:show:"
+)
+
+func NewShowServices(sc *spotify.SpotifyClient, authService AuthService, cache *gocache.Cache, subscriptionRepository repositories.SubscriptionRepository, showRepository repositories.ShowRepository) ShowServices {
 	return &showServices{
 		spotifyClient:          sc,
 		authService:            authService,
-		cfg:                    cfg,
 		cache:                  cache,
 		subscriptionRepository: subscriptionRepository,
 		showRepository:         showRepository,
@@ -61,6 +65,8 @@ func (s *showServices) GetUserSavedShows(ctx context.Context, userID uuid.UUID, 
 	if err != nil {
 		return nil, err
 	}
+	s.cacheSavedShows(savedShows)
+
 	shows := savedShows.ToSavedShows()
 	s.cache.Set(cacheKey, shows, gocache.DefaultExpiration)
 	return s.filterShows(shows, query), nil
@@ -96,6 +102,8 @@ func (s *showServices) SearchShows(ctx context.Context, userID uuid.UUID, query 
 	if err != nil {
 		return nil, err
 	}
+	s.cacheSearchResults(result)
+
 	shows := result.ToSavedShows()
 	return shows, nil
 }
@@ -105,41 +113,156 @@ func (s *showServices) GetSubscriptions(ctx context.Context, userID uuid.UUID) (
 	return s.subscriptionRepository.GetByUserID(ctx, userID)
 }
 
-func (s *showServices) Subscribe(ctx context.Context, userID uuid.UUID, spotifyShowID string) (*models.Subscription, error) {
-	accessToken, err := s.authService.GetValidAccessToken(ctx, userID)
-	if err != nil {
-		return nil, err
+func (s *showServices) Subscribe(ctx context.Context, userID uuid.UUID, spotifyShowIDs []string) ([]models.Subscription, error) {
+	uniqueIDs := cleanShowIDs(spotifyShowIDs)
+
+	if len(uniqueIDs) == 0 {
+		return nil, apperrors.ErrInvalidSpotifyShowIDs
 	}
-	spotifyShow, err := s.spotifyClient.GetShow(ctx, accessToken, spotifyShowID)
+
+	if len(uniqueIDs) > maxSpotifyShowIDs {
+		return nil, fmt.Errorf("%w: maximum is %d, got %d", apperrors.ErrTooManySpotifyShowIDs, maxSpotifyShowIDs, len(uniqueIDs))
+	}
+	showsData, err := s.fetchShowsFromSpotify(ctx, userID, uniqueIDs)
 	if err != nil {
 		if errors.Is(err, apperrors.ErrSpotifyResourceNotFound) {
 			return nil, apperrors.ErrPodcastShowNotFound
 		}
+		return nil, fmt.Errorf("%w: %w", apperrors.ErrSpotifyUnavailable, err)
+	}
+
+	showModels := make([]*models.PodcastShow, 0, len(showsData))
+
+	for _, sd := range showsData {
+		showModels = append(showModels, &models.PodcastShow{
+			SpotifyShowID: sd.ID,
+			Name:          sd.Name,
+			Description:   sd.Description,
+			ImageURL:      sd.ImageURL(),
+			SpotifyURL:    sd.ExternalURLs.Spotify,
+		})
+	}
+
+	if err := s.showRepository.BatchGetOrCreate(ctx, showModels); err != nil {
 		return nil, err
 	}
 
-	show := &models.PodcastShow{
-		SpotifyShowID: spotifyShow.ID,
-		Name:          spotifyShow.Name,
-		Description:   spotifyShow.Description,
-		ImageURL:      spotifyShow.ImageURL(),
-		SpotifyURL:    spotifyShow.ExternalURLs.Spotify,
+	subscriptions := make([]models.Subscription, 0, len(showModels))
+	for _, show := range showModels {
+		subscriptions = append(subscriptions, models.Subscription{
+			UserID:        userID,
+			PodcastShowID: show.ID,
+			PodcastShow:   *show,
+		})
 	}
-	if err := s.showRepository.GetOrCreate(ctx, show); err != nil {
+
+	if err := s.subscriptionRepository.CreateBatch(ctx, subscriptions); err != nil {
 		return nil, err
 	}
 
-	subscription := &models.Subscription{
-		UserID:        userID,
-		PodcastShowID: show.ID,
-	}
-	if err := s.subscriptionRepository.Create(ctx, subscription); err != nil {
-		return nil, err
-	}
-	subscription.PodcastShow = *show
-	return subscription, nil
+	return subscriptions, nil
 }
 
 func (s *showServices) Unsubscribe(ctx context.Context, userID uuid.UUID, subscriptionID uuid.UUID) error {
 	return s.subscriptionRepository.Delete(ctx, userID, subscriptionID)
+}
+
+func cleanShowIDs(showIDs []string) []string {
+	seen := make(map[string]struct{}, len(showIDs))
+	unique := make([]string, 0, len(showIDs))
+
+	for _, id := range showIDs {
+		id = strings.TrimSpace(id)
+		if id == "" {
+			continue
+		}
+		if _, exists := seen[id]; exists {
+			continue
+		}
+
+		seen[id] = struct{}{}
+		unique = append(unique, id)
+	}
+	return unique
+}
+
+func (s *showServices) fetchShowsFromSpotify(ctx context.Context, userID uuid.UUID, showIDs []string) ([]*spotify.SpotifyShow, error) {
+	result := make([]*spotify.SpotifyShow, len(showIDs))
+	missingIndexes := make([]int, 0, len(showIDs))
+
+	for i, spotifyShowID := range showIDs {
+		if cachedShow, found := s.cachedSpotifyShow(spotifyShowID); found {
+			result[i] = cachedShow
+			continue
+		}
+		missingIndexes = append(missingIndexes, i)
+	}
+
+	if len(missingIndexes) == 0 {
+		return result, nil
+	}
+
+	accessToken, err := s.authService.GetValidAccessToken(ctx, userID)
+	if err != nil {
+		return nil, err
+	}
+
+	group, groupCtx := errgroup.WithContext(ctx)
+	group.SetLimit(maxConcurrentSpotifyShowRequests)
+
+	for _, index := range missingIndexes {
+		index := index
+		spotifyShowID := showIDs[index]
+
+		group.Go(func() error {
+			spotifyShow, err := s.spotifyClient.GetShow(groupCtx, accessToken, spotifyShowID)
+			if err != nil {
+				if errors.Is(err, apperrors.ErrSpotifyResourceNotFound) {
+					return apperrors.ErrPodcastShowNotFound
+				}
+				return err
+			}
+
+			result[index] = spotifyShow
+			s.cacheSpotifyShow(*spotifyShow)
+			return nil
+		})
+	}
+
+	if err := group.Wait(); err != nil {
+		return nil, err
+	}
+
+	return result, nil
+}
+
+func (s *showServices) cacheSavedShows(response *spotify.SpotifySavedShowsResponse) {
+	for _, item := range response.Items {
+		s.cacheSpotifyShow(item.Show)
+	}
+}
+
+func (s *showServices) cacheSearchResults(result *spotify.ShowSearchResult) {
+	for _, show := range result.Shows.Items {
+		s.cacheSpotifyShow(show)
+	}
+}
+
+func (s *showServices) cacheSpotifyShow(show spotify.SpotifyShow) {
+	s.cache.Set(spotifyShowCachePrefix+show.ID, show, gocache.DefaultExpiration)
+}
+
+func (s *showServices) cachedSpotifyShow(spotifyShowID string) (*spotify.SpotifyShow, bool) {
+	value, found := s.cache.Get(spotifyShowCachePrefix + spotifyShowID)
+	if !found {
+		return nil, false
+	}
+
+	show, ok := value.(spotify.SpotifyShow)
+	if !ok {
+		s.cache.Delete(spotifyShowCachePrefix + spotifyShowID)
+		return nil, false
+	}
+
+	return &show, true
 }
