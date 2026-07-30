@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/devrapture/pod-events/internal/models"
@@ -13,6 +14,8 @@ import (
 	"github.com/devrapture/pod-events/pkg/utils"
 	"go.uber.org/zap"
 )
+
+var mrkdwnEscaper = strings.NewReplacer("&", "&amp;", "<", "&lt;", ">", "&gt;")
 
 type Notifier struct {
 	webHookURL string
@@ -31,6 +34,11 @@ func NewNotifier(webHookURL string, logger *zap.Logger) *Notifier {
 }
 
 func (n *Notifier) Send(ctx context.Context, message notifications.NotificationMessage) error {
+	episodeTitle := mrkdwnEscaper.Replace(message.EpisodeTitle)
+	description := mrkdwnEscaper.Replace(utils.Truncate(message.Description, 300))
+	showName := mrkdwnEscaper.Replace(message.ShowName)
+	spotifyURL := mrkdwnEscaper.Replace(message.SpotifyURL)
+
 	payload := map[string]interface{}{
 		"blocks": []map[string]interface{}{
 			{
@@ -45,7 +53,7 @@ func (n *Notifier) Send(ctx context.Context, message notifications.NotificationM
 				"block_id": "episode_details",
 				"text": map[string]interface{}{
 					"type": "mrkdwn",
-					"text": fmt.Sprintf("*%s*\n\n%s\n\n<%s|Listen on Spotify>", message.EpisodeTitle, utils.Truncate(message.Description, 300), message.SpotifyURL),
+					"text": fmt.Sprintf("*%s*\n\n%s\n\n<%s|Listen on Spotify>", episodeTitle, description, spotifyURL),
 				},
 				"accessory": map[string]interface{}{
 					"type":      "image",
@@ -59,7 +67,7 @@ func (n *Notifier) Send(ctx context.Context, message notifications.NotificationM
 				"fields": []map[string]interface{}{
 					{
 						"type": "mrkdwn",
-						"text": fmt.Sprintf("*Podcast*\n%s", message.ShowName),
+						"text": fmt.Sprintf("*Podcast*\n%s", showName),
 					},
 					{
 						"type": "mrkdwn",
