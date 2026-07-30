@@ -10,6 +10,7 @@ import (
 
 	"github.com/devrapture/pod-events/internal/models"
 	"github.com/devrapture/pod-events/internal/notifications"
+	"github.com/devrapture/pod-events/pkg/utils"
 	"go.uber.org/zap"
 )
 
@@ -66,7 +67,7 @@ func (n *Notifier) Send(ctx context.Context, message notifications.NotificationM
 		Embeds: []DiscordEmbed{
 			{
 				Title:       "🎙️ " + message.EpisodeTitle,
-				Description: truncate(message.Description, 300),
+				Description: utils.Truncate(message.Description, 300),
 				URL:         message.SpotifyURL,
 				Color:       spotifyGreen,
 				Fields: []Fields{
@@ -122,18 +123,4 @@ func (n *Notifier) Send(ctx context.Context, message notifications.NotificationM
 
 func (n *Notifier) Type() string {
 	return string(models.ChannelTypeDiscord)
-}
-
-func truncate(s string, maxLen int) string {
-	if maxLen <= 0 {
-		return ""
-	}
-
-	runes := []rune(s)
-
-	if len(runes) <= maxLen {
-		return s
-	}
-
-	return string(runes[:maxLen]) + "..."
 }
