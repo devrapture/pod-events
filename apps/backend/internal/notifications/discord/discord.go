@@ -10,19 +10,22 @@ import (
 
 	"github.com/devrapture/pod-events/internal/models"
 	"github.com/devrapture/pod-events/internal/notifications"
+	"go.uber.org/zap"
 )
 
 type Notifier struct {
 	webHookURL string
 	http       *http.Client
+	logger     *zap.Logger
 }
 
-func NewNotifier(webHookURL string) *Notifier {
+func NewNotifier(webHookURL string, logger *zap.Logger) *Notifier {
 	return &Notifier{
 		webHookURL: webHookURL,
 		http: &http.Client{
 			Timeout: 30 * time.Second,
 		},
+		logger: logger,
 	}
 }
 
@@ -95,19 +98,23 @@ func (n *Notifier) Send(ctx context.Context, message notifications.NotificationM
 
 	body, err := json.Marshal(payload)
 	if err != nil {
+		n.logger.Error("failed to marshal discord payload", zap.Error(err))
 		return fmt.Errorf("marshal discord payload: %w", err)
 	}
 	req, err := http.NewRequestWithContext(ctx, http.MethodPost, n.webHookURL, bytes.NewReader(body))
 	if err != nil {
+		n.logger.Error("failed to create discord request", zap.Error(err))
 		return fmt.Errorf("create discord request: %w", err)
 	}
 	req.Header.Set("Content-Type", "application/json")
 	res, err := n.http.Do(req)
 	if err != nil {
+		n.logger.Error("failed to send discord notification", zap.Error(err))
 		return fmt.Errorf("send discord notification: %w", err)
 	}
 	defer res.Body.Close()
 	if res.StatusCode != http.StatusNoContent && res.StatusCode != http.StatusOK {
+		n.logger.Error("discord returned unexpected status", zap.Int("status", res.StatusCode))
 		return fmt.Errorf("discord returned unexpected status: %d", res.StatusCode)
 	}
 	return nil
