@@ -1,6 +1,10 @@
 package models
 
-import "github.com/google/uuid"
+import (
+	"time"
+
+	"github.com/google/uuid"
+)
 
 // Episode represents a single podcast episode.
 type Episode struct {
@@ -10,9 +14,10 @@ type Episode struct {
 	AudioPreviewURL  string    `json:"audio_preview_url"`
 	SpotifyURL       string    `json:"spotify_url"`
 	DurationMs       int       `json:"duration_ms"`
-	ReleaseDate      string    `json:"release_date"`
+	ReleaseDate      time.Time `json:"release_date"`
 	ImageURL         string    `json:"image_url" `
 	Name             string    `json:"name"`
+	Description      string    `json:"description"`
 
 	PodcastShow PodcastShow `json:"-" gorm:"foreignKey:PodcastShowID"`
 }
