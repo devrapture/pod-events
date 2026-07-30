@@ -73,9 +73,29 @@ func (s *notificationService) NotifyUser(ctx context.Context, userID uuid.UUID, 
 		notifier, err := s.buildNotifier(channel)
 		if err != nil {
 			s.logger.Error("failed to build notifier", zap.String("channel_type", string(channel.ChannelType)), zap.Error(err))
+			s.saveLog(ctx, userID, episode.ID, channel.ChannelType, models.NotificationStatusFailed, err.Error())
 			continue
 		}
+		sendCtx, cancel := context.WithTimeout(ctx, 10*time.Second)
+		sendErr := notifier.Send(sendCtx, message)
+		cancel()
 
+		if sendErr != nil {
+			s.logger.Error(
+				"notification send failed",
+				zap.String("user_id", userID.String()),
+				zap.String("episode_id", episode.ID.String()),
+				zap.String("channel_type", string(channel.ChannelType)))
+			s.saveLog(ctx, userID, episode.ID, channel.ChannelType, models.NotificationStatusFailed, sendErr.Error())
+		} else {
+			s.logger.Info(
+				"notification sent",
+				zap.String("user_id", userID.String()),
+				zap.String("episode_id", episode.ID.String()),
+				zap.String("channel_type", string(channel.ChannelType)),
+			)
+			s.saveLog(ctx, userID, episode.ID, channel.ChannelType, models.NotificationStatusSent, "")
+		}
 	}
 
 	return nil
