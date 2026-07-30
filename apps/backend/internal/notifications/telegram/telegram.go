@@ -11,9 +11,9 @@ import (
 
 	"github.com/devrapture/pod-events/internal/config"
 	apperrors "github.com/devrapture/pod-events/internal/errors"
+	"github.com/devrapture/pod-events/internal/models"
 	"github.com/devrapture/pod-events/internal/notifications"
 )
-
 
 const telegramAPIBaseURL = "https://api.telegram.org/bot"
 
@@ -38,7 +38,7 @@ func (n *Notifier) Send(ctx context.Context, message notifications.NotificationM
 }
 
 func (n *Notifier) Type() string {
-	return "telegram"
+	return string(models.ChannelTypeTelegram)
 }
 
 func (n *Notifier) SendToChatID(ctx context.Context, text string, chatID int64) error {
