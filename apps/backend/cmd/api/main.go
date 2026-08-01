@@ -30,6 +30,8 @@
 // @tag.description Service health check
 // @tag.name Dashboard
 // @tag.description Dashboard overview
+// @tag.name Cron
+// @tag.description Cron job endpoints (protected by secret header)
 package main
 
 import (

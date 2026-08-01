@@ -29,7 +29,7 @@ func NewDashboardShowHandler(dashboardShowService services.DashboardSummaryServi
 //	@Tags        Dashboard
 //	@Security    BearerAuth
 //	@Produce     json
-//	@Success     200 {object} response.APIResponse{data=dto.DashboardSummaryDTO} "dashboard summary fetched successfully"
+//	@Success     200 {object} response.APIResponse "dashboard summary fetched successfully"
 //	@Failure     500 {object} response.APIResponse "failed to get dashboard summary"
 //	@Router      /dashboard/summary [get]
 func (h *DashboardShowHandler) GetDashboardSummary(c *gin.Context) {

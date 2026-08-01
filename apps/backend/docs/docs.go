@@ -12,7 +12,7 @@ const docTemplate = `{
         "termsOfService": "https://podevents.app/terms",
         "contact": {
             "name": "API Support",
-            "email": "support@podevents.app"
+            "email": "devrapture@proton.me"
         },
         "license": {
             "name": "MIT",
@@ -23,6 +23,47 @@ const docTemplate = `{
     "host": "{{.Host}}",
     "basePath": "{{.BasePath}}",
     "paths": {
+        "/../cron/check-episodes": {
+            "post": {
+                "description": "Manually trigger the cron job that polls Spotify for new episodes and sends notifications to subscribers",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Cron"
+                ],
+                "summary": "Trigger episode check",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Cron secret for authorization",
+                        "name": "X-Cron-Secret",
+                        "in": "header",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Cron job completed",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_devrapture_pod-events_pkg_response.APIResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_devrapture_pod-events_pkg_response.APIResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Cron job failed",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_devrapture_pod-events_pkg_response.APIResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/auth/exchange": {
             "post": {
                 "description": "Exchanges the temporary auth code (obtained from the frontend callback redirect) for a JWT token",
@@ -43,7 +84,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/dto.AuthExchangeRequest"
+                            "$ref": "#/definitions/github_com_devrapture_pod-events_internal_dto.AuthExchangeRequest"
                         }
                     }
                 ],
@@ -51,19 +92,19 @@ const docTemplate = `{
                     "200": {
                         "description": "Authentication completed",
                         "schema": {
-                            "$ref": "#/definitions/response.APIResponse"
+                            "$ref": "#/definitions/github_com_devrapture_pod-events_pkg_response.APIResponse"
                         }
                     },
                     "400": {
                         "description": "missing auth exchange code",
                         "schema": {
-                            "$ref": "#/definitions/response.APIResponse"
+                            "$ref": "#/definitions/github_com_devrapture_pod-events_pkg_response.APIResponse"
                         }
                     },
                     "401": {
                         "description": "invalid or expired auth exchange code",
                         "schema": {
-                            "$ref": "#/definitions/response.APIResponse"
+                            "$ref": "#/definitions/github_com_devrapture_pod-events_pkg_response.APIResponse"
                         }
                     }
                 }
@@ -85,13 +126,13 @@ const docTemplate = `{
                     "200": {
                         "description": "User fetched successfully",
                         "schema": {
-                            "$ref": "#/definitions/response.APIResponse"
+                            "$ref": "#/definitions/github_com_devrapture_pod-events_pkg_response.APIResponse"
                         }
                     },
                     "401": {
                         "description": "unauthorized",
                         "schema": {
-                            "$ref": "#/definitions/response.APIResponse"
+                            "$ref": "#/definitions/github_com_devrapture_pod-events_pkg_response.APIResponse"
                         }
                     }
                 }
@@ -160,7 +201,7 @@ const docTemplate = `{
                     "200": {
                         "description": "Channels fetched",
                         "schema": {
-                            "$ref": "#/definitions/response.APIResponse"
+                            "$ref": "#/definitions/github_com_devrapture_pod-events_pkg_response.APIResponse"
                         }
                     }
                 }
@@ -189,7 +230,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/dto.CreateChannelRequest"
+                            "$ref": "#/definitions/github_com_devrapture_pod-events_internal_dto.CreateChannelRequest"
                         }
                     }
                 ],
@@ -197,13 +238,13 @@ const docTemplate = `{
                     "200": {
                         "description": "Channel created",
                         "schema": {
-                            "$ref": "#/definitions/response.APIResponse"
+                            "$ref": "#/definitions/github_com_devrapture_pod-events_pkg_response.APIResponse"
                         }
                     },
                     "422": {
                         "description": "validation error",
                         "schema": {
-                            "$ref": "#/definitions/response.APIResponse"
+                            "$ref": "#/definitions/github_com_devrapture_pod-events_pkg_response.APIResponse"
                         }
                     }
                 }
@@ -237,13 +278,13 @@ const docTemplate = `{
                     "200": {
                         "description": "Channel deleted",
                         "schema": {
-                            "$ref": "#/definitions/response.APIResponse"
+                            "$ref": "#/definitions/github_com_devrapture_pod-events_pkg_response.APIResponse"
                         }
                     },
                     "404": {
                         "description": "Channel not found",
                         "schema": {
-                            "$ref": "#/definitions/response.APIResponse"
+                            "$ref": "#/definitions/github_com_devrapture_pod-events_pkg_response.APIResponse"
                         }
                     }
                 }
@@ -281,7 +322,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/dto.ToggleActiveChannelRequest"
+                            "$ref": "#/definitions/github_com_devrapture_pod-events_internal_dto.ToggleActiveChannelRequest"
                         }
                     }
                 ],
@@ -289,13 +330,13 @@ const docTemplate = `{
                     "200": {
                         "description": "Channel status updated",
                         "schema": {
-                            "$ref": "#/definitions/response.APIResponse"
+                            "$ref": "#/definitions/github_com_devrapture_pod-events_pkg_response.APIResponse"
                         }
                     },
                     "404": {
                         "description": "Channel not found",
                         "schema": {
-                            "$ref": "#/definitions/response.APIResponse"
+                            "$ref": "#/definitions/github_com_devrapture_pod-events_pkg_response.APIResponse"
                         }
                     }
                 }
@@ -320,25 +361,13 @@ const docTemplate = `{
                     "200": {
                         "description": "dashboard summary fetched successfully",
                         "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/response.APIResponse"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "data": {
-                                            "$ref": "#/definitions/dto.DashboardSummaryDTO"
-                                        }
-                                    }
-                                }
-                            ]
+                            "$ref": "#/definitions/github_com_devrapture_pod-events_pkg_response.APIResponse"
                         }
                     },
                     "500": {
                         "description": "failed to get dashboard summary",
                         "schema": {
-                            "$ref": "#/definitions/response.APIResponse"
+                            "$ref": "#/definitions/github_com_devrapture_pod-events_pkg_response.APIResponse"
                         }
                     }
                 }
@@ -399,7 +428,7 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/response.APIResponse"
+                                    "$ref": "#/definitions/github_com_devrapture_pod-events_pkg_response.APIResponse"
                                 },
                                 {
                                     "type": "object",
@@ -407,7 +436,7 @@ const docTemplate = `{
                                         "data": {
                                             "type": "array",
                                             "items": {
-                                                "$ref": "#/definitions/dto.SavedShowResponse"
+                                                "$ref": "#/definitions/github_com_devrapture_pod-events_internal_dto.SavedShowResponse"
                                             }
                                         }
                                     }
@@ -457,7 +486,7 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/response.APIResponse"
+                                    "$ref": "#/definitions/github_com_devrapture_pod-events_pkg_response.APIResponse"
                                 },
                                 {
                                     "type": "object",
@@ -465,7 +494,7 @@ const docTemplate = `{
                                         "data": {
                                             "type": "array",
                                             "items": {
-                                                "$ref": "#/definitions/dto.SavedShowResponse"
+                                                "$ref": "#/definitions/github_com_devrapture_pod-events_internal_dto.SavedShowResponse"
                                             }
                                         }
                                     }
@@ -476,68 +505,88 @@ const docTemplate = `{
                     "400": {
                         "description": "invalid parameters",
                         "schema": {
-                            "$ref": "#/definitions/response.APIResponse"
+                            "$ref": "#/definitions/github_com_devrapture_pod-events_pkg_response.APIResponse"
                         }
                     }
                 }
             }
         },
-        "/shows/{spotifyShowId}/subscribe": {
+        "/shows/subscribe": {
             "post": {
                 "security": [
                     {
                         "BearerAuth": []
                     }
                 ],
-                "description": "Subscribe the current user to a podcast show by Spotify show ID",
+                "description": "Subscribe the current user to one or more podcast shows by Spotify show ID",
                 "tags": [
                     "Subscriptions"
                 ],
-                "summary": "Subscribe to a show",
+                "summary": "Subscribe to shows",
                 "parameters": [
                     {
-                        "type": "string",
-                        "description": "Spotify show ID (22 characters)",
-                        "name": "spotifyShowId",
-                        "in": "path",
-                        "required": true
+                        "description": "Spotify show IDs",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/github_com_devrapture_pod-events_internal_dto.SubscribeShowsRequest"
+                        }
                     }
                 ],
                 "responses": {
                     "200": {
                         "description": "subscribed successfully",
                         "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/response.APIResponse"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "data": {
-                                            "$ref": "#/definitions/dto.SubscriptionResponse"
-                                        }
-                                    }
-                                }
-                            ]
+                            "$ref": "#/definitions/github_com_devrapture_pod-events_pkg_response.APIResponse"
                         }
                     },
                     "400": {
-                        "description": "invalid spotify show ID",
+                        "description": "invalid or too many Spotify show IDs",
                         "schema": {
-                            "$ref": "#/definitions/response.APIResponse"
+                            "$ref": "#/definitions/github_com_devrapture_pod-events_pkg_response.APIResponse"
                         }
                     },
                     "404": {
                         "description": "podcast show not found",
                         "schema": {
-                            "$ref": "#/definitions/response.APIResponse"
+                            "$ref": "#/definitions/github_com_devrapture_pod-events_pkg_response.APIResponse"
                         }
                     },
                     "409": {
                         "description": "already subscribed",
                         "schema": {
-                            "$ref": "#/definitions/response.APIResponse"
+                            "$ref": "#/definitions/github_com_devrapture_pod-events_pkg_response.APIResponse"
+                        }
+                    },
+                    "422": {
+                        "description": "invalid request",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_devrapture_pod-events_pkg_response.APIResponse"
+                        }
+                    },
+                    "424": {
+                        "description": "Spotify authorization required",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_devrapture_pod-events_pkg_response.APIResponse"
+                        }
+                    },
+                    "429": {
+                        "description": "Spotify rate limit exceeded",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_devrapture_pod-events_pkg_response.APIResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_devrapture_pod-events_pkg_response.APIResponse"
+                        }
+                    },
+                    "503": {
+                        "description": "Spotify unavailable",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_devrapture_pod-events_pkg_response.APIResponse"
                         }
                     }
                 }
@@ -561,7 +610,7 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/response.APIResponse"
+                                    "$ref": "#/definitions/github_com_devrapture_pod-events_pkg_response.APIResponse"
                                 },
                                 {
                                     "type": "object",
@@ -569,7 +618,7 @@ const docTemplate = `{
                                         "data": {
                                             "type": "array",
                                             "items": {
-                                                "$ref": "#/definitions/dto.SubscriptionResponse"
+                                                "$ref": "#/definitions/github_com_devrapture_pod-events_internal_dto.SubscriptionResponse"
                                             }
                                         }
                                     }
@@ -605,19 +654,19 @@ const docTemplate = `{
                     "200": {
                         "description": "unsubscribed successfully",
                         "schema": {
-                            "$ref": "#/definitions/response.APIResponse"
+                            "$ref": "#/definitions/github_com_devrapture_pod-events_pkg_response.APIResponse"
                         }
                     },
                     "400": {
                         "description": "invalid subscription ID",
                         "schema": {
-                            "$ref": "#/definitions/response.APIResponse"
+                            "$ref": "#/definitions/github_com_devrapture_pod-events_pkg_response.APIResponse"
                         }
                     },
                     "404": {
                         "description": "subscription not found",
                         "schema": {
-                            "$ref": "#/definitions/response.APIResponse"
+                            "$ref": "#/definitions/github_com_devrapture_pod-events_pkg_response.APIResponse"
                         }
                     }
                 }
@@ -642,13 +691,13 @@ const docTemplate = `{
                     "200": {
                         "description": "Telegram connect link created",
                         "schema": {
-                            "$ref": "#/definitions/response.APIResponse"
+                            "$ref": "#/definitions/github_com_devrapture_pod-events_pkg_response.APIResponse"
                         }
                     },
                     "409": {
                         "description": "already have a Telegram channel",
                         "schema": {
-                            "$ref": "#/definitions/response.APIResponse"
+                            "$ref": "#/definitions/github_com_devrapture_pod-events_pkg_response.APIResponse"
                         }
                     }
                 }
@@ -671,7 +720,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/telegram.Update"
+                            "$ref": "#/definitions/github_com_devrapture_pod-events_internal_notifications_telegram.Update"
                         }
                     }
                 ],
@@ -687,7 +736,7 @@ const docTemplate = `{
         }
     },
     "definitions": {
-        "dto.AuthExchangeRequest": {
+        "github_com_devrapture_pod-events_internal_dto.AuthExchangeRequest": {
             "type": "object",
             "required": [
                 "code"
@@ -699,7 +748,7 @@ const docTemplate = `{
                 }
             }
         },
-        "dto.CreateChannelRequest": {
+        "github_com_devrapture_pod-events_internal_dto.CreateChannelRequest": {
             "type": "object",
             "required": [
                 "channel_type",
@@ -716,7 +765,7 @@ const docTemplate = `{
                     ],
                     "allOf": [
                         {
-                            "$ref": "#/definitions/models.ChannelType"
+                            "$ref": "#/definitions/github_com_devrapture_pod-events_internal_models.ChannelType"
                         }
                     ],
                     "example": "slack_webhook"
@@ -733,69 +782,7 @@ const docTemplate = `{
                 }
             }
         },
-        "dto.DashboardItems": {
-            "type": "object",
-            "properties": {
-                "completed": {
-                    "type": "boolean"
-                },
-                "key": {
-                    "type": "string"
-                },
-                "label": {
-                    "type": "string"
-                }
-            }
-        },
-        "dto.DashboardSetupResponse": {
-            "type": "object",
-            "properties": {
-                "completed": {
-                    "type": "integer"
-                },
-                "items": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/dto.DashboardItems"
-                    }
-                },
-                "percent": {
-                    "type": "integer"
-                },
-                "total": {
-                    "type": "integer"
-                }
-            }
-        },
-        "dto.DashboardStatsResponse": {
-            "type": "object",
-            "properties": {
-                "active_channels": {
-                    "type": "integer"
-                },
-                "new_episodes_this_week": {
-                    "type": "integer"
-                },
-                "notification_sent": {
-                    "type": "integer"
-                },
-                "podcasts_tracked": {
-                    "type": "integer"
-                }
-            }
-        },
-        "dto.DashboardSummaryDTO": {
-            "type": "object",
-            "properties": {
-                "setup": {
-                    "$ref": "#/definitions/dto.DashboardSetupResponse"
-                },
-                "stats": {
-                    "$ref": "#/definitions/dto.DashboardStatsResponse"
-                }
-            }
-        },
-        "dto.PodcastShowResponse": {
+        "github_com_devrapture_pod-events_internal_dto.PodcastShowResponse": {
             "type": "object",
             "properties": {
                 "description": {
@@ -824,7 +811,7 @@ const docTemplate = `{
                 }
             }
         },
-        "dto.SavedShowResponse": {
+        "github_com_devrapture_pod-events_internal_dto.SavedShowResponse": {
             "type": "object",
             "properties": {
                 "added_at": {
@@ -857,7 +844,23 @@ const docTemplate = `{
                 }
             }
         },
-        "dto.SubscriptionResponse": {
+        "github_com_devrapture_pod-events_internal_dto.SubscribeShowsRequest": {
+            "type": "object",
+            "required": [
+                "spotify_show_ids"
+            ],
+            "properties": {
+                "spotify_show_ids": {
+                    "type": "array",
+                    "maxItems": 50,
+                    "minItems": 1,
+                    "items": {
+                        "type": "string"
+                    }
+                }
+            }
+        },
+        "github_com_devrapture_pod-events_internal_dto.SubscriptionResponse": {
             "type": "object",
             "properties": {
                 "created_at": {
@@ -867,7 +870,7 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "podcast_show": {
-                    "$ref": "#/definitions/dto.PodcastShowResponse"
+                    "$ref": "#/definitions/github_com_devrapture_pod-events_internal_dto.PodcastShowResponse"
                 },
                 "podcast_show_id": {
                     "type": "string"
@@ -880,7 +883,7 @@ const docTemplate = `{
                 }
             }
         },
-        "dto.ToggleActiveChannelRequest": {
+        "github_com_devrapture_pod-events_internal_dto.ToggleActiveChannelRequest": {
             "type": "object",
             "required": [
                 "is_active"
@@ -892,7 +895,7 @@ const docTemplate = `{
                 }
             }
         },
-        "models.ChannelType": {
+        "github_com_devrapture_pod-events_internal_models.ChannelType": {
             "type": "string",
             "enum": [
                 "slack_webhook",
@@ -907,25 +910,75 @@ const docTemplate = `{
                 "ChannelTypeWhatsApp"
             ]
         },
-        "response.APIResponse": {
+        "github_com_devrapture_pod-events_internal_notifications_telegram.Chat": {
+            "type": "object",
+            "properties": {
+                "id": {
+                    "type": "integer"
+                }
+            }
+        },
+        "github_com_devrapture_pod-events_internal_notifications_telegram.Message": {
+            "type": "object",
+            "properties": {
+                "chat": {
+                    "$ref": "#/definitions/github_com_devrapture_pod-events_internal_notifications_telegram.Chat"
+                },
+                "from": {
+                    "$ref": "#/definitions/github_com_devrapture_pod-events_internal_notifications_telegram.User"
+                },
+                "message_id": {
+                    "type": "integer"
+                },
+                "text": {
+                    "type": "string"
+                }
+            }
+        },
+        "github_com_devrapture_pod-events_internal_notifications_telegram.Update": {
+            "type": "object",
+            "properties": {
+                "message": {
+                    "$ref": "#/definitions/github_com_devrapture_pod-events_internal_notifications_telegram.Message"
+                },
+                "update_id": {
+                    "type": "integer"
+                }
+            }
+        },
+        "github_com_devrapture_pod-events_internal_notifications_telegram.User": {
+            "type": "object",
+            "properties": {
+                "first_name": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "last_name": {
+                    "type": "string"
+                }
+            }
+        },
+        "github_com_devrapture_pod-events_pkg_response.APIResponse": {
             "type": "object",
             "properties": {
                 "data": {},
                 "error": {
-                    "$ref": "#/definitions/response.ErrorInfo"
+                    "$ref": "#/definitions/github_com_devrapture_pod-events_pkg_response.ErrorInfo"
                 },
                 "message": {
                     "type": "string"
                 },
                 "meta": {
-                    "$ref": "#/definitions/response.PaginationMeta"
+                    "$ref": "#/definitions/github_com_devrapture_pod-events_pkg_response.PaginationMeta"
                 },
                 "success": {
                     "type": "boolean"
                 }
             }
         },
-        "response.ErrorInfo": {
+        "github_com_devrapture_pod-events_pkg_response.ErrorInfo": {
             "type": "object",
             "properties": {
                 "details": {
@@ -939,7 +992,7 @@ const docTemplate = `{
                 }
             }
         },
-        "response.PaginationMeta": {
+        "github_com_devrapture_pod-events_pkg_response.PaginationMeta": {
             "type": "object",
             "properties": {
                 "page": {
@@ -953,56 +1006,6 @@ const docTemplate = `{
                 },
                 "total": {
                     "type": "integer"
-                }
-            }
-        },
-        "telegram.Chat": {
-            "type": "object",
-            "properties": {
-                "id": {
-                    "type": "integer"
-                }
-            }
-        },
-        "telegram.Message": {
-            "type": "object",
-            "properties": {
-                "chat": {
-                    "$ref": "#/definitions/telegram.Chat"
-                },
-                "from": {
-                    "$ref": "#/definitions/telegram.User"
-                },
-                "message_id": {
-                    "type": "integer"
-                },
-                "text": {
-                    "type": "string"
-                }
-            }
-        },
-        "telegram.Update": {
-            "type": "object",
-            "properties": {
-                "message": {
-                    "$ref": "#/definitions/telegram.Message"
-                },
-                "update_id": {
-                    "type": "integer"
-                }
-            }
-        },
-        "telegram.User": {
-            "type": "object",
-            "properties": {
-                "first_name": {
-                    "type": "string"
-                },
-                "id": {
-                    "type": "integer"
-                },
-                "last_name": {
-                    "type": "string"
                 }
             }
         }
