@@ -16,7 +16,9 @@ import (
 	"go.uber.org/zap"
 )
 
-type NotificationService interface{}
+type NotificationService interface {
+	NotifyUser(ctx context.Context, userID uuid.UUID, episode *models.Episode, show *models.PodcastShow) error
+}
 
 type notificationService struct {
 	logRepo     repositories.NotificationLogRepository
@@ -34,7 +36,7 @@ func NewNotificationService(logRepo repositories.NotificationLogRepository, logg
 	}
 }
 
-func (s *notificationService) NotifyUser(ctx context.Context, userID uuid.UUID, episode *models.Episode, show *models.PodcastShow, message notifications.NotificationMessage) error {
+func (s *notificationService) NotifyUser(ctx context.Context, userID uuid.UUID, episode *models.Episode, show *models.PodcastShow) error {
 	channels, err := s.channelRepo.GetByUserID(ctx, userID)
 	if err != nil {
 		return fmt.Errorf("failed to get notification channels: %w", err)
@@ -77,7 +79,7 @@ func (s *notificationService) NotifyUser(ctx context.Context, userID uuid.UUID, 
 			continue
 		}
 		sendCtx, cancel := context.WithTimeout(ctx, 10*time.Second)
-		sendErr := notifier.Send(sendCtx, message)
+		sendErr := notifier.Send(sendCtx, msg)
 		cancel()
 
 		if sendErr != nil {

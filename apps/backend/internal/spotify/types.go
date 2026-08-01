@@ -16,6 +16,24 @@ type TokenResponse struct {
 	Scope        string `json:"scope"`
 }
 
+type SpotifyEpisode struct {
+	ID           string `json:"id"`
+	Name         string `json:"name"`
+	Description  string `json:"description"`
+	ExternalURLs struct {
+		Spotify string `json:"spotify"`
+	} `json:"external_urls"`
+	Images []struct {
+		URL string `json:"url"`
+	} `json:"images"`
+	DurationMs  int    `json:"duration_ms"`
+	ReleaseDate string `json:"release_date"` // "2024-01-15" format
+}
+
+func (e *SpotifyEpisode) ParsedReleaseDate() (time.Time, error) {
+	return time.Parse("2006-01-02", e.ReleaseDate)
+}
+
 // ExpiresAt converts ExpiresIn seconds to an absolute time.Time
 func (t *TokenResponse) ExpiresAt() time.Time {
 	return time.Now().UTC().Add(time.Duration(t.ExpiresIn) * time.Second)
@@ -54,7 +72,6 @@ type SpotifySavedShowsResponse struct {
 	Total    int                    `json:"total"`
 	Items    []SpotifySavedShowItem `json:"items"`
 }
-
 
 type SpotifySavedShowItem struct {
 	AddedAt string      `json:"added_at"`
