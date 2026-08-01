@@ -62,8 +62,15 @@ func (c *EpisodeChecker) Run(ctx context.Context) (*CheckResult, error) {
 	}
 	c.logger.Info("found tracked shows", zap.Int("count", len(shows)))
 	for _, show := range shows {
+		if err := ctx.Err(); err != nil {
+			return result, err
+		}
+
 		result.ShowsChecked++
 		if err := c.checkShow(ctx, &show, result); err != nil {
+			if ctxErr := ctx.Err(); ctxErr != nil {
+				return result, ctxErr
+			}
 			c.logger.Error(
 				"error checking show",
 				zap.String("show_id", show.ID.String()),
@@ -71,7 +78,12 @@ func (c *EpisodeChecker) Run(ctx context.Context) (*CheckResult, error) {
 			)
 			result.Errors = append(result.Errors, fmt.Sprintf("show %s: %v", show.Name, err))
 		}
-		time.Sleep(200 * time.Millisecond)
+
+		select {
+		case <-ctx.Done():
+			return result, ctx.Err()
+		case <-time.After(200 * time.Millisecond):
+		}
 	}
 	c.logger.Info(
 		"cron job completed",
