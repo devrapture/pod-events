@@ -104,10 +104,11 @@ func (c *EpisodeChecker) checkShow(ctx context.Context, show *models.PodcastShow
 	latestEpisode, err := c.spotifyClient.GetShowLatestEpisode(ctx, accessToken, show.SpotifyShowID)
 	if err != nil {
 		var rateLimiterErr *spotify.RateLimitError
-		if errors.Is(err, rateLimiterErr) {
+		if errors.As(err, &rateLimiterErr) {
 			c.logger.Warn(
 				"rate limited by spotify",
 				zap.String("show", show.Name),
+				zap.Int("retry_after", rateLimiterErr.RetryAfter),
 			)
 			return nil
 		}

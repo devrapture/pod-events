@@ -30,6 +30,13 @@ type SpotifyEpisode struct {
 	ReleaseDate string `json:"release_date"` // "2024-01-15" format
 }
 
+func (e *SpotifyEpisode) ImageURL() string {
+	if len(e.Images) > 0 {
+		return e.Images[0].URL
+	}
+	return ""
+}
+
 func (e *SpotifyEpisode) ParsedReleaseDate() (time.Time, error) {
 	return time.Parse("2006-01-02", e.ReleaseDate)
 }

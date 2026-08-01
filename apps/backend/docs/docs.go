@@ -43,20 +43,14 @@ const docTemplate = `{
                     }
                 ],
                 "responses": {
-                    "200": {
-                        "description": "Cron job completed",
+                    "202": {
+                        "description": "Cron job started or already running",
                         "schema": {
                             "$ref": "#/definitions/github_com_devrapture_pod-events_pkg_response.APIResponse"
                         }
                     },
                     "401": {
                         "description": "Unauthorized",
-                        "schema": {
-                            "$ref": "#/definitions/github_com_devrapture_pod-events_pkg_response.APIResponse"
-                        }
-                    },
-                    "500": {
-                        "description": "Cron job failed",
                         "schema": {
                             "$ref": "#/definitions/github_com_devrapture_pod-events_pkg_response.APIResponse"
                         }
