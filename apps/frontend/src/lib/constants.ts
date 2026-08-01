@@ -9,10 +9,10 @@ export const LICENSE_URL =
 	"https://github.com/devrapture/pod-events/blob/main/LICENSE";
 
 export const NAV_LINKS = [
-	{ label: "How it works", href: "#how-it-works" },
-	{ label: "Features", href: "#features" },
-	{ label: "Architecture", href: "#architecture" },
-	{ label: "Security", href: "#security" },
+	{ label: "How it works", href: "/#how-it-works" },
+	{ label: "Features", href: "/#features" },
+	{ label: "Architecture", href: "/#architecture" },
+	{ label: "Security", href: "/#security" },
 ] as const;
 
 export const TECH_BADGES = [

@@ -10,11 +10,12 @@ import {
 } from "@/lib/constants";
 
 const FOOTER_LINKS = [
-	{ label: "GitHub", href: GITHUB_URL },
-	{ label: "Documentation", href: DOCS_URL },
-	{ label: "Issues", href: ISSUES_URL },
-	{ label: "Contributing", href: CONTRIBUTING_URL },
-	{ label: "License", href: LICENSE_URL },
+	{ label: "GitHub", href: GITHUB_URL, external: true },
+	{ label: "Documentation", href: DOCS_URL, external: true },
+	{ label: "Issues", href: ISSUES_URL, external: true },
+	{ label: "Contributing", href: CONTRIBUTING_URL, external: true },
+	{ label: "License", href: LICENSE_URL, external: true },
+	{ label: "Privacy", href: "/privacy", external: false },
 ] as const;
 
 export function Footer() {
@@ -29,17 +30,27 @@ export function Footer() {
 				</Link>
 
 				<nav className="flex flex-wrap justify-center gap-6">
-					{FOOTER_LINKS.map((link) => (
-						<a
-							className="text-sm text-zinc-500 transition-colors hover:text-zinc-300"
-							href={link.href}
-							key={link.href}
-							rel="noopener noreferrer"
-							target="_blank"
-						>
-							{link.label}
-						</a>
-					))}
+					{FOOTER_LINKS.map((link) =>
+						link.external ? (
+							<a
+								className="text-sm text-zinc-500 transition-colors hover:text-zinc-300"
+								href={link.href}
+								key={link.href}
+								rel="noopener noreferrer"
+								target="_blank"
+							>
+								{link.label}
+							</a>
+						) : (
+							<Link
+								className="text-sm text-zinc-500 transition-colors hover:text-zinc-300"
+								href={link.href}
+								key={link.href}
+							>
+								{link.label}
+							</Link>
+						),
+					)}
 				</nav>
 
 				<p className="text-sm text-zinc-600">
