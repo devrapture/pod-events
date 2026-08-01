@@ -11,7 +11,7 @@ import (
 
 type NotificationLogRepository interface {
 	Create(ctx context.Context, log *models.NotificationLog) error
-	AlreadlySent(ctx context.Context, userID, episodeID uuid.UUID, channelType models.ChannelType) (bool, error)
+	AlreadySent(ctx context.Context, userID, episodeID uuid.UUID, channelType models.ChannelType) (bool, error)
 }
 
 type notificationLogRepository struct {
@@ -32,7 +32,7 @@ func (r *notificationLogRepository) Create(ctx context.Context, log *models.Noti
 	return nil
 }
 
-func (r *notificationLogRepository) AlreadlySent(ctx context.Context, userID, episodeID uuid.UUID, channelType models.ChannelType) (bool, error) {
+func (r *notificationLogRepository) AlreadySent(ctx context.Context, userID, episodeID uuid.UUID, channelType models.ChannelType) (bool, error) {
 	var count int64
 	if err := dbFromCtx(ctx, r.db).WithContext(ctx).Model(&models.NotificationLog{}).
 		Where("user_id = ? AND episode_id = ? AND channel_type = ? AND status = ?", userID, episodeID, channelType, models.NotificationStatusSent).

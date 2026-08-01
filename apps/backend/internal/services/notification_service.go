@@ -56,7 +56,7 @@ func (s *notificationService) NotifyUser(ctx context.Context, userID uuid.UUID, 
 	}
 
 	for _, channel := range channels {
-		alreadySent, err := s.logRepo.AlreadlySent(ctx, userID, episode.ID, channel.ChannelType)
+		alreadySent, err := s.logRepo.AlreadySent(ctx, userID, episode.ID, channel.ChannelType)
 		if err != nil {
 			s.logger.Error(
 				"failed to check duplicate notification",

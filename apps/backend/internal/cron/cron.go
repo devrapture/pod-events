@@ -132,7 +132,13 @@ func (c *EpisodeChecker) checkShow(ctx context.Context, show *models.PodcastShow
 
 	publishedAt, err := latestEpisode.ParsedReleaseDate()
 	if err != nil {
-		publishedAt = time.Now().UTC()
+		c.logger.Error(
+			"failed to parse episode release date",
+			zap.String("release_date", latestEpisode.ReleaseDate),
+			zap.String("release_date_precision", latestEpisode.ReleaseDatePrecision),
+			zap.Error(err),
+		)
+		return nil
 	}
 	existingEpisode, err := c.episodeRepo.GetBySpotifyID(ctx, latestEpisode.ID)
 	if err != nil {

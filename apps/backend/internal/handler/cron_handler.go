@@ -34,7 +34,7 @@ func NewCronJobHandler(logger *zap.Logger, episodeChecker *cron.EpisodeChecker) 
 //	@Param       X-Cron-Secret header string true "Cron secret for authorization"
 //	@Success     202 {object} response.APIResponse "Cron job started or already running"
 //	@Failure     401 {object} response.APIResponse "Unauthorized"
-//	@Router      /../cron/check-episodes [post]
+//	@Router       /cron/check-episodes [post]
 func (h *CronJobHandler) CheckEpisodes(c *gin.Context) {
 	// TryLock returns false if another run already has the lock.
 	if !h.runMu.TryLock() {

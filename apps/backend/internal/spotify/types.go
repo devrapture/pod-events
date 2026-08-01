@@ -26,8 +26,9 @@ type SpotifyEpisode struct {
 	Images []struct {
 		URL string `json:"url"`
 	} `json:"images"`
-	DurationMs  int    `json:"duration_ms"`
-	ReleaseDate string `json:"release_date"` // "2024-01-15" format
+	DurationMs           int    `json:"duration_ms"`
+	ReleaseDate          string `json:"release_date"`
+	ReleaseDatePrecision string `json:"release_date_precision"`
 }
 
 func (e *SpotifyEpisode) ImageURL() string {
@@ -38,7 +39,16 @@ func (e *SpotifyEpisode) ImageURL() string {
 }
 
 func (e *SpotifyEpisode) ParsedReleaseDate() (time.Time, error) {
-	return time.Parse("2006-01-02", e.ReleaseDate)
+	var parseErr error
+	for _, layout := range []string{"2006", "2006-01", "2006-01-02"} {
+		var parsed time.Time
+		parsed, parseErr = time.Parse(layout, e.ReleaseDate)
+		if parseErr == nil {
+			return parsed, nil
+		}
+	}
+
+	return time.Time{}, fmt.Errorf("parse release date %q: %w", e.ReleaseDate, parseErr)
 }
 
 // ExpiresAt converts ExpiresIn seconds to an absolute time.Time

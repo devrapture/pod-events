@@ -17,41 +17,6 @@
     "host": "localhost:8080",
     "basePath": "/api/v1",
     "paths": {
-        "/../cron/check-episodes": {
-            "post": {
-                "description": "Manually trigger the cron job that polls Spotify for new episodes and sends notifications to subscribers",
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Cron"
-                ],
-                "summary": "Trigger episode check",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "Cron secret for authorization",
-                        "name": "X-Cron-Secret",
-                        "in": "header",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "202": {
-                        "description": "Cron job started or already running",
-                        "schema": {
-                            "$ref": "#/definitions/github_com_devrapture_pod-events_pkg_response.APIResponse"
-                        }
-                    },
-                    "401": {
-                        "description": "Unauthorized",
-                        "schema": {
-                            "$ref": "#/definitions/github_com_devrapture_pod-events_pkg_response.APIResponse"
-                        }
-                    }
-                }
-            }
-        },
         "/auth/exchange": {
             "post": {
                 "description": "Exchanges the temporary auth code (obtained from the frontend callback redirect) for a JWT token",
@@ -323,6 +288,41 @@
                     },
                     "404": {
                         "description": "Channel not found",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_devrapture_pod-events_pkg_response.APIResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/cron/check-episodes": {
+            "post": {
+                "description": "Manually trigger the cron job that polls Spotify for new episodes and sends notifications to subscribers",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Cron"
+                ],
+                "summary": "Trigger episode check",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Cron secret for authorization",
+                        "name": "X-Cron-Secret",
+                        "in": "header",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "202": {
+                        "description": "Cron job started or already running",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_devrapture_pod-events_pkg_response.APIResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
                         "schema": {
                             "$ref": "#/definitions/github_com_devrapture_pod-events_pkg_response.APIResponse"
                         }

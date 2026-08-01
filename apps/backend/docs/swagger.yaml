@@ -198,30 +198,6 @@ info:
   title: PodEvents API
   version: "1.0"
 paths:
-  /../cron/check-episodes:
-    post:
-      description: Manually trigger the cron job that polls Spotify for new episodes
-        and sends notifications to subscribers
-      parameters:
-      - description: Cron secret for authorization
-        in: header
-        name: X-Cron-Secret
-        required: true
-        type: string
-      produces:
-      - application/json
-      responses:
-        "202":
-          description: Cron job started or already running
-          schema:
-            $ref: '#/definitions/github_com_devrapture_pod-events_pkg_response.APIResponse'
-        "401":
-          description: Unauthorized
-          schema:
-            $ref: '#/definitions/github_com_devrapture_pod-events_pkg_response.APIResponse'
-      summary: Trigger episode check
-      tags:
-      - Cron
   /auth/exchange:
     post:
       consumes:
@@ -401,6 +377,30 @@ paths:
       summary: Toggle notification channel
       tags:
       - Channels
+  /cron/check-episodes:
+    post:
+      description: Manually trigger the cron job that polls Spotify for new episodes
+        and sends notifications to subscribers
+      parameters:
+      - description: Cron secret for authorization
+        in: header
+        name: X-Cron-Secret
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "202":
+          description: Cron job started or already running
+          schema:
+            $ref: '#/definitions/github_com_devrapture_pod-events_pkg_response.APIResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/github_com_devrapture_pod-events_pkg_response.APIResponse'
+      summary: Trigger episode check
+      tags:
+      - Cron
   /dashboard/summary:
     get:
       description: Get the dashboard overview with setup progress and statistics

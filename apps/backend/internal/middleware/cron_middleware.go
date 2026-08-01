@@ -1,6 +1,7 @@
 package middleware
 
 import (
+	"crypto/subtle"
 	"net/http"
 
 	"github.com/devrapture/pod-events/pkg/response"
@@ -11,7 +12,7 @@ import (
 func CronMiddleware(secret string, logger *zap.Logger) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		provided := c.GetHeader("X-Cron-Secret")
-		if provided == "" || provided != secret {
+		if provided == "" || subtle.ConstantTimeCompare([]byte(provided), []byte(secret)) != 1 {
 			logger.Warn(
 				"unauthorized cron attempt",
 				zap.String("ip", c.ClientIP()),

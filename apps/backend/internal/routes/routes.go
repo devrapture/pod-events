@@ -33,18 +33,17 @@ func Setup(db *gorm.DB, deps HandlerDependencies, cfg *config.Config, logger *za
 
 	r.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
 
-	// Cron endpoint — protected by secret header, NOT user auth
-	// cron-job.org is a machine caller, not a user
-	cronGroup := r.Group("/api/cron")
-	cronGroup.Use(middleware.CronMiddleware(cfg.CronSecret, logger))
-	{
-		cronGroup.POST("/check-episodes", deps.CronHandler.CheckEpisodes)
-	}
-
 	v1 := r.Group("/api/v1")
 
 	{
 		v1.GET("/health", handlers.HealthHandler(db))
+
+		// Cron endpoint — protected by secret header, NOT user auth
+		// cron-job.org is a machine caller, not a user
+		cronGroup := r.Group("/cron")
+		cronGroup.Use(middleware.CronMiddleware(cfg.CronSecret, logger))
+
+		cronGroup.POST("/check-episodes", deps.CronHandler.CheckEpisodes)
 
 		// auth
 		auth := v1.Group("/auth")
