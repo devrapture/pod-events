@@ -90,6 +90,10 @@ func FormatValidationErrors(err error) map[string]string {
 			switch fe.Tag() {
 			case "required":
 				out[field] = field + " is required"
+			case "min":
+				out[field] = field + " must contain at least " + fe.Param() + " item(s)"
+			case "max":
+				out[field] = field + " must contain at most " + fe.Param() + " item(s)"
 			case "maxwords":
 				out[field] = field + " must be at most " + fe.Param() + " words"
 			default:

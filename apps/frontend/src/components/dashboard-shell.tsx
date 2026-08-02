@@ -1,6 +1,7 @@
 "use client";
 
 import {
+	Bell,
 	Download,
 	LayoutDashboard,
 	LogOut,
@@ -31,6 +32,12 @@ const NAV_ITEMS = [
 		label: "Search Podcasts",
 		href: "/dashboard/search",
 		icon: Search,
+		exact: true,
+	},
+	{
+		label: "Notification Channels",
+		href: "/dashboard/channels",
+		icon: Bell,
 		exact: true,
 	},
 	{

@@ -8,8 +8,7 @@ Podcast notification platform — subscribe to Spotify shows and get notificatio
 ┌──────────────┐     ┌──────────────┐     ┌────────────┐
 │  Frontend    │────▶│  Backend      │────▶│  Postgres  │
 │  Next.js 15  │     │  Gin + GORM  │     │    17      │
-│  Better Auth │     │  Spotify API │     └────────────┘
-│  Tailwind v4 │     │  Telegram    │
+│  Tailwind v4 │     │  Spotify API │     └────────────┘
 └──────────────┘     └──────┬───────┘
                             │
                      ┌──────▼───────┐
@@ -19,7 +18,7 @@ Podcast notification platform — subscribe to Spotify shows and get notificatio
                      └──────────────┘
 ```
 
-**Auth:** Spotify OAuth (backend) + GitHub OAuth via Better Auth (frontend)
+**Auth:** Spotify OAuth (backend) + JWT (backend) + custom React auth context (frontend)
 
 ## Prerequisites
 
@@ -83,10 +82,7 @@ The API runs at `http://localhost:8080` and the frontend at `http://localhost:30
 
 | Variable | Description |
 |---|---|
-| `NEXT_PUBLIC_API_URL` | Backend API URL (e.g. ngrok tunnel in dev) |
-| `BETTER_AUTH_SECRET` | Better Auth secret (`openssl rand -base64 32`) |
-| `BETTER_AUTH_GITHUB_CLIENT_ID` | GitHub OAuth app client ID |
-| `BETTER_AUTH_GITHUB_CLIENT_SECRET` | GitHub OAuth app secret |
+| `NEXT_PUBLIC_API_URL` | Backend API URL including `/api/v1` prefix (e.g. `https://your-ngrok-url.ngrok-free.dev/api/v1`) |
 
 ## Development
 
@@ -155,13 +151,11 @@ DATABASE_URL=... DEV_DATABASE_URL=... make migrate-prod-up
 ```
 User → /auth/spotify/login → redirect to Spotify → authorize
 → callback with code+state → exchange for Spotify tokens
-→ encrypt tokens, store in DB → create JWT → redirect to frontend
-→ frontend calls POST /auth/exchange → receives JWT
+→ encrypt tokens, store in DB → create temporary exchange code
+→ redirect to frontend /auth/callback?code={exchangeCode}
+→ frontend calls POST ${NEXT_PUBLIC_API_URL}/auth/exchange with code
+→ backend returns JWT + user
 ```
-
-### GitHub OAuth (Frontend via Better Auth)
-
-The frontend uses **Better Auth** for GitHub authentication, independent of the backend Spotify auth.
 
 ## Project Structure
 
@@ -190,7 +184,7 @@ The frontend uses **Better Auth** for GitHub authentication, independent of the 
 │   │       ├── jwt/              # JWT generation/validation
 │   │       ├── logger/           # Zap logger factory
 │   │       └── response/         # API response wrapper
-│   └── frontend/                 # Next.js 15 + Better Auth + Tailwind v4
+│   └── frontend/                 # Next.js 15 + Tailwind v4
 │       └── src/
 │           ├── app/              # App router pages
 │           ├── components/       # UI components

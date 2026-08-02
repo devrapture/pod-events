@@ -12,7 +12,7 @@ const docTemplate = `{
         "termsOfService": "https://podevents.app/terms",
         "contact": {
             "name": "API Support",
-            "email": "support@podevents.app"
+            "email": "devrapture@proton.me"
         },
         "license": {
             "name": "MIT",
@@ -301,6 +301,72 @@ const docTemplate = `{
                 }
             }
         },
+        "/cron/check-episodes": {
+            "post": {
+                "description": "Manually trigger the cron job that polls Spotify for new episodes and sends notifications to subscribers",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Cron"
+                ],
+                "summary": "Trigger episode check",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Cron secret for authorization",
+                        "name": "X-Cron-Secret",
+                        "in": "header",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "202": {
+                        "description": "Cron job started or already running",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_devrapture_pod-events_pkg_response.APIResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_devrapture_pod-events_pkg_response.APIResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/dashboard/summary": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Get the dashboard overview with setup progress and statistics",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Dashboard"
+                ],
+                "summary": "Get dashboard summary",
+                "responses": {
+                    "200": {
+                        "description": "dashboard summary fetched successfully",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_devrapture_pod-events_pkg_response.APIResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "failed to get dashboard summary",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_devrapture_pod-events_pkg_response.APIResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/health": {
             "get": {
                 "description": "Check if the database is reachable",
@@ -439,48 +505,38 @@ const docTemplate = `{
                 }
             }
         },
-        "/shows/{spotifyShowId}/subscribe": {
+        "/shows/subscribe": {
             "post": {
                 "security": [
                     {
                         "BearerAuth": []
                     }
                 ],
-                "description": "Subscribe the current user to a podcast show by Spotify show ID",
+                "description": "Subscribe the current user to one or more podcast shows by Spotify show ID",
                 "tags": [
                     "Subscriptions"
                 ],
-                "summary": "Subscribe to a show",
+                "summary": "Subscribe to shows",
                 "parameters": [
                     {
-                        "type": "string",
-                        "description": "Spotify show ID (22 characters)",
-                        "name": "spotifyShowId",
-                        "in": "path",
-                        "required": true
+                        "description": "Spotify show IDs",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/github_com_devrapture_pod-events_internal_dto.SubscribeShowsRequest"
+                        }
                     }
                 ],
                 "responses": {
                     "200": {
                         "description": "subscribed successfully",
                         "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/github_com_devrapture_pod-events_pkg_response.APIResponse"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "data": {
-                                            "$ref": "#/definitions/github_com_devrapture_pod-events_internal_dto.SubscriptionResponse"
-                                        }
-                                    }
-                                }
-                            ]
+                            "$ref": "#/definitions/github_com_devrapture_pod-events_pkg_response.APIResponse"
                         }
                     },
                     "400": {
-                        "description": "invalid spotify show ID",
+                        "description": "invalid or too many Spotify show IDs",
                         "schema": {
                             "$ref": "#/definitions/github_com_devrapture_pod-events_pkg_response.APIResponse"
                         }
@@ -493,6 +549,36 @@ const docTemplate = `{
                     },
                     "409": {
                         "description": "already subscribed",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_devrapture_pod-events_pkg_response.APIResponse"
+                        }
+                    },
+                    "422": {
+                        "description": "invalid request",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_devrapture_pod-events_pkg_response.APIResponse"
+                        }
+                    },
+                    "424": {
+                        "description": "Spotify authorization required",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_devrapture_pod-events_pkg_response.APIResponse"
+                        }
+                    },
+                    "429": {
+                        "description": "Spotify rate limit exceeded",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_devrapture_pod-events_pkg_response.APIResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_devrapture_pod-events_pkg_response.APIResponse"
+                        }
+                    },
+                    "503": {
+                        "description": "Spotify unavailable",
                         "schema": {
                             "$ref": "#/definitions/github_com_devrapture_pod-events_pkg_response.APIResponse"
                         }
@@ -749,6 +835,22 @@ const docTemplate = `{
                 "total_episodes": {
                     "type": "integer",
                     "example": 200
+                }
+            }
+        },
+        "github_com_devrapture_pod-events_internal_dto.SubscribeShowsRequest": {
+            "type": "object",
+            "required": [
+                "spotify_show_ids"
+            ],
+            "properties": {
+                "spotify_show_ids": {
+                    "type": "array",
+                    "maxItems": 50,
+                    "minItems": 1,
+                    "items": {
+                        "type": "string"
+                    }
                 }
             }
         },

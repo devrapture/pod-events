@@ -1,9 +1,8 @@
 "use client";
 
-import type { AxiosError } from "axios";
 import { Loader2, RefreshCw, Search, X } from "lucide-react";
-import { useCallback, useMemo, useState } from "react";
 import pluralize from "pluralize";
+import { useCallback, useMemo, useState } from "react";
 
 import { SearchResultCard } from "@/components/search/search-result-card";
 import { Button } from "@/components/ui/button";
@@ -12,9 +11,9 @@ import { useSearchShows } from "@/hooks/queries/show.queries";
 import { useSubscriptions } from "@/hooks/queries/subscription.queries";
 import { useDebouncedValue } from "@/hooks/use-debounced-value";
 import { useToast } from "@/hooks/use-toast";
+import { getAPIErrorMessage } from "@/lib/api-error";
 import { enrichShowsWithTracking } from "@/lib/show-utils";
 import { cn, formatNumber } from "@/lib/utils";
-import type { APIResponse } from "@/services/types";
 
 function SearchResultSkeleton() {
 	return (
@@ -44,13 +43,7 @@ export function SearchPodcastsPage() {
 	const trimmedQuery = debouncedQuery.trim();
 	const { toast } = useToast();
 
-	const {
-		data,
-		isLoading,
-		isFetching,
-		isError,
-		refetch,
-	} = useSearchShows({
+	const { data, isLoading, isFetching, isError, refetch } = useSearchShows({
 		variables: { q: trimmedQuery, limit: 10 },
 		enabled: trimmedQuery.length > 0,
 	});
@@ -74,18 +67,19 @@ export function SearchPodcastsPage() {
 				{
 					onSuccess: () => {
 						toast.success(
-							show ? `Now tracking ${show.name}` : "Podcast tracked successfully",
+							show
+								? `Now tracking ${show.name}`
+								: "Podcast tracked successfully",
 						);
 						setTrackingId(null);
 					},
 					onError: (error) => {
-						const axiosError = error as AxiosError<APIResponse>;
-						if (axiosError.response?.status === 409) {
-							toast.success("Already tracking this podcast");
-							setTrackingId(null);
-							return;
-						}
-						toast.error("Failed to track podcast. Please try again.");
+						toast.error(
+							getAPIErrorMessage(
+								error,
+								"Failed to track podcast. Please try again.",
+							),
+						);
 						setTrackingId(null);
 					},
 				},
@@ -95,7 +89,8 @@ export function SearchPodcastsPage() {
 	);
 
 	const hasQuery = trimmedQuery.length > 0;
-	const isSearching = hasQuery && (isLoading || (isFetching && results.length === 0));
+	const isSearching =
+		hasQuery && (isLoading || (isFetching && results.length === 0));
 
 	return (
 		<div className="flex min-h-0 flex-1 flex-col">
@@ -157,7 +152,8 @@ export function SearchPodcastsPage() {
 						</div>
 						<p className="font-medium text-zinc-200">Search for a podcast</p>
 						<p className="mt-2 max-w-md text-sm text-zinc-500">
-							Try &ldquo;tech&rdquo;, &ldquo;Productivity&rdquo;, &ldquo;Entrepreneurship&rdquo;, or any podcast name.
+							Try &ldquo;tech&rdquo;, &ldquo;Productivity&rdquo;,
+							&ldquo;Entrepreneurship&rdquo;, or any podcast name.
 						</p>
 					</div>
 				) : isLoading ? (

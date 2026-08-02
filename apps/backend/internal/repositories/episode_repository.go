@@ -28,7 +28,7 @@ func NewEpisodeRepository(db *gorm.DB) EpisodeRepository {
 }
 
 func (r *episodeRepository) Create(ctx context.Context, episode *models.Episode) error {
-	result := r.db.WithContext(ctx).Create(episode)
+	result := dbFromCtx(ctx, r.db).WithContext(ctx).Create(episode)
 	if result.Error != nil {
 		return fmt.Errorf("failed to create episode: %w", result.Error)
 	}
@@ -39,7 +39,7 @@ func (r *episodeRepository) Create(ctx context.Context, episode *models.Episode)
 // GetByID fetches an episode by UUID.
 func (r *episodeRepository) GetByID(ctx context.Context, id uuid.UUID) (*models.Episode, error) {
 	var episode models.Episode
-	result := r.db.WithContext(ctx).First(&episode, "id = ?", id)
+	result := dbFromCtx(ctx, r.db).WithContext(ctx).First(&episode, "id = ?", id)
 	if result.Error != nil {
 		if errors.Is(result.Error, gorm.ErrRecordNotFound) {
 			return nil, apperrors.ErrEpisodeNotFound
@@ -53,7 +53,7 @@ func (r *episodeRepository) GetByID(ctx context.Context, id uuid.UUID) (*models.
 // Returns (nil, nil) if not found — meaning it's a new episode.
 func (r *episodeRepository) GetBySpotifyID(ctx context.Context, spotifyEpisodeID string) (*models.Episode, error) {
 	var episode models.Episode
-	result := r.db.WithContext(ctx).First(&episode, "spotify_episode_id = ?", spotifyEpisodeID)
+	result := dbFromCtx(ctx, r.db).WithContext(ctx).First(&episode, "spotify_episode_id = ?", spotifyEpisodeID)
 	if result.Error != nil {
 		if errors.Is(result.Error, gorm.ErrRecordNotFound) {
 			return nil, nil

@@ -17,14 +17,15 @@ import (
 )
 
 type HandlerDependencies struct {
-	AuthHandler     *handlers.AuthHandler
-	ShowHandler     *handlers.ShowHandler
-	TelegramHandler *handlers.TelegramWebHookHandler
-	ChannelHandler  *handlers.ChannelHandler
+	AuthHandler      *handlers.AuthHandler
+	ShowHandler      *handlers.ShowHandler
+	TelegramHandler  *handlers.TelegramWebHookHandler
+	ChannelHandler   *handlers.ChannelHandler
+	DashboardHandler *handlers.DashboardShowHandler
+	CronHandler      *handlers.CronJobHandler
 }
 
 func Setup(db *gorm.DB, deps HandlerDependencies, cfg *config.Config, logger *zap.Logger) *gin.Engine {
-
 	r := gin.New()
 	r.Use(middleware.RequestLogger(logger))
 	r.Use(gin.Recovery())
@@ -36,6 +37,13 @@ func Setup(db *gorm.DB, deps HandlerDependencies, cfg *config.Config, logger *za
 
 	{
 		v1.GET("/health", handlers.HealthHandler(db))
+
+		// Cron endpoint — protected by secret header, NOT user auth
+		// cron-job.org is a machine caller, not a user
+		cronGroup := r.Group("/cron")
+		cronGroup.Use(middleware.CronMiddleware(cfg.CronSecret, logger))
+
+		cronGroup.POST("/check-episodes", deps.CronHandler.CheckEpisodes)
 
 		// auth
 		auth := v1.Group("/auth")
@@ -49,12 +57,17 @@ func Setup(db *gorm.DB, deps HandlerDependencies, cfg *config.Config, logger *za
 		protected.Use(middleware.AuthMiddleware(cfg))
 		protected.GET("/auth/me", deps.AuthHandler.Me)
 
+		// dashboard
+		dashboard := protected.Group("/dashboard")
+		dashboard.
+			GET("/summary", deps.DashboardHandler.GetDashboardSummary)
+
 		// shows
 		shows := protected.Group("/shows")
 		shows.
 			GET("/saved", deps.ShowHandler.GetUserSavedShows).
 			GET("/search", deps.ShowHandler.SearchShows).
-			POST("/:spotifyShowId/subscribe", deps.ShowHandler.Subscribe)
+			POST("/subscribe", deps.ShowHandler.Subscribe)
 
 		// subscriptions
 		subscriptions := protected.Group("/subscriptions")

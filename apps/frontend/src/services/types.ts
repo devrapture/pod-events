@@ -70,20 +70,8 @@ export interface SavedShowWithTracking extends SavedShowResponse {
 	tracking_status: TrackingStatus;
 }
 
-export interface BulkSubscribeRequest {
+export interface SubscribeShowsRequest {
 	spotify_show_ids: string[];
-}
-
-export interface BulkSubscribeItemResult {
-	spotify_show_id: string;
-	success: boolean;
-	error?: string;
-}
-
-export interface BulkSubscribeResponse {
-	succeeded: number;
-	failed: number;
-	results: BulkSubscribeItemResult[];
 }
 
 export interface PodcastShowResponse {
@@ -123,6 +111,31 @@ export interface TelegramLinkResponse {
 
 export interface HealthResponse {
 	status: string;
+}
+
+export interface DashboardSetupItem {
+	key: string;
+	label: string;
+	completed: boolean;
+}
+
+export interface DashboardSetup {
+	completed: number;
+	total: number;
+	percent: number;
+	items: DashboardSetupItem[];
+}
+
+export interface DashboardStats {
+	podcasts_tracked: number;
+	active_channels: number;
+	new_episodes_this_week: number;
+	notification_sent: number;
+}
+
+export interface DashboardSummary {
+	setup: DashboardSetup;
+	stats: DashboardStats;
 }
 
 export interface ShowSearchParams {

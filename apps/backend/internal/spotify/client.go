@@ -100,6 +100,20 @@ func (c *SpotifyClient) GetShow(ctx context.Context, accessToken, spotifyShowID 
 	return &result, nil
 }
 
+func (c *SpotifyClient) GetShowLatestEpisode(ctx context.Context, accessToken, spotifyShowID string) (*SpotifyEpisode, error) {
+	endpoint := fmt.Sprintf("shows/%s/episodes?limit=1", spotifyShowID)
+	var result struct {
+		Items []SpotifyEpisode `json:"items"`
+	}
+	if err := c.get(ctx, accessToken, endpoint, &result); err != nil {
+		return nil, err
+	}
+	if len(result.Items) == 0 {
+		return nil, apperrors.ErrSpotifyResourceNotFound
+	}
+	return &result.Items[0], nil
+}
+
 func (c *SpotifyClient) GetUserSavedShows(ctx context.Context, accessToken string, offset, limit int) (*SpotifySavedShowsResponse, error) {
 	endpoint := fmt.Sprintf("me/shows?offset=%d&limit=%d", offset, limit)
 	var show SpotifySavedShowsResponse
@@ -149,11 +163,19 @@ func (c *SpotifyClient) requestToken(ctx context.Context, data url.Values) (*Tok
 		return nil, fmt.Errorf("failed to make request: %w", err)
 	}
 	defer res.Body.Close()
+	body, err := io.ReadAll(res.Body)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read token response: %w", err)
+	}
+
+	if res.StatusCode == http.StatusBadRequest || res.StatusCode == http.StatusUnauthorized {
+		return nil, fmt.Errorf("%w: %s", apperrors.ErrSpotifyAuthorizationRequired, string(body))
+	}
 	var result TokenResponse
 	if res.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("failed to get token: %s", res.Status)
+		return nil, fmt.Errorf("failed to get token: %s: %s", res.Status, string(body))
 	}
-	if err := json.NewDecoder(res.Body).Decode(&result); err != nil {
+	if err := json.Unmarshal(body, &result); err != nil {
 		return nil, fmt.Errorf("failed to decode response: %w", err)
 	}
 	return &result, nil
@@ -199,7 +221,7 @@ func (c *SpotifyClient) get(ctx context.Context, accessToken, endpoint string, t
 		return fmt.Errorf("%w: %s", apperrors.ErrSpotifyResourceNotFound, string(body))
 
 	case http.StatusUnauthorized:
-		return fmt.Errorf("spotify access token expired or invalid: %s", string(body))
+		return fmt.Errorf("%w: %s", apperrors.ErrSpotifyAuthorizationRequired, string(body))
 
 	default:
 		return fmt.Errorf("failed to get %s: %s: %s", endpoint, res.Status, string(body))

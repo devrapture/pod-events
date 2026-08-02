@@ -75,6 +75,17 @@ definitions:
         example: 200
         type: integer
     type: object
+  github_com_devrapture_pod-events_internal_dto.SubscribeShowsRequest:
+    properties:
+      spotify_show_ids:
+        items:
+          type: string
+        maxItems: 50
+        minItems: 1
+        type: array
+    required:
+    - spotify_show_ids
+    type: object
   github_com_devrapture_pod-events_internal_dto.SubscriptionResponse:
     properties:
       created_at:
@@ -177,7 +188,7 @@ definitions:
 host: localhost:8080
 info:
   contact:
-    email: support@podevents.app
+    email: devrapture@proton.me
     name: API Support
   description: API for PodEvents - podcast notification platform
   license:
@@ -366,6 +377,49 @@ paths:
       summary: Toggle notification channel
       tags:
       - Channels
+  /cron/check-episodes:
+    post:
+      description: Manually trigger the cron job that polls Spotify for new episodes
+        and sends notifications to subscribers
+      parameters:
+      - description: Cron secret for authorization
+        in: header
+        name: X-Cron-Secret
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "202":
+          description: Cron job started or already running
+          schema:
+            $ref: '#/definitions/github_com_devrapture_pod-events_pkg_response.APIResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/github_com_devrapture_pod-events_pkg_response.APIResponse'
+      summary: Trigger episode check
+      tags:
+      - Cron
+  /dashboard/summary:
+    get:
+      description: Get the dashboard overview with setup progress and statistics
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: dashboard summary fetched successfully
+          schema:
+            $ref: '#/definitions/github_com_devrapture_pod-events_pkg_response.APIResponse'
+        "500":
+          description: failed to get dashboard summary
+          schema:
+            $ref: '#/definitions/github_com_devrapture_pod-events_pkg_response.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Get dashboard summary
+      tags:
+      - Dashboard
   /health:
     get:
       description: Check if the database is reachable
@@ -385,42 +439,6 @@ paths:
       summary: Health check
       tags:
       - Health
-  /shows/{spotifyShowId}/subscribe:
-    post:
-      description: Subscribe the current user to a podcast show by Spotify show ID
-      parameters:
-      - description: Spotify show ID (22 characters)
-        in: path
-        name: spotifyShowId
-        required: true
-        type: string
-      responses:
-        "200":
-          description: subscribed successfully
-          schema:
-            allOf:
-            - $ref: '#/definitions/github_com_devrapture_pod-events_pkg_response.APIResponse'
-            - properties:
-                data:
-                  $ref: '#/definitions/github_com_devrapture_pod-events_internal_dto.SubscriptionResponse'
-              type: object
-        "400":
-          description: invalid spotify show ID
-          schema:
-            $ref: '#/definitions/github_com_devrapture_pod-events_pkg_response.APIResponse'
-        "404":
-          description: podcast show not found
-          schema:
-            $ref: '#/definitions/github_com_devrapture_pod-events_pkg_response.APIResponse'
-        "409":
-          description: already subscribed
-          schema:
-            $ref: '#/definitions/github_com_devrapture_pod-events_pkg_response.APIResponse'
-      security:
-      - BearerAuth: []
-      summary: Subscribe to a show
-      tags:
-      - Subscriptions
   /shows/saved:
     get:
       description: Get the current user's saved/podcasts from Spotify
@@ -484,6 +502,59 @@ paths:
       summary: Search shows
       tags:
       - Shows
+  /shows/subscribe:
+    post:
+      description: Subscribe the current user to one or more podcast shows by Spotify
+        show ID
+      parameters:
+      - description: Spotify show IDs
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/github_com_devrapture_pod-events_internal_dto.SubscribeShowsRequest'
+      responses:
+        "200":
+          description: subscribed successfully
+          schema:
+            $ref: '#/definitions/github_com_devrapture_pod-events_pkg_response.APIResponse'
+        "400":
+          description: invalid or too many Spotify show IDs
+          schema:
+            $ref: '#/definitions/github_com_devrapture_pod-events_pkg_response.APIResponse'
+        "404":
+          description: podcast show not found
+          schema:
+            $ref: '#/definitions/github_com_devrapture_pod-events_pkg_response.APIResponse'
+        "409":
+          description: already subscribed
+          schema:
+            $ref: '#/definitions/github_com_devrapture_pod-events_pkg_response.APIResponse'
+        "422":
+          description: invalid request
+          schema:
+            $ref: '#/definitions/github_com_devrapture_pod-events_pkg_response.APIResponse'
+        "424":
+          description: Spotify authorization required
+          schema:
+            $ref: '#/definitions/github_com_devrapture_pod-events_pkg_response.APIResponse'
+        "429":
+          description: Spotify rate limit exceeded
+          schema:
+            $ref: '#/definitions/github_com_devrapture_pod-events_pkg_response.APIResponse'
+        "500":
+          description: internal server error
+          schema:
+            $ref: '#/definitions/github_com_devrapture_pod-events_pkg_response.APIResponse'
+        "503":
+          description: Spotify unavailable
+          schema:
+            $ref: '#/definitions/github_com_devrapture_pod-events_pkg_response.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Subscribe to shows
+      tags:
+      - Subscriptions
   /subscriptions:
     get:
       description: Get all of the current user's active subscriptions
