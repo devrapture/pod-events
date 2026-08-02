@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strconv"
 	"time"
 
 	"github.com/devrapture/pod-events/internal/config"
@@ -125,7 +126,11 @@ func (s *notificationService) buildNotifier(channel models.NotificationChannel) 
 	case models.ChannelTypeDiscord:
 		return discord.NewNotifier(channel.Destination, s.logger), nil
 	case models.ChannelTypeTelegram:
-		return telegram.NewNotifier(s.cfg), nil
+		chatID, err := strconv.ParseInt(channel.Destination, 10, 64)
+		if err != nil {
+			return nil, fmt.Errorf("failed to parse chat ID: %w", err)
+		}
+		return telegram.NewNotifier(s.cfg, chatID, s.logger), nil
 	default:
 		return nil, fmt.Errorf("unknown channel type: %s", channel.ChannelType)
 	}

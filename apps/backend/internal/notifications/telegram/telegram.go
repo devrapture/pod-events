@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"html"
 	"io"
 	"net/http"
 	"time"
@@ -13,6 +14,8 @@ import (
 	apperrors "github.com/devrapture/pod-events/internal/errors"
 	"github.com/devrapture/pod-events/internal/models"
 	"github.com/devrapture/pod-events/internal/notifications"
+	"github.com/devrapture/pod-events/pkg/utils"
+	"go.uber.org/zap"
 )
 
 const telegramAPIBaseURL = "https://api.telegram.org/bot"
@@ -21,20 +24,44 @@ type Notifier struct {
 	botToken   string
 	httpClient *http.Client
 	baseURL    string
+	chatID     int64
+	logger     *zap.Logger
 }
 
-func NewNotifier(cfg *config.Config) *Notifier {
+func NewNotifier(cfg *config.Config, chatID int64, logger *zap.Logger) *Notifier {
 	return &Notifier{
 		botToken: cfg.TelegramBotToken,
 		httpClient: &http.Client{
 			Timeout: 30 * time.Second,
 		},
 		baseURL: fmt.Sprintf("%s%s", telegramAPIBaseURL, cfg.TelegramBotToken),
+		chatID:  chatID,
+		logger:  logger,
 	}
 }
 
 func (n *Notifier) Send(ctx context.Context, message notifications.NotificationMessage) error {
-	return nil
+	text := fmt.Sprintf(
+		"🎙️ <b>A new podcast episode is available!</b>\n\n"+
+			"<b>%s</b>\n\n"+
+			"%s\n\n"+
+			"🎧 <b>Podcast:</b> %s\n"+
+			"📅 <b>Published:</b> %s\n\n"+
+			"▶️ <a href=\"%s\">Listen on Spotify</a>",
+		html.EscapeString(message.EpisodeTitle),
+		html.EscapeString(utils.Truncate(message.Description, 300)),
+		html.EscapeString(message.ShowName),
+		message.PublishedAt.Format("Jan 02, 2006"),
+		html.EscapeString(message.SpotifyURL),
+	)
+
+	payload := map[string]interface{}{
+		"chat_id":    n.chatID,
+		"text":       text,
+		"parse_mode": "HTML",
+	}
+	url := fmt.Sprintf("%s/sendMessage", n.baseURL)
+	return n.post(ctx, url, payload, nil)
 }
 
 func (n *Notifier) Type() string {
