@@ -2,6 +2,7 @@ package services
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"time"
 
@@ -17,7 +18,7 @@ import (
 )
 
 type NotificationService interface {
-	NotifyUser(ctx context.Context, userID uuid.UUID, episode *models.Episode, show *models.PodcastShow) error
+	NotifyUser(ctx context.Context, userID uuid.UUID, episode *models.Episode, show *models.PodcastShow) (bool, error)
 }
 
 type notificationService struct {
@@ -36,14 +37,14 @@ func NewNotificationService(logRepo repositories.NotificationLogRepository, logg
 	}
 }
 
-func (s *notificationService) NotifyUser(ctx context.Context, userID uuid.UUID, episode *models.Episode, show *models.PodcastShow) error {
+func (s *notificationService) NotifyUser(ctx context.Context, userID uuid.UUID, episode *models.Episode, show *models.PodcastShow) (bool, error) {
 	channels, err := s.channelRepo.GetByUserID(ctx, userID)
 	if err != nil {
-		return fmt.Errorf("failed to get notification channels: %w", err)
+		return false, fmt.Errorf("failed to get notification channels: %w", err)
 	}
 	if len(channels) == 0 {
 		s.logger.Info("User has no notification channel configured", zap.String("user_id", userID.String()))
-		return nil
+		return false, fmt.Errorf("user has no notification channel configured")
 	}
 
 	msg := notifications.NotificationMessage{
@@ -55,6 +56,8 @@ func (s *notificationService) NotifyUser(ctx context.Context, userID uuid.UUID, 
 		PublishedAt:  episode.ReleaseDate,
 	}
 
+	var sendErrors []error
+	delivered := false
 	for _, channel := range channels {
 		alreadySent, err := s.logRepo.AlreadySent(ctx, userID, episode.ID, channel.ChannelType)
 		if err != nil {
@@ -65,6 +68,7 @@ func (s *notificationService) NotifyUser(ctx context.Context, userID uuid.UUID, 
 				zap.String("channel_type", string(channel.ChannelType)),
 				zap.Error(err),
 			)
+			sendErrors = append(sendErrors, fmt.Errorf("%s: check duplicate notification: %w", channel.ChannelType, err))
 			continue
 		}
 
@@ -76,6 +80,7 @@ func (s *notificationService) NotifyUser(ctx context.Context, userID uuid.UUID, 
 		if err != nil {
 			s.logger.Error("failed to build notifier", zap.String("channel_type", string(channel.ChannelType)), zap.Error(err))
 			s.saveLog(ctx, userID, episode.ID, channel.ChannelType, models.NotificationStatusFailed, err.Error())
+			sendErrors = append(sendErrors, fmt.Errorf("%s: %w", channel.ChannelType, err))
 			continue
 		}
 		sendCtx, cancel := context.WithTimeout(ctx, 10*time.Second)
@@ -87,9 +92,13 @@ func (s *notificationService) NotifyUser(ctx context.Context, userID uuid.UUID, 
 				"notification send failed",
 				zap.String("user_id", userID.String()),
 				zap.String("episode_id", episode.ID.String()),
-				zap.String("channel_type", string(channel.ChannelType)))
+				zap.String("channel_type", string(channel.ChannelType)),
+				zap.Error(sendErr),
+			)
 			s.saveLog(ctx, userID, episode.ID, channel.ChannelType, models.NotificationStatusFailed, sendErr.Error())
+			sendErrors = append(sendErrors, fmt.Errorf("%s: %w", channel.ChannelType, sendErr))
 		} else {
+			delivered = true
 			s.logger.Info(
 				"notification sent",
 				zap.String("user_id", userID.String()),
@@ -100,7 +109,13 @@ func (s *notificationService) NotifyUser(ctx context.Context, userID uuid.UUID, 
 		}
 	}
 
-	return nil
+	if delivered {
+		return true, nil
+	}
+	if len(sendErrors) > 0 {
+		return false, fmt.Errorf("no notification delivered: %w", errors.Join(sendErrors...))
+	}
+	return false, fmt.Errorf("no notification delivered: all configured channels were already notified")
 }
 
 func (s *notificationService) buildNotifier(channel models.NotificationChannel) (notifications.Notifier, error) {

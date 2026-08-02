@@ -108,6 +108,9 @@ func (c *SpotifyClient) GetShowLatestEpisode(ctx context.Context, accessToken, s
 	if err := c.get(ctx, accessToken, endpoint, &result); err != nil {
 		return nil, err
 	}
+	if len(result.Items) == 0 {
+		return nil, apperrors.ErrSpotifyResourceNotFound
+	}
 	return &result.Items[0], nil
 }
 

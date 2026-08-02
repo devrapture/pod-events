@@ -176,14 +176,16 @@ func (c *EpisodeChecker) checkShow(ctx context.Context, show *models.PodcastShow
 	}
 
 	for _, user := range subscribers {
-		if err := c.notifService.NotifyUser(ctx, user.ID, episode, show); err != nil {
+		delivered, err := c.notifService.NotifyUser(ctx, user.ID, episode, show)
+		if err != nil {
 			c.logger.Error(
 				"failed to notify user",
 				zap.String("user_id", user.ID.String()),
 				zap.String("episode_id", latestEpisode.ID),
 				zap.Error(err),
 			)
-		} else {
+		}
+		if delivered {
 			result.NotificationsSent++
 		}
 	}
