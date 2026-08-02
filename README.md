@@ -167,8 +167,8 @@ User → /auth/spotify/login → redirect to Spotify → authorize
 
 New-episode detection is triggered via a cron endpoint rather than an in-process scheduler:
 
-```
-POST /api/v1/cron/check-episodes
+```text
+POST /cron/check-episodes
 Header: X-Cron-Secret: <CRON_SECRET>
 ```
 
