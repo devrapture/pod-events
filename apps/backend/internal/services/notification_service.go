@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/devrapture/pod-events/internal/config"
+	apperrors "github.com/devrapture/pod-events/internal/errors"
 	"github.com/devrapture/pod-events/internal/models"
 	"github.com/devrapture/pod-events/internal/notifications"
 	"github.com/devrapture/pod-events/internal/notifications/discord"
@@ -128,7 +129,7 @@ func (s *notificationService) buildNotifier(channel models.NotificationChannel) 
 	case models.ChannelTypeTelegram:
 		chatID, err := strconv.ParseInt(channel.Destination, 10, 64)
 		if err != nil {
-			return nil, fmt.Errorf("failed to parse chat ID: %w", err)
+			return nil, fmt.Errorf("%w: %v", apperrors.ErrInvalidTelegramChatID, err)
 		}
 		return telegram.NewNotifier(s.cfg, chatID, s.logger), nil
 	default:
