@@ -85,7 +85,7 @@ func main() {
 	spotifyClient := spotify.NewSpotifyClient(cfg, logger)
 
 	// ── Notifier ────────────────────────────────────────────────
-	telegramNotifier := telegram.NewNotifier(cfg)
+	telegramNotifier := telegram.NewNotifier(cfg, 0, logger)
 
 	// ── Repositories ────────────────────────────────────────────────
 	userRepo := repositories.NewUserRepository(db)

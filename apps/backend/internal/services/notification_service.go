@@ -4,9 +4,11 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strconv"
 	"time"
 
 	"github.com/devrapture/pod-events/internal/config"
+	apperrors "github.com/devrapture/pod-events/internal/errors"
 	"github.com/devrapture/pod-events/internal/models"
 	"github.com/devrapture/pod-events/internal/notifications"
 	"github.com/devrapture/pod-events/internal/notifications/discord"
@@ -125,7 +127,11 @@ func (s *notificationService) buildNotifier(channel models.NotificationChannel) 
 	case models.ChannelTypeDiscord:
 		return discord.NewNotifier(channel.Destination, s.logger), nil
 	case models.ChannelTypeTelegram:
-		return telegram.NewNotifier(s.cfg), nil
+		chatID, err := strconv.ParseInt(channel.Destination, 10, 64)
+		if err != nil {
+			return nil, fmt.Errorf("%w: %v", apperrors.ErrInvalidTelegramChatID, err)
+		}
+		return telegram.NewNotifier(s.cfg, chatID, s.logger), nil
 	default:
 		return nil, fmt.Errorf("unknown channel type: %s", channel.ChannelType)
 	}

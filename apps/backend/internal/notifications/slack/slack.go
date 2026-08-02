@@ -35,7 +35,7 @@ func NewNotifier(webHookURL string, logger *zap.Logger) *Notifier {
 
 func (n *Notifier) Send(ctx context.Context, message notifications.NotificationMessage) error {
 	episodeTitle := mrkdwnEscaper.Replace(message.EpisodeTitle)
-	description := mrkdwnEscaper.Replace(utils.Truncate(message.Description, 300))
+	description := mrkdwnEscaper.Replace(utils.Truncate(message.Description, 200))
 	showName := mrkdwnEscaper.Replace(message.ShowName)
 	spotifyURL := mrkdwnEscaper.Replace(message.SpotifyURL)
 
