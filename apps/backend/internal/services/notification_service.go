@@ -78,6 +78,16 @@ func (s *notificationService) NotifyUser(ctx context.Context, userID uuid.UUID, 
 			s.logger.Info("Notification already sent", zap.String("user_id", userID.String()), zap.String("episode_id", episode.ID.String()), zap.String("channel_type", string(channel.ChannelType)))
 			continue
 		}
+		if !channel.IsActive {
+			s.logger.Info(
+				"Channel is not active",
+				zap.String("user_id", userID.String()),
+				zap.String("episode_id", episode.ID.String()),
+				zap.String("channel_type", string(channel.ChannelType)))
+			s.saveLog(ctx, userID, episode.ID, channel.ChannelType, models.NotificationStatusFailed, "Channel is not active")
+			sendErrors = append(sendErrors, fmt.Errorf("%s: Channel is not active", channel.ChannelType))
+			continue
+		}
 		notifier, err := s.buildNotifier(channel)
 		if err != nil {
 			s.logger.Error("failed to build notifier", zap.String("channel_type", string(channel.ChannelType)), zap.Error(err))
