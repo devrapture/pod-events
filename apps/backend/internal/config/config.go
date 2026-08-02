@@ -25,6 +25,7 @@ type Config struct {
 	TelegramBotToken      string
 	TelegramWebhookSecret string
 	BotName               string
+	CronSecret            string
 }
 
 func Load() (*Config, error) {
@@ -50,6 +51,7 @@ func Load() (*Config, error) {
 		TelegramBotToken:      mustGetEnv("TELEGRAM_BOT_TOKEN"),
 		TelegramWebhookSecret: mustGetEnv("TELEGRAM_WEBHOOK_SECRET"),
 		BotName:               mustGetEnv("BOT_NAME"),
+		CronSecret:            mustGetEnv("CRON_SECRET"),
 	}
 
 	return config, config.validate()

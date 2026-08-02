@@ -16,6 +16,41 @@ type TokenResponse struct {
 	Scope        string `json:"scope"`
 }
 
+type SpotifyEpisode struct {
+	ID           string `json:"id"`
+	Name         string `json:"name"`
+	Description  string `json:"description"`
+	ExternalURLs struct {
+		Spotify string `json:"spotify"`
+	} `json:"external_urls"`
+	Images []struct {
+		URL string `json:"url"`
+	} `json:"images"`
+	DurationMs           int    `json:"duration_ms"`
+	ReleaseDate          string `json:"release_date"`
+	ReleaseDatePrecision string `json:"release_date_precision"`
+}
+
+func (e *SpotifyEpisode) ImageURL() string {
+	if len(e.Images) > 0 {
+		return e.Images[0].URL
+	}
+	return ""
+}
+
+func (e *SpotifyEpisode) ParsedReleaseDate() (time.Time, error) {
+	var parseErr error
+	for _, layout := range []string{"2006", "2006-01", "2006-01-02"} {
+		var parsed time.Time
+		parsed, parseErr = time.Parse(layout, e.ReleaseDate)
+		if parseErr == nil {
+			return parsed, nil
+		}
+	}
+
+	return time.Time{}, fmt.Errorf("parse release date %q: %w", e.ReleaseDate, parseErr)
+}
+
 // ExpiresAt converts ExpiresIn seconds to an absolute time.Time
 func (t *TokenResponse) ExpiresAt() time.Time {
 	return time.Now().UTC().Add(time.Duration(t.ExpiresIn) * time.Second)
@@ -54,7 +89,6 @@ type SpotifySavedShowsResponse struct {
 	Total    int                    `json:"total"`
 	Items    []SpotifySavedShowItem `json:"items"`
 }
-
 
 type SpotifySavedShowItem struct {
 	AddedAt string      `json:"added_at"`

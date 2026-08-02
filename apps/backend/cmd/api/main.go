@@ -4,7 +4,7 @@
 // @termsOfService  https://podevents.app/terms
 //
 // @contact.name   API Support
-// @contact.email  support@podevents.app
+// @contact.email  devrapture@proton.me
 //
 // @license.name  MIT
 // @license.url   https://opensource.org/licenses/MIT
@@ -30,6 +30,8 @@
 // @tag.description Service health check
 // @tag.name Dashboard
 // @tag.description Dashboard overview
+// @tag.name Cron
+// @tag.description Cron job endpoints (protected by secret header)
 package main
 
 import (
@@ -43,6 +45,7 @@ import (
 	"time"
 
 	"github.com/devrapture/pod-events/internal/config"
+	"github.com/devrapture/pod-events/internal/cron"
 	"github.com/devrapture/pod-events/internal/database"
 	handlers "github.com/devrapture/pod-events/internal/handler"
 	"github.com/devrapture/pod-events/internal/notifications/telegram"
@@ -92,6 +95,9 @@ func main() {
 	subscriptionRepo := repositories.NewSubscriptionRepository(db)
 	showRepository := repositories.NewShowRepository(db)
 	dashboardSummaryRepo := repositories.NewDashboardSummaryRepository(db, tokenRepo)
+	episodeRepo := repositories.NewEpisodeRepository(db)
+	showRepo := repositories.NewShowRepository(db)
+	notificationLogRepo := repositories.NewNotificationLogRepository(db)
 
 	// ── Services ────────────────────────────────────────────────
 	authService := services.NewAuthService(cfg, tokenRepo, userRepo, spotifyClient, appCache, logger)
@@ -99,6 +105,10 @@ func main() {
 	channelService := services.NewChannelServices(channelRepo)
 	telegramConnectionService := services.NewTelegramConnectionService(telegramConnectionRepo, channelRepo, cfg)
 	dashboardService := services.NewDashboardSummaryService(dashboardSummaryRepo)
+	notifService := services.NewNotificationService(notificationLogRepo, logger, cfg, channelRepo)
+
+	// ── Cron ────────────────────────────────────────────────
+	episodeChecker := cron.NewEpisodeChecker(subscriptionRepo, episodeRepo, showRepo, authService, notifService, logger, spotifyClient)
 
 	// ── Handlers ────────────────────────────────────────────────
 	authHandler := handlers.NewAuthHandler(authService, logger, cfg, userRepo)
@@ -106,6 +116,7 @@ func main() {
 	telegramHandler := handlers.NewTelegramWebHookHandler(cfg, telegramNotifier, telegramConnectionService, logger)
 	channelHandler := handlers.NewChannelHandler(channelService, logger)
 	dashboardHandler := handlers.NewDashboardShowHandler(dashboardService, logger)
+	cronHandler := handlers.NewCronJobHandler(logger, episodeChecker)
 
 	deps := routes.HandlerDependencies{
 		AuthHandler:      authHandler,
@@ -113,6 +124,7 @@ func main() {
 		TelegramHandler:  telegramHandler,
 		ChannelHandler:   channelHandler,
 		DashboardHandler: dashboardHandler,
+		CronHandler:      cronHandler,
 	}
 
 	addr := fmt.Sprintf(":%s", cfg.Port)

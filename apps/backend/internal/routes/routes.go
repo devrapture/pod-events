@@ -22,6 +22,7 @@ type HandlerDependencies struct {
 	TelegramHandler  *handlers.TelegramWebHookHandler
 	ChannelHandler   *handlers.ChannelHandler
 	DashboardHandler *handlers.DashboardShowHandler
+	CronHandler      *handlers.CronJobHandler
 }
 
 func Setup(db *gorm.DB, deps HandlerDependencies, cfg *config.Config, logger *zap.Logger) *gin.Engine {
@@ -36,6 +37,13 @@ func Setup(db *gorm.DB, deps HandlerDependencies, cfg *config.Config, logger *za
 
 	{
 		v1.GET("/health", handlers.HealthHandler(db))
+
+		// Cron endpoint — protected by secret header, NOT user auth
+		// cron-job.org is a machine caller, not a user
+		cronGroup := r.Group("/cron")
+		cronGroup.Use(middleware.CronMiddleware(cfg.CronSecret, logger))
+
+		cronGroup.POST("/check-episodes", deps.CronHandler.CheckEpisodes)
 
 		// auth
 		auth := v1.Group("/auth")
