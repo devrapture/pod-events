@@ -65,14 +65,20 @@ import (
 )
 
 func main() {
+	os.Exit(run())
+}
+
+func run() int {
 	cfg, err := config.Load()
 	if err != nil {
-		log.Fatalf("Failed to load configuration %v", err)
+		log.Printf("Failed to load configuration %v", err)
+		return 1
 	}
 
 	logger, err := logger.NewLogger(!cfg.IsProduction())
 	if err != nil {
-		log.Fatalf("Failed to create logger %v", err)
+		log.Printf("Failed to create logger %v", err)
+		return 1
 	}
 	if err := sentry.Init(sentry.ClientOptions{
 		Dsn:                   cfg.SentryDSN,
@@ -85,14 +91,11 @@ func main() {
 		BeforeSend:            scrubSentryEvent,
 		BeforeSendTransaction: scrubSentryEvent,
 	}); err != nil {
-		log.Fatalf("Failed to initialize Sentry: %v", err)
+		log.Printf("Failed to initialize Sentry: %v", err)
+		return 1
 	}
-	if cfg.SentryDSN != "" {
-		defer func() {
-			if !sentry.Flush(2 * time.Second) {
-				logger.Warn("Timed out flushing Sentry events")
-			}
-		}()
+	sentryEnabled := cfg.SentryDSN != ""
+	if sentryEnabled {
 		logger = withSentryLogging(logger, cfg.SentryEnableLogs)
 		logger.Info(
 			"Sentry initialized",
@@ -100,12 +103,13 @@ func main() {
 			zap.Bool("logs_enabled", cfg.SentryEnableLogs),
 		)
 	}
-	defer logger.Sync()
+	defer flushTelemetry(logger, sentryEnabled)
 	logger.Info("Starting PodEvents server", zap.String("env", cfg.AppEnv), zap.String("port", cfg.Port))
 
 	db, err := database.ConnectDb(cfg)
 	if err != nil {
-		log.Fatalf("Failed to initialize database: %v", err)
+		logger.Error("Failed to initialize database", zap.Error(err))
+		return 1
 	}
 
 	// ── Cache ────────────────────────────────────────────────
@@ -168,33 +172,51 @@ func main() {
 		Handler: r.Handler(),
 	}
 
+	serverErrors := make(chan error, 1)
 	go func() {
 		logger.Info("Server starting", zap.String("addr", addr))
 		if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
-			logger.Fatal("Failed to start server", zap.Error(err))
+			serverErrors <- err
 		}
 	}()
 
 	quit := make(chan os.Signal, 1)
 	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
-	<-quit
+	defer signal.Stop(quit)
+	select {
+	case <-quit:
+	case err := <-serverErrors:
+		logger.Error("Failed to start server", zap.Error(err))
+		return 1
+	}
 	logger.Info("Shutting down server...")
 
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
+	exitCode := 0
 	if err := srv.Shutdown(ctx); err != nil {
-		logger.Fatal("Server forced to shutdown", zap.Error(err))
+		logger.Error("Server forced to shutdown", zap.Error(err))
+		exitCode = 1
 	}
 
 	sqlDB, err := db.DB()
 	if err == nil {
 		if err := sqlDB.Close(); err != nil {
-			logger.Fatal("Failed to close database", zap.Error(err))
+			logger.Error("Failed to close database", zap.Error(err))
+			exitCode = 1
 		}
 	}
 
 	logger.Info("Server exited")
+	return exitCode
+}
+
+func flushTelemetry(logger *zap.Logger, sentryEnabled bool) {
+	_ = logger.Sync()
+	if sentryEnabled && !sentry.Flush(2*time.Second) {
+		log.Print("Timed out flushing Sentry events")
+	}
 }
 
 func withSentryLogging(baseLogger *zap.Logger, enabled bool) *zap.Logger {
