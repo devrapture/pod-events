@@ -59,7 +59,9 @@ import (
 	"github.com/devrapture/pod-events/internal/spotify"
 	"github.com/devrapture/pod-events/pkg/logger"
 	"github.com/getsentry/sentry-go"
+	sentryzap "github.com/getsentry/sentry-go/zap"
 	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
 )
 
 func main() {
@@ -72,8 +74,6 @@ func main() {
 	if err != nil {
 		log.Fatalf("Failed to create logger %v", err)
 	}
-	defer logger.Sync()
-	logger.Info("Starting PodEvents server", zap.String("env", cfg.AppEnv), zap.String("port", cfg.Port))
 	if err := sentry.Init(sentry.ClientOptions{
 		Dsn:                   cfg.SentryDSN,
 		Environment:           cfg.AppEnv,
@@ -93,12 +93,15 @@ func main() {
 				logger.Warn("Timed out flushing Sentry events")
 			}
 		}()
+		logger = withSentryLogging(logger, cfg.SentryEnableLogs)
 		logger.Info(
 			"Sentry initialized",
 			zap.Float64("traces_sample_rate", cfg.SentryTracesSampleRate),
 			zap.Bool("logs_enabled", cfg.SentryEnableLogs),
 		)
 	}
+	defer logger.Sync()
+	logger.Info("Starting PodEvents server", zap.String("env", cfg.AppEnv), zap.String("port", cfg.Port))
 
 	db, err := database.ConnectDb(cfg)
 	if err != nil {
@@ -192,6 +195,29 @@ func main() {
 	}
 
 	logger.Info("Server exited")
+}
+
+func withSentryLogging(baseLogger *zap.Logger, enabled bool) *zap.Logger {
+	if !enabled {
+		return baseLogger
+	}
+
+	sentryCore := sentryzap.NewSentryCore(context.Background(), sentryzap.Option{
+		Level: []zapcore.Level{
+			zapcore.InfoLevel,
+			zapcore.WarnLevel,
+			zapcore.ErrorLevel,
+			zapcore.DPanicLevel,
+			zapcore.PanicLevel,
+			zapcore.FatalLevel,
+		},
+		AddCaller:    true,
+		FlushTimeout: 2 * time.Second,
+	})
+
+	return baseLogger.WithOptions(zap.WrapCore(func(core zapcore.Core) zapcore.Core {
+		return zapcore.NewTee(core, sentryCore)
+	}))
 }
 
 func scrubSentryEvent(event *sentry.Event, _ *sentry.EventHint) *sentry.Event {
