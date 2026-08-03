@@ -34,7 +34,7 @@
 		"lucide-react": "^1.27.0",
 		"next": "^16.2.12",
 		"pluralize": "^8.0.0",
-		"portless": "^0.15.4",
+		"portless": "^0.15.5",
 		"react": "^19.2.8",
 		"react-dom": "^19.2.8",
 		"react-query-kit": "^3.3.4",
