@@ -1,3 +1,5 @@
+<img width="1600" height="496" alt="image" src="https://github.com/user-attachments/assets/45864420-f9aa-492c-8780-e2e4d715dfee" />
+
 # Pod Events
 
 Podcast notification platform — subscribe to Spotify shows and get notifications via Slack, Discord, or Telegram (WhatsApp planned).
