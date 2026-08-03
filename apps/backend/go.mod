@@ -9,7 +9,7 @@ require (
 	github.com/go-playground/validator/v10 v10.30.1
 	github.com/golang-jwt/jwt/v5 v5.2.0
 	github.com/google/uuid v1.6.0
-	github.com/jackc/pgx/v5 v5.9.2
+	github.com/jackc/pgx/v5 v5.10.0
 	github.com/joho/godotenv v1.5.1
 	github.com/patrickmn/go-cache v2.1.0+incompatible
 	github.com/stretchr/testify v1.11.1
@@ -18,7 +18,7 @@ require (
 	github.com/swaggo/swag v1.16.6
 	go.uber.org/zap v1.28.0
 	golang.org/x/sync v0.22.0
-	gorm.io/driver/postgres v1.6.0
+	gorm.io/driver/postgres v1.6.1
 	gorm.io/gorm v1.31.1
 )
 
