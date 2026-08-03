@@ -18,14 +18,40 @@ func TestWithSentryLogging(t *testing.T) {
 	})
 	require.NoError(t, err)
 
+	client := sentry.CurrentHub().Client()
+	require.NotNil(t, client)
+	t.Cleanup(func() {
+		client.Close()
+		sentry.CurrentHub().BindClient(nil)
+	})
+
 	withSentryLogging(zap.NewNop(), false).Info("disabled log")
-	withSentryLogging(zap.NewNop(), true).Info("enabled log")
+	sentryLogger := withSentryLogging(zap.NewNop(), true)
+	sentryLogger.Debug("debug log")
+	sentryLogger.Info("info log")
+	sentryLogger.Warn("warn log")
+	sentryLogger.Error("error log")
 	require.True(t, sentry.Flush(2*time.Second))
 
 	events := transport.Events()
 	require.Len(t, events, 1)
-	require.Len(t, events[0].Logs, 1)
-	assert.Equal(t, "enabled log", events[0].Logs[0].Body)
+	require.Len(t, events[0].Logs, 3)
+
+	expectedLogs := []struct {
+		level   sentry.LogLevel
+		message string
+	}{
+		{level: sentry.LogLevelInfo, message: "info log"},
+		{level: sentry.LogLevelWarn, message: "warn log"},
+		{level: sentry.LogLevelError, message: "error log"},
+	}
+	for i, expected := range expectedLogs {
+		assert.Equal(t, expected.level, events[0].Logs[i].Level)
+		assert.Equal(t, expected.message, events[0].Logs[i].Body)
+	}
+	for _, log := range events[0].Logs {
+		assert.NotEqual(t, "debug log", log.Body)
+	}
 }
 
 func TestScrubSentryEvent(t *testing.T) {
