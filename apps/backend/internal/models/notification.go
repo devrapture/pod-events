@@ -19,13 +19,13 @@ const (
 
 type NotificationChannel struct {
 	Base
-	UserID      uuid.UUID   `json:"user_id" gorm:"type:uuid; not null;index"`
-	ChannelType ChannelType `json:"channel_type" gorm:"not null"`
-	Destination string      `json:"destination" gorm:"not null;uniqueIndex"`
-	IsActive    bool        `json:"is_active" gorm:"type:bool; default:true"`
-	Label       string      `json:"label"` // optional human-readable label, e.g. "#dev-alerts"
-
-	User User `json:"-" gorm:"foreignkey:UserID"`
+	UserID                 uuid.UUID   `json:"user_id" gorm:"type:uuid;not null;index;uniqueIndex:idx_user_channel_destination"`
+	ChannelType            ChannelType `json:"channel_type" gorm:"not null;uniqueIndex:idx_user_channel_destination"`
+	Destination            string      `json:"-" gorm:"not null"`
+	DestinationFingerprint string      `json:"-" gorm:"type:char(64);not null;uniqueIndex:idx_user_channel_destination"`
+	IsActive               bool        `json:"is_active" gorm:"type:bool;default:true"`
+	Label                  string      `json:"label"`
+	User                   User        `json:"-" gorm:"foreignkey:UserID"`
 }
 
 func (c ChannelType) IsValid() bool {
@@ -34,4 +34,8 @@ func (c ChannelType) IsValid() bool {
 		return true
 	}
 	return false
+}
+
+func (c ChannelType) IsWebhook() bool {
+	return c == ChannelTypeSlack || c == ChannelTypeDiscord
 }

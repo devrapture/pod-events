@@ -32,6 +32,46 @@ definitions:
     - channel_type
     - destination
     type: object
+  github_com_devrapture_pod-events_internal_dto.DashboardItems:
+    properties:
+      completed:
+        type: boolean
+      key:
+        type: string
+      label:
+        type: string
+    type: object
+  github_com_devrapture_pod-events_internal_dto.DashboardSetupResponse:
+    properties:
+      completed:
+        type: integer
+      items:
+        items:
+          $ref: '#/definitions/github_com_devrapture_pod-events_internal_dto.DashboardItems'
+        type: array
+      percent:
+        type: integer
+      total:
+        type: integer
+    type: object
+  github_com_devrapture_pod-events_internal_dto.DashboardStatsResponse:
+    properties:
+      active_channels:
+        type: integer
+      new_episodes_this_week:
+        type: integer
+      notification_sent:
+        type: integer
+      podcasts_tracked:
+        type: integer
+    type: object
+  github_com_devrapture_pod-events_internal_dto.DashboardSummaryDTO:
+    properties:
+      setup:
+        $ref: '#/definitions/github_com_devrapture_pod-events_internal_dto.DashboardSetupResponse'
+      stats:
+        $ref: '#/definitions/github_com_devrapture_pod-events_internal_dto.DashboardStatsResponse'
+    type: object
   github_com_devrapture_pod-events_internal_dto.PodcastShowResponse:
     properties:
       description:
@@ -310,6 +350,10 @@ paths:
           description: Channel created
           schema:
             $ref: '#/definitions/github_com_devrapture_pod-events_pkg_response.APIResponse'
+        "409":
+          description: Notification channel already exists
+          schema:
+            $ref: '#/definitions/github_com_devrapture_pod-events_pkg_response.APIResponse'
         "422":
           description: validation error
           schema:
@@ -410,7 +454,12 @@ paths:
         "200":
           description: dashboard summary fetched successfully
           schema:
-            $ref: '#/definitions/github_com_devrapture_pod-events_pkg_response.APIResponse'
+            allOf:
+            - $ref: '#/definitions/github_com_devrapture_pod-events_pkg_response.APIResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/github_com_devrapture_pod-events_internal_dto.DashboardSummaryDTO'
+              type: object
         "500":
           description: failed to get dashboard summary
           schema:

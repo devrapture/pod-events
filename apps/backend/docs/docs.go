@@ -200,6 +200,12 @@ const docTemplate = `{
                             "$ref": "#/definitions/github_com_devrapture_pod-events_pkg_response.APIResponse"
                         }
                     },
+                    "409": {
+                        "description": "Notification channel already exists",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_devrapture_pod-events_pkg_response.APIResponse"
+                        }
+                    },
                     "422": {
                         "description": "validation error",
                         "schema": {
@@ -355,7 +361,19 @@ const docTemplate = `{
                     "200": {
                         "description": "dashboard summary fetched successfully",
                         "schema": {
-                            "$ref": "#/definitions/github_com_devrapture_pod-events_pkg_response.APIResponse"
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/github_com_devrapture_pod-events_pkg_response.APIResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/github_com_devrapture_pod-events_internal_dto.DashboardSummaryDTO"
+                                        }
+                                    }
+                                }
+                            ]
                         }
                     },
                     "500": {
@@ -773,6 +791,68 @@ const docTemplate = `{
                     "description": "Optional label to identify the channel",
                     "type": "string",
                     "example": "Work Slack"
+                }
+            }
+        },
+        "github_com_devrapture_pod-events_internal_dto.DashboardItems": {
+            "type": "object",
+            "properties": {
+                "completed": {
+                    "type": "boolean"
+                },
+                "key": {
+                    "type": "string"
+                },
+                "label": {
+                    "type": "string"
+                }
+            }
+        },
+        "github_com_devrapture_pod-events_internal_dto.DashboardSetupResponse": {
+            "type": "object",
+            "properties": {
+                "completed": {
+                    "type": "integer"
+                },
+                "items": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/github_com_devrapture_pod-events_internal_dto.DashboardItems"
+                    }
+                },
+                "percent": {
+                    "type": "integer"
+                },
+                "total": {
+                    "type": "integer"
+                }
+            }
+        },
+        "github_com_devrapture_pod-events_internal_dto.DashboardStatsResponse": {
+            "type": "object",
+            "properties": {
+                "active_channels": {
+                    "type": "integer"
+                },
+                "new_episodes_this_week": {
+                    "type": "integer"
+                },
+                "notification_sent": {
+                    "type": "integer"
+                },
+                "podcasts_tracked": {
+                    "type": "integer"
+                }
+            }
+        },
+        "github_com_devrapture_pod-events_internal_dto.DashboardSummaryDTO": {
+            "type": "object",
+            "properties": {
+                "setup": {
+                    "$ref": "#/definitions/github_com_devrapture_pod-events_internal_dto.DashboardSetupResponse"
+                },
+                "stats": {
+                    "$ref": "#/definitions/github_com_devrapture_pod-events_internal_dto.DashboardStatsResponse"
                 }
             }
         },

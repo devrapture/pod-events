@@ -15,6 +15,7 @@ import (
 	"github.com/devrapture/pod-events/internal/notifications/slack"
 	"github.com/devrapture/pod-events/internal/notifications/telegram"
 	"github.com/devrapture/pod-events/internal/repositories"
+	appcrypto "github.com/devrapture/pod-events/pkg/crypto"
 	"github.com/google/uuid"
 	"go.uber.org/zap"
 )
@@ -131,6 +132,13 @@ func (s *notificationService) NotifyUser(ctx context.Context, userID uuid.UUID, 
 }
 
 func (s *notificationService) buildNotifier(channel models.NotificationChannel) (notifications.Notifier, error) {
+	if channel.ChannelType.IsWebhook() {
+		decryptedWebhook, err := s.decryptWebhook(channel.Destination)
+		if err != nil {
+			return nil, err
+		}
+		channel.Destination = decryptedWebhook
+	}
 	switch channel.ChannelType {
 	case models.ChannelTypeSlack:
 		return slack.NewNotifier(channel.Destination, s.logger), nil
@@ -163,4 +171,12 @@ func (s *notificationService) saveLog(ctx context.Context, userID uuid.UUID, epi
 	if err := s.logRepo.Create(ctx, log); err != nil {
 		s.logger.Error("failed to save notification log", zap.Error(err))
 	}
+}
+
+func (s *notificationService) decryptWebhook(webhook string) (string, error) {
+	decrypted, err := appcrypto.DecryptText(webhook, s.cfg.TokenEncryptionKey)
+	if err != nil {
+		return "", fmt.Errorf("failed to decrypt webhook: %w", err)
+	}
+	return decrypted, nil
 }

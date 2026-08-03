@@ -7,7 +7,7 @@ import { DiscordIcon } from "@/components/icons/discord";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { getChannelTypeLabel, maskDestination } from "@/lib/utils";
+import { getChannelTypeLabel } from "@/lib/utils";
 import type { ChannelType, NotificationChannel } from "@/services/types";
 
 const CHANNEL_ICONS: Record<ChannelType, LucideIcon | typeof DiscordIcon> = {
@@ -76,9 +76,9 @@ export function ChannelCard({ channel, onToggle, onRemove }: ChannelCardProps) {
 						{channel.label && (
 							<p className="mt-0.5 text-sm text-zinc-300">{channel.label}</p>
 						)}
-						<p className="mt-1 truncate font-mono text-xs text-zinc-400">
-							{maskDestination(channel.channel_type, channel.destination)}
-						</p>
+						{channel.channel_type === "telegram" && (
+							<p className="mt-1 text-xs text-zinc-400">Connected</p>
+						)}
 					</div>
 				</div>
 

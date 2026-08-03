@@ -90,7 +90,7 @@ func main() {
 	// ── Repositories ────────────────────────────────────────────────
 	userRepo := repositories.NewUserRepository(db)
 	tokenRepo := repositories.NewTokenRepository(db, cfg.TokenEncryptionKey)
-	channelRepo := repositories.NewChannelRepository(db)
+	channelRepo := repositories.NewChannelRepository(db, cfg.TokenEncryptionKey)
 	telegramConnectionRepo := repositories.NewTelegramConnectionRepository(db)
 	subscriptionRepo := repositories.NewSubscriptionRepository(db)
 	showRepository := repositories.NewShowRepository(db)

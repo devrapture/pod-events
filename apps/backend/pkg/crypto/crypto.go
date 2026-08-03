@@ -3,8 +3,11 @@ package crypto
 import (
 	"crypto/aes"
 	"crypto/cipher"
+	"crypto/hmac"
 	"crypto/rand"
+	"crypto/sha256"
 	"encoding/base64"
+	"encoding/hex"
 	"errors"
 	"io"
 	"strings"
@@ -87,4 +90,17 @@ func MaskSecret(secret string) string {
 	}
 
 	return secret[:6] + "..." + secret[len(secret)-4:]
+}
+
+func FingerprintText(value, secretKey string) (string, error) {
+	key, err := DecodeEncryptionKey(secretKey)
+	if err != nil {
+		return "", err
+	}
+
+	mac := hmac.New(sha256.New, key)
+	mac.Write([]byte("notification-channel:v1\x00"))
+	mac.Write([]byte(value))
+
+	return hex.EncodeToString(mac.Sum(nil)), nil
 }
