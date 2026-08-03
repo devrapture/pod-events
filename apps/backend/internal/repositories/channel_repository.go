@@ -37,18 +37,19 @@ func (r *channelRepository) Create(
 ) error {
 	toSave := *channel
 
-	if r.isWebhookChannel(toSave.ChannelType) {
-		fingerprint, err := appcrypto.FingerprintText(
-			toSave.Destination,
-			r.encryptionKey,
+	fingerprint, err := appcrypto.FingerprintText(
+		toSave.Destination,
+		r.encryptionKey,
+	)
+	if err != nil {
+		return fmt.Errorf(
+			"failed to fingerprint channel destination: %w",
+			err,
 		)
-		if err != nil {
-			return fmt.Errorf(
-				"failed to fingerprint webhook: %w",
-				err,
-			)
-		}
+	}
+	toSave.DestinationFingerprint = fingerprint
 
+	if toSave.ChannelType.IsWebhook() {
 		encryptedWebhook, err := r.encryptWebhook(
 			toSave.Destination,
 		)
@@ -57,7 +58,6 @@ func (r *channelRepository) Create(
 		}
 
 		toSave.Destination = encryptedWebhook
-		toSave.DestinationFingerprint = fingerprint
 	}
 
 	result := dbFromCtx(ctx, r.db).
@@ -111,10 +111,6 @@ func (r *channelRepository) Delete(ctx context.Context, userID, channelID uuid.U
 		return apperrors.ErrChannelIDNotFound
 	}
 	return nil
-}
-
-func (r *channelRepository) isWebhookChannel(channelType models.ChannelType) bool {
-	return channelType == models.ChannelTypeDiscord || channelType == models.ChannelTypeSlack
 }
 
 func (r *channelRepository) encryptWebhook(webhook string) (string, error) {

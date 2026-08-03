@@ -35,3 +35,7 @@ func (c ChannelType) IsValid() bool {
 	}
 	return false
 }
+
+func (c ChannelType) IsWebhook() bool {
+	return c == ChannelTypeSlack || c == ChannelTypeDiscord
+}

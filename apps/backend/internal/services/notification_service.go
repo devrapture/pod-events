@@ -132,10 +132,10 @@ func (s *notificationService) NotifyUser(ctx context.Context, userID uuid.UUID, 
 }
 
 func (s *notificationService) buildNotifier(channel models.NotificationChannel) (notifications.Notifier, error) {
-	if s.isWebhookChannel(channel.ChannelType) {
+	if channel.ChannelType.IsWebhook() {
 		decryptedWebhook, err := s.decryptWebhook(channel.Destination)
 		if err != nil {
-			return nil, fmt.Errorf("failed to decrypt webhook: %w", err)
+			return nil, err
 		}
 		channel.Destination = decryptedWebhook
 	}
@@ -171,10 +171,6 @@ func (s *notificationService) saveLog(ctx context.Context, userID uuid.UUID, epi
 	if err := s.logRepo.Create(ctx, log); err != nil {
 		s.logger.Error("failed to save notification log", zap.Error(err))
 	}
-}
-
-func (s *notificationService) isWebhookChannel(channelType models.ChannelType) bool {
-	return channelType == models.ChannelTypeDiscord || channelType == models.ChannelTypeSlack
 }
 
 func (s *notificationService) decryptWebhook(webhook string) (string, error) {

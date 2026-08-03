@@ -13,7 +13,7 @@ import (
 
 func TestCreateChannelDuplicate(t *testing.T) {
 	db, mock := setupMockDB(t)
-	repo := NewChannelRepository(db, "")
+	repo := NewChannelRepository(db, "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=")
 	channel := &models.NotificationChannel{
 		UserID:      uuid.New(),
 		ChannelType: models.ChannelTypeTelegram,
