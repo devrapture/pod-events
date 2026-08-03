@@ -1,6 +1,6 @@
 "use client";
 
-import { Loader2, LogOut, Menu, Radio, X } from "lucide-react";
+import { Loader2, LogOut, Menu, X } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 

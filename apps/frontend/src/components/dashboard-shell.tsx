@@ -63,7 +63,6 @@ export function DashboardShell({ children }: { children: ReactNode }) {
 	return (
 		<div className="min-h-screen bg-zinc-950 md:h-screen md:overflow-hidden">
 			<aside className="fixed inset-y-0 left-0 z-40 hidden w-64 flex-col border-white/6 border-r bg-zinc-950 md:flex">
-
 				<div className="px-6 py-4">
 					<LogoWithText className="h-8 w-auto" />
 				</div>
