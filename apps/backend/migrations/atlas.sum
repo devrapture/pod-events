@@ -1,4 +1,4 @@
-h1:QneNYERn9Lli+xOPs3IZ3e2UCBcBsRbJ8US9i78NUL4=
+h1:htm+8r9SAatgHeimQoZskGrwYGgPQy7IH3tmE8xHSms=
 20260610223508_initial_schema.sql h1:aRWOc7j0IN64WrzZ9DrSFFSzk2gzBM/tEFqjD6UuSf8=
 20260613214534_add_spotify_tokens.sql h1:QPPAVGc06oqiG7cnBvDRwzTB9dYpwVfcuAlaJQHNB6I=
 20260628132546_notification_channels_table.sql h1:7J5MlB6OpncbbQ5gJlfdJgFnr4yMbDGwI+yOnNiovEE=
@@ -7,3 +7,4 @@ h1:QneNYERn9Lli+xOPs3IZ3e2UCBcBsRbJ8US9i78NUL4=
 20260705090013_add_notification_logs_table.sql h1:8i3Go6x6fShgRYuz28yQK5C1am6jaOcWrfXncLfK/5A=
 20260731194051_update_episode_fields.sql h1:OUdo+GtjtJZIXxL7m76MtIN0FCGWLpoO5r67mGyF+MU=
 20260803114808_add_notification_channel_fingerprint.sql h1:WSCbofk8UABOmI7mgQdxfYteSpBaqgqjJjTAZC2bF1g=
+20260803213110_make_channel_index_partial.sql h1:OLUFl1WxPxd+0Hrnouv1F2YAqNcsrkmlo4DGxhQL8UA=
