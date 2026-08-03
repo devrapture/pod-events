@@ -41,6 +41,7 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"strings"
 	"syscall"
 	"time"
 
@@ -57,7 +58,10 @@ import (
 	"github.com/devrapture/pod-events/internal/services"
 	"github.com/devrapture/pod-events/internal/spotify"
 	"github.com/devrapture/pod-events/pkg/logger"
+	"github.com/getsentry/sentry-go"
+	sentryzap "github.com/getsentry/sentry-go/zap"
 	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
 )
 
 func main() {
@@ -69,6 +73,32 @@ func main() {
 	logger, err := logger.NewLogger(!cfg.IsProduction())
 	if err != nil {
 		log.Fatalf("Failed to create logger %v", err)
+	}
+	if err := sentry.Init(sentry.ClientOptions{
+		Dsn:                   cfg.SentryDSN,
+		Environment:           cfg.AppEnv,
+		Release:               cfg.SentryRelease,
+		AttachStacktrace:      true,
+		EnableTracing:         cfg.SentryTracesSampleRate > 0,
+		TracesSampleRate:      cfg.SentryTracesSampleRate,
+		DisableLogs:           !cfg.SentryEnableLogs,
+		BeforeSend:            scrubSentryEvent,
+		BeforeSendTransaction: scrubSentryEvent,
+	}); err != nil {
+		log.Fatalf("Failed to initialize Sentry: %v", err)
+	}
+	if cfg.SentryDSN != "" {
+		defer func() {
+			if !sentry.Flush(2 * time.Second) {
+				logger.Warn("Timed out flushing Sentry events")
+			}
+		}()
+		logger = withSentryLogging(logger, cfg.SentryEnableLogs)
+		logger.Info(
+			"Sentry initialized",
+			zap.Float64("traces_sample_rate", cfg.SentryTracesSampleRate),
+			zap.Bool("logs_enabled", cfg.SentryEnableLogs),
+		)
 	}
 	defer logger.Sync()
 	logger.Info("Starting PodEvents server", zap.String("env", cfg.AppEnv), zap.String("port", cfg.Port))
@@ -165,4 +195,42 @@ func main() {
 	}
 
 	logger.Info("Server exited")
+}
+
+func withSentryLogging(baseLogger *zap.Logger, enabled bool) *zap.Logger {
+	if !enabled {
+		return baseLogger
+	}
+
+	sentryCore := sentryzap.NewSentryCore(context.Background(), sentryzap.Option{
+		Level: []zapcore.Level{
+			zapcore.InfoLevel,
+			zapcore.WarnLevel,
+			zapcore.ErrorLevel,
+			zapcore.DPanicLevel,
+			zapcore.PanicLevel,
+			zapcore.FatalLevel,
+		},
+		AddCaller:    true,
+		FlushTimeout: 2 * time.Second,
+	})
+
+	return baseLogger.WithOptions(zap.WrapCore(func(core zapcore.Core) zapcore.Core {
+		return zapcore.NewTee(core, sentryCore)
+	}))
+}
+
+func scrubSentryEvent(event *sentry.Event, _ *sentry.EventHint) *sentry.Event {
+	if event.Request == nil {
+		return event
+	}
+
+	event.Request.Cookies = ""
+	for header := range event.Request.Headers {
+		switch strings.ToLower(header) {
+		case "authorization", "cookie", "x-cron-secret", "x-telegram-bot-api-secret-token":
+			delete(event.Request.Headers, header)
+		}
+	}
+	return event
 }

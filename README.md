@@ -83,6 +83,10 @@ The API runs at `http://localhost:8080` and the frontend at `http://localhost:30
 | `TELEGRAM_WEBHOOK_URL` | Public HTTPS URL for Telegram (use ngrok) |
 | `BOT_NAME` | Telegram bot display name (optional) |
 | `CRON_SECRET` | Secret for the episode-check cron endpoint (sent via `X-Cron-Secret` header) |
+| `SENTRY_DSN` | Sentry project DSN; leave empty to disable Sentry |
+| `SENTRY_TRACES_SAMPLE_RATE` | Fraction of requests traced, from `0.0` to `1.0` (default `0.1`) |
+| `SENTRY_ENABLE_LOGS` | Forward Info-and-higher Zap logs to Sentry (default `true`) |
+| `SENTRY_RELEASE` | Optional release identifier, such as a Git commit SHA |
 
 ### Frontend (`apps/frontend/.env`)
 
