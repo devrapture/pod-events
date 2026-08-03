@@ -7,6 +7,7 @@ import (
 
 	apperrors "github.com/devrapture/pod-events/internal/errors"
 	"github.com/devrapture/pod-events/internal/models"
+	appcrypto "github.com/devrapture/pod-events/pkg/crypto"
 	"github.com/google/uuid"
 	"gorm.io/gorm"
 )
@@ -19,20 +20,60 @@ type ChannelRepository interface {
 }
 
 type channelRepository struct {
-	db *gorm.DB
+	db            *gorm.DB
+	encryptionKey string
 }
 
-func NewChannelRepository(db *gorm.DB) ChannelRepository {
+func NewChannelRepository(db *gorm.DB, encryptionKey string) ChannelRepository {
 	return &channelRepository{
-		db: db,
+		db:            db,
+		encryptionKey: encryptionKey,
 	}
 }
 
-func (r *channelRepository) Create(ctx context.Context, channel *models.NotificationChannel) error {
-	result := dbFromCtx(ctx, r.db).WithContext(ctx).Create(channel)
-	if result.Error != nil {
-		return fmt.Errorf("failed to create notification channel: %w", result.Error)
+func (r *channelRepository) Create(
+	ctx context.Context,
+	channel *models.NotificationChannel,
+) error {
+	toSave := *channel
+
+	if r.isWebhookChannel(toSave.ChannelType) {
+		fingerprint, err := appcrypto.FingerprintText(
+			toSave.Destination,
+			r.encryptionKey,
+		)
+		if err != nil {
+			return fmt.Errorf(
+				"failed to fingerprint webhook: %w",
+				err,
+			)
+		}
+
+		encryptedWebhook, err := r.encryptWebhook(
+			toSave.Destination,
+		)
+		if err != nil {
+			return err
+		}
+
+		toSave.Destination = encryptedWebhook
+		toSave.DestinationFingerprint = fingerprint
 	}
+
+	result := dbFromCtx(ctx, r.db).
+		WithContext(ctx).
+		Create(&toSave)
+	if result.Error != nil {
+		if isUniqueViolation(result.Error) {
+			return apperrors.ErrNotificationChannelAlreadyExists
+		}
+		return fmt.Errorf(
+			"failed to create notification channel: %w",
+			result.Error,
+		)
+	}
+
+	channel.Base = toSave.Base
 	return nil
 }
 
@@ -70,4 +111,16 @@ func (r *channelRepository) Delete(ctx context.Context, userID, channelID uuid.U
 		return apperrors.ErrChannelIDNotFound
 	}
 	return nil
+}
+
+func (r *channelRepository) isWebhookChannel(channelType models.ChannelType) bool {
+	return channelType == models.ChannelTypeDiscord || channelType == models.ChannelTypeSlack
+}
+
+func (r *channelRepository) encryptWebhook(webhook string) (string, error) {
+	encrypted, err := appcrypto.EncryptText(webhook, r.encryptionKey)
+	if err != nil {
+		return "", fmt.Errorf("failed to encrypt webhook: %w", err)
+	}
+	return encrypted, nil
 }

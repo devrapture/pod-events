@@ -11,6 +11,8 @@ var (
 	ErrInvalidToken = errors.New("invalid token")
 	// ErrChannelIDNotFound is returned when a channel is not found
 	ErrChannelIDNotFound = errors.New("channel id not found")
+	// ErrNotificationChannelAlreadyExists is returned when a user already has the notification channel
+	ErrNotificationChannelAlreadyExists = errors.New("notification channel already exists")
 	// ErrInvalidTelegramBotToken is returned when a telegram bot token is invalid
 	ErrInvalidTelegramBotToken = errors.New("invalid telegram bot token")
 	// ErrTelegramBotTokenNotProvided is returned when a telegram bot token is not provided

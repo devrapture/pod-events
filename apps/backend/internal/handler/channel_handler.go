@@ -36,6 +36,7 @@ func NewChannelHandler(channelService services.ChannelServices, logger *zap.Logg
 //	@Produce     json
 //	@Param       channel body dto.CreateChannelRequest true "Channel details"
 //	@Success     200 {object} response.APIResponse "Channel created"
+//	@Failure     409 {object} response.APIResponse "Notification channel already exists"
 //	@Failure     422 {object} response.APIResponse "validation error"
 //	@Router      /channels [post]
 func (h *ChannelHandler) CreateChannel(c *gin.Context) {
@@ -47,6 +48,10 @@ func (h *ChannelHandler) CreateChannel(c *gin.Context) {
 	}
 	channel, err := h.channelService.Create(c.Request.Context(), userID.(uuid.UUID), req)
 	if err != nil {
+		if errors.Is(err, apperrors.ErrNotificationChannelAlreadyExists) {
+			response.ErrorResponse(c, http.StatusConflict, "this notification channel has already been added")
+			return
+		}
 		if isChannelValidationError(err) {
 			response.ErrorResponse(c, http.StatusBadRequest, err.Error())
 			return

@@ -3,6 +3,7 @@ package handler
 import (
 	"net/http"
 
+	"github.com/devrapture/pod-events/internal/dto"
 	"github.com/devrapture/pod-events/internal/services"
 	"github.com/devrapture/pod-events/pkg/response"
 	"github.com/gin-gonic/gin"
@@ -34,6 +35,7 @@ func NewDashboardShowHandler(dashboardShowService services.DashboardSummaryServi
 //	@Router      /dashboard/summary [get]
 func (h *DashboardShowHandler) GetDashboardSummary(c *gin.Context) {
 	userID, _ := c.Get("userID")
+	var summary *dto.DashboardSummaryDTO
 	summary, err := h.dashboardShowService.GetDashboardSummary(c.Request.Context(), userID.(uuid.UUID))
 	if err != nil {
 		h.logger.Error("failed to get dashboard summary", zap.Error(err))
