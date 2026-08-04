@@ -138,9 +138,18 @@ export default function PrivacyPage() {
 							</li>
 						</ul>
 						<p className="mt-3">
-							We did not identify third-party advertising or analytics cookies
-							in the product codebase. If that changes, we will update this
-							policy.
+							PodEvents uses{" "}
+							<a
+								className="text-emerald-400 transition-colors hover:text-emerald-300"
+								href="https://www.sabilytics.com/"
+								rel="noopener noreferrer"
+								target="_blank"
+							>
+								Sabilytics
+							</a>{" "}
+							for website usage analytics. Sabilytics may process technical and
+							usage information when you visit the site. We do not use it for
+							third-party advertising.
 						</p>
 					</section>
 
