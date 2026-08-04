@@ -11,6 +11,8 @@ var (
 	ErrInvalidToken = errors.New("invalid token")
 	// ErrChannelIDNotFound is returned when a channel is not found
 	ErrChannelIDNotFound = errors.New("channel id not found")
+	// ErrNotificationChannelAlreadyExists is returned when a user already has the notification channel
+	ErrNotificationChannelAlreadyExists = errors.New("notification channel already exists")
 	// ErrInvalidTelegramBotToken is returned when a telegram bot token is invalid
 	ErrInvalidTelegramBotToken = errors.New("invalid telegram bot token")
 	// ErrTelegramBotTokenNotProvided is returned when a telegram bot token is not provided
@@ -21,6 +23,8 @@ var (
 	ErrNoExpiredTelegramConnectionsFound = errors.New("no expired telegram connections found")
 	// ErrTelegramChannelAlreadyExists is returned when a user already has a Telegram notification channel
 	ErrTelegramChannelAlreadyExists = errors.New("telegram channel already exists")
+	// ErrInvalidTelegramChatID is returned when a Telegram chat ID cannot be parsed
+	ErrInvalidTelegramChatID = errors.New("invalid telegram chat ID")
 	// ErrPodcastShowNotFound is returned when a podcast show cannot be found
 	ErrPodcastShowNotFound = errors.New("podcast show not found")
 	// ErrEpisodeNotFound is returned when an episode cannot be found

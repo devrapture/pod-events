@@ -3,10 +3,12 @@ package routes
 import (
 	"net/http"
 	"strings"
+	"time"
 
 	"github.com/devrapture/pod-events/internal/config"
 	handlers "github.com/devrapture/pod-events/internal/handler"
 	"github.com/devrapture/pod-events/internal/middleware"
+	sentrygin "github.com/getsentry/sentry-go/gin"
 	"github.com/gin-gonic/gin"
 	swaggerFiles "github.com/swaggo/files"
 	ginSwagger "github.com/swaggo/gin-swagger"
@@ -29,6 +31,12 @@ func Setup(db *gorm.DB, deps HandlerDependencies, cfg *config.Config, logger *za
 	r := gin.New()
 	r.Use(middleware.RequestLogger(logger))
 	r.Use(gin.Recovery())
+	if cfg.SentryDSN != "" {
+		r.Use(sentrygin.New(sentrygin.Options{
+			Repanic: true,
+			Timeout: 2 * time.Second,
+		}))
+	}
 	r.Use(corsMiddleware(cfg.FrontendURL))
 
 	r.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))

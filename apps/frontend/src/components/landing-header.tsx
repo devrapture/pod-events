@@ -1,6 +1,6 @@
 "use client";
 
-import { Loader2, LogOut, Menu, Radio, X } from "lucide-react";
+import { Loader2, LogOut, Menu, X } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 
@@ -8,6 +8,7 @@ import { useAuth } from "@/components/auth-provider";
 import { Button } from "@/components/ui/button";
 import { DOCS_URL, NAV_LINKS } from "@/lib/constants";
 import { cn } from "@/lib/utils";
+import LogoWithText from "./icons/logo-with-text";
 
 export function LandingHeader() {
 	const [scrolled, setScrolled] = useState(false);
@@ -32,12 +33,7 @@ export function LandingHeader() {
 		>
 			<div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-6">
 				<Link className="flex items-center gap-2.5" href="/">
-					<div className="flex h-8 w-8 items-center justify-center rounded-lg border border-emerald-500/20 bg-emerald-500/10">
-						<Radio className="h-4 w-4 text-emerald-400" />
-					</div>
-					<span className="font-semibold text-zinc-100 tracking-tight">
-						PodEvents
-					</span>
+					<LogoWithText className="h-8 w-auto" />
 				</Link>
 
 				<nav className="hidden items-center gap-8 md:flex">

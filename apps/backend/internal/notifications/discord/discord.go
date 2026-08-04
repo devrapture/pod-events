@@ -67,7 +67,7 @@ func (n *Notifier) Send(ctx context.Context, message notifications.NotificationM
 		Embeds: []DiscordEmbed{
 			{
 				Title:       "🎙️ " + message.EpisodeTitle,
-				Description: utils.Truncate(message.Description, 300),
+				Description: utils.Truncate(message.Description, 200),
 				URL:         message.SpotifyURL,
 				Color:       spotifyGreen,
 				Fields: []Fields{

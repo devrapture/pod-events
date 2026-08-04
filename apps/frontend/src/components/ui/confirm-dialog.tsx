@@ -60,7 +60,7 @@ export function ConfirmDialog({
 							>
 								<motion.div
 									animate={{ opacity: 1, scale: 1 }}
-									className="pointer-events-auto w-full max-w-sm rounded-xl border border-white/[0.06] bg-zinc-950 p-6 shadow-2xl"
+									className="pointer-events-auto w-full max-w-sm rounded-xl border border-white/6 bg-zinc-950 p-6 shadow-2xl"
 									exit={{ opacity: 0, scale: 0.95 }}
 									initial={{ opacity: 0, scale: 0.95 }}
 									transition={{ duration: 0.15 }}

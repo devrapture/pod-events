@@ -41,6 +41,7 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"strings"
 	"syscall"
 	"time"
 
@@ -57,26 +58,72 @@ import (
 	"github.com/devrapture/pod-events/internal/services"
 	"github.com/devrapture/pod-events/internal/spotify"
 	"github.com/devrapture/pod-events/pkg/logger"
+	"github.com/getsentry/sentry-go"
+	sentryzap "github.com/getsentry/sentry-go/zap"
 	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
 )
 
+var connectDatabase = database.ConnectDb
+
 func main() {
+	os.Exit(run())
+}
+
+func run() (exitStatus int) {
 	cfg, err := config.Load()
 	if err != nil {
-		log.Fatalf("Failed to load configuration %v", err)
+		log.Printf("Failed to load configuration %v", err)
+		return 1
 	}
 
 	logger, err := logger.NewLogger(!cfg.IsProduction())
 	if err != nil {
-		log.Fatalf("Failed to create logger %v", err)
+		log.Printf("Failed to create logger %v", err)
+		return 1
 	}
-	defer logger.Sync()
+	if err := sentry.Init(sentry.ClientOptions{
+		Dsn:                   cfg.SentryDSN,
+		Environment:           cfg.AppEnv,
+		Release:               cfg.SentryRelease,
+		AttachStacktrace:      true,
+		EnableTracing:         cfg.SentryTracesSampleRate > 0,
+		TracesSampleRate:      cfg.SentryTracesSampleRate,
+		DisableLogs:           !cfg.SentryEnableLogs,
+		BeforeSend:            scrubSentryEvent,
+		BeforeSendTransaction: scrubSentryEvent,
+	}); err != nil {
+		log.Printf("Failed to initialize Sentry: %v", err)
+		return 1
+	}
+	sentryEnabled := cfg.SentryDSN != ""
+	if sentryEnabled {
+		logger = withSentryLogging(logger, cfg.SentryEnableLogs)
+		logger.Info(
+			"Sentry initialized",
+			zap.Float64("traces_sample_rate", cfg.SentryTracesSampleRate),
+			zap.Bool("logs_enabled", cfg.SentryEnableLogs),
+		)
+	}
+	defer flushTelemetry(logger, sentryEnabled)
 	logger.Info("Starting PodEvents server", zap.String("env", cfg.AppEnv), zap.String("port", cfg.Port))
 
-	db, err := database.ConnectDb(cfg)
+	db, err := connectDatabase(cfg)
 	if err != nil {
-		log.Fatalf("Failed to initialize database: %v", err)
+		logger.Error("Failed to initialize database", zap.Error(err))
+		return 1
 	}
+	sqlDB, err := db.DB()
+	if err != nil {
+		logger.Error("Failed to access database connection pool", zap.Error(err))
+		return 1
+	}
+	defer func() {
+		if err := sqlDB.Close(); err != nil {
+			logger.Error("Failed to close database", zap.Error(err))
+			exitStatus = 1
+		}
+	}()
 
 	// ── Cache ────────────────────────────────────────────────
 	appCache := cache.New(10*time.Minute, 15*time.Minute)
@@ -85,12 +132,12 @@ func main() {
 	spotifyClient := spotify.NewSpotifyClient(cfg, logger)
 
 	// ── Notifier ────────────────────────────────────────────────
-	telegramNotifier := telegram.NewNotifier(cfg)
+	telegramNotifier := telegram.NewNotifier(cfg, 0, logger)
 
 	// ── Repositories ────────────────────────────────────────────────
 	userRepo := repositories.NewUserRepository(db)
 	tokenRepo := repositories.NewTokenRepository(db, cfg.TokenEncryptionKey)
-	channelRepo := repositories.NewChannelRepository(db)
+	channelRepo := repositories.NewChannelRepository(db, cfg.TokenEncryptionKey)
 	telegramConnectionRepo := repositories.NewTelegramConnectionRepository(db)
 	subscriptionRepo := repositories.NewSubscriptionRepository(db)
 	showRepository := repositories.NewShowRepository(db)
@@ -138,31 +185,78 @@ func main() {
 		Handler: r.Handler(),
 	}
 
+	serverErrors := make(chan error, 1)
 	go func() {
 		logger.Info("Server starting", zap.String("addr", addr))
 		if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
-			logger.Fatal("Failed to start server", zap.Error(err))
+			serverErrors <- err
 		}
 	}()
 
 	quit := make(chan os.Signal, 1)
 	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
-	<-quit
+	defer signal.Stop(quit)
+	select {
+	case <-quit:
+	case err := <-serverErrors:
+		logger.Error("Failed to start server", zap.Error(err))
+		return 1
+	}
 	logger.Info("Shutting down server...")
 
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
 	if err := srv.Shutdown(ctx); err != nil {
-		logger.Fatal("Server forced to shutdown", zap.Error(err))
-	}
-
-	sqlDB, err := db.DB()
-	if err == nil {
-		if err := sqlDB.Close(); err != nil {
-			logger.Fatal("Failed to close database", zap.Error(err))
-		}
+		logger.Error("Server forced to shutdown", zap.Error(err))
+		exitStatus = 1
 	}
 
 	logger.Info("Server exited")
+	return exitStatus
+}
+
+func flushTelemetry(logger *zap.Logger, sentryEnabled bool) {
+	_ = logger.Sync()
+	if sentryEnabled && !sentry.Flush(2*time.Second) {
+		log.Print("Timed out flushing Sentry events")
+	}
+}
+
+func withSentryLogging(baseLogger *zap.Logger, enabled bool) *zap.Logger {
+	if !enabled {
+		return baseLogger
+	}
+
+	sentryCore := sentryzap.NewSentryCore(context.Background(), sentryzap.Option{
+		Level: []zapcore.Level{
+			zapcore.InfoLevel,
+			zapcore.WarnLevel,
+			zapcore.ErrorLevel,
+			zapcore.DPanicLevel,
+			zapcore.PanicLevel,
+			zapcore.FatalLevel,
+		},
+		AddCaller:    true,
+		FlushTimeout: 2 * time.Second,
+	})
+
+	return baseLogger.WithOptions(zap.WrapCore(func(core zapcore.Core) zapcore.Core {
+		return zapcore.NewTee(core, sentryCore)
+	}))
+}
+
+func scrubSentryEvent(event *sentry.Event, _ *sentry.EventHint) *sentry.Event {
+	if event.Request == nil {
+		return event
+	}
+
+	event.Request.Cookies = ""
+	for header := range event.Request.Headers {
+		switch strings.ToLower(header) {
+		case "authorization", "cookie", "x-cron-secret", "x-telegram-bot-api-secret-token":
+			delete(event.Request.Headers, header)
+		}
+	}
+	return event
 }

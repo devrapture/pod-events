@@ -4,15 +4,18 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strconv"
 	"time"
 
 	"github.com/devrapture/pod-events/internal/config"
+	apperrors "github.com/devrapture/pod-events/internal/errors"
 	"github.com/devrapture/pod-events/internal/models"
 	"github.com/devrapture/pod-events/internal/notifications"
 	"github.com/devrapture/pod-events/internal/notifications/discord"
 	"github.com/devrapture/pod-events/internal/notifications/slack"
 	"github.com/devrapture/pod-events/internal/notifications/telegram"
 	"github.com/devrapture/pod-events/internal/repositories"
+	appcrypto "github.com/devrapture/pod-events/pkg/crypto"
 	"github.com/google/uuid"
 	"go.uber.org/zap"
 )
@@ -76,6 +79,16 @@ func (s *notificationService) NotifyUser(ctx context.Context, userID uuid.UUID, 
 			s.logger.Info("Notification already sent", zap.String("user_id", userID.String()), zap.String("episode_id", episode.ID.String()), zap.String("channel_type", string(channel.ChannelType)))
 			continue
 		}
+		if !channel.IsActive {
+			s.logger.Info(
+				"Channel is not active",
+				zap.String("user_id", userID.String()),
+				zap.String("episode_id", episode.ID.String()),
+				zap.String("channel_type", string(channel.ChannelType)))
+			s.saveLog(ctx, userID, episode.ID, channel.ChannelType, models.NotificationStatusFailed, "Channel is not active")
+			sendErrors = append(sendErrors, fmt.Errorf("%s: Channel is not active", channel.ChannelType))
+			continue
+		}
 		notifier, err := s.buildNotifier(channel)
 		if err != nil {
 			s.logger.Error("failed to build notifier", zap.String("channel_type", string(channel.ChannelType)), zap.Error(err))
@@ -119,13 +132,24 @@ func (s *notificationService) NotifyUser(ctx context.Context, userID uuid.UUID, 
 }
 
 func (s *notificationService) buildNotifier(channel models.NotificationChannel) (notifications.Notifier, error) {
+	if channel.ChannelType.IsWebhook() {
+		decryptedWebhook, err := s.decryptWebhook(channel.Destination)
+		if err != nil {
+			return nil, err
+		}
+		channel.Destination = decryptedWebhook
+	}
 	switch channel.ChannelType {
 	case models.ChannelTypeSlack:
 		return slack.NewNotifier(channel.Destination, s.logger), nil
 	case models.ChannelTypeDiscord:
 		return discord.NewNotifier(channel.Destination, s.logger), nil
 	case models.ChannelTypeTelegram:
-		return telegram.NewNotifier(s.cfg), nil
+		chatID, err := strconv.ParseInt(channel.Destination, 10, 64)
+		if err != nil {
+			return nil, fmt.Errorf("%w: %v", apperrors.ErrInvalidTelegramChatID, err)
+		}
+		return telegram.NewNotifier(s.cfg, chatID, s.logger), nil
 	default:
 		return nil, fmt.Errorf("unknown channel type: %s", channel.ChannelType)
 	}
@@ -147,4 +171,12 @@ func (s *notificationService) saveLog(ctx context.Context, userID uuid.UUID, epi
 	if err := s.logRepo.Create(ctx, log); err != nil {
 		s.logger.Error("failed to save notification log", zap.Error(err))
 	}
+}
+
+func (s *notificationService) decryptWebhook(webhook string) (string, error) {
+	decrypted, err := appcrypto.DecryptText(webhook, s.cfg.TokenEncryptionKey)
+	if err != nil {
+		return "", fmt.Errorf("failed to decrypt webhook: %w", err)
+	}
+	return decrypted, nil
 }

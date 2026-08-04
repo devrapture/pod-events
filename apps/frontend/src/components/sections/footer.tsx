@@ -1,4 +1,3 @@
-import { Radio } from "lucide-react";
 import Link from "next/link";
 
 import {
@@ -8,6 +7,7 @@ import {
 	ISSUES_URL,
 	LICENSE_URL,
 } from "@/lib/constants";
+import LogoWithText from "../icons/logo-with-text";
 
 const FOOTER_LINKS = [
 	{ label: "GitHub", href: GITHUB_URL, external: true },
@@ -20,13 +20,10 @@ const FOOTER_LINKS = [
 
 export function Footer() {
 	return (
-		<footer className="border-white/[0.06] border-t py-12">
+		<footer className="border-white/6 border-t py-12">
 			<div className="mx-auto flex max-w-6xl flex-col items-center justify-between gap-8 px-6 md:flex-row">
 				<Link className="flex items-center gap-2.5" href="/">
-					<div className="flex h-7 w-7 items-center justify-center rounded-lg border border-emerald-500/20 bg-emerald-500/10">
-						<Radio className="h-3.5 w-3.5 text-emerald-400" />
-					</div>
-					<span className="font-medium text-sm text-zinc-300">PodEvents</span>
+					<LogoWithText className="h-8 w-auto" />
 				</Link>
 
 				<nav className="flex flex-wrap justify-center gap-6">
