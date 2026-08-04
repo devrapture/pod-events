@@ -11,11 +11,54 @@ import (
 	"testing"
 	"time"
 
+	"github.com/DATA-DOG/go-sqlmock"
+	"github.com/devrapture/pod-events/internal/config"
 	"github.com/getsentry/sentry-go"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
+	"gorm.io/driver/postgres"
+	"gorm.io/gorm"
 )
+
+func TestRunClosesDatabaseWhenServerFails(t *testing.T) {
+	t.Setenv("APP_ENV", "test")
+	t.Setenv("PORT", "invalid")
+	t.Setenv("DATABASE_URL", "postgres://unused")
+	t.Setenv("TOKEN_ENCRYPTION_KEY", "YWJjZGVmZ2hpamtsbW5vcHFyc3R1dnd4eXoxMjM0NTY=")
+	t.Setenv("SPOTIFY_CLIENT_SECRET", "test")
+	t.Setenv("SPOTIFY_CLIENT_ID", "test")
+	t.Setenv("SPOTIFY_REDIRECT_URL", "http://localhost/callback")
+	t.Setenv("FRONTEND_URL", "http://localhost")
+	t.Setenv("JWT_SECRET", "test")
+	t.Setenv("TELEGRAM_BOT_TOKEN", "test")
+	t.Setenv("TELEGRAM_WEBHOOK_SECRET", "test")
+	t.Setenv("BOT_NAME", "test")
+	t.Setenv("CRON_SECRET", "test")
+	t.Setenv("SENTRY_DSN", "")
+	t.Setenv("SENTRY_TRACES_SAMPLE_RATE", "0")
+	t.Setenv("SENTRY_ENABLE_LOGS", "false")
+
+	sqlDB, mock, err := sqlmock.New()
+	require.NoError(t, err)
+	mock.ExpectClose()
+
+	gormDB, err := gorm.Open(postgres.New(postgres.Config{Conn: sqlDB}), &gorm.Config{})
+	require.NoError(t, err)
+
+	originalConnectDatabase := connectDatabase
+	connectDatabase = func(*config.Config) (*gorm.DB, error) {
+		return gormDB, nil
+	}
+	t.Cleanup(func() {
+		connectDatabase = originalConnectDatabase
+	})
+
+	exitStatus := run()
+
+	assert.Equal(t, 1, exitStatus)
+	require.NoError(t, mock.ExpectationsWereMet())
+}
 
 func TestRunFlushesSentryBeforeExit(t *testing.T) {
 	if os.Getenv("POD_EVENTS_SENTRY_EXIT_HELPER") == "1" {

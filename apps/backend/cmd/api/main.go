@@ -64,11 +64,13 @@ import (
 	"go.uber.org/zap/zapcore"
 )
 
+var connectDatabase = database.ConnectDb
+
 func main() {
 	os.Exit(run())
 }
 
-func run() int {
+func run() (exitStatus int) {
 	cfg, err := config.Load()
 	if err != nil {
 		log.Printf("Failed to load configuration %v", err)
@@ -106,11 +108,22 @@ func run() int {
 	defer flushTelemetry(logger, sentryEnabled)
 	logger.Info("Starting PodEvents server", zap.String("env", cfg.AppEnv), zap.String("port", cfg.Port))
 
-	db, err := database.ConnectDb(cfg)
+	db, err := connectDatabase(cfg)
 	if err != nil {
 		logger.Error("Failed to initialize database", zap.Error(err))
 		return 1
 	}
+	sqlDB, err := db.DB()
+	if err != nil {
+		logger.Error("Failed to access database connection pool", zap.Error(err))
+		return 1
+	}
+	defer func() {
+		if err := sqlDB.Close(); err != nil {
+			logger.Error("Failed to close database", zap.Error(err))
+			exitStatus = 1
+		}
+	}()
 
 	// ── Cache ────────────────────────────────────────────────
 	appCache := cache.New(10*time.Minute, 15*time.Minute)
@@ -194,22 +207,13 @@ func run() int {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
-	exitCode := 0
 	if err := srv.Shutdown(ctx); err != nil {
 		logger.Error("Server forced to shutdown", zap.Error(err))
-		exitCode = 1
-	}
-
-	sqlDB, err := db.DB()
-	if err == nil {
-		if err := sqlDB.Close(); err != nil {
-			logger.Error("Failed to close database", zap.Error(err))
-			exitCode = 1
-		}
+		exitStatus = 1
 	}
 
 	logger.Info("Server exited")
-	return exitCode
+	return exitStatus
 }
 
 func flushTelemetry(logger *zap.Logger, sentryEnabled bool) {
