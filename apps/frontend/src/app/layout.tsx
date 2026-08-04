@@ -2,6 +2,7 @@ import "@/styles/globals.css";
 
 import type { Metadata } from "next";
 import { Geist } from "next/font/google";
+import Script from "next/script";
 
 import { Providers } from "@/components/providers";
 import { SITE_URL } from "@/lib/constants";
@@ -71,6 +72,15 @@ export default function RootLayout({
 		>
 			<body className="font-sans">
 				<Providers>{children}</Providers>
+				{process.env.NODE_ENV === "production" && (
+					<Script
+						async
+						data-domain="pod-event.vercel.app"
+						data-site="ekewhwo941ka"
+						src="https://www.sabilytics.com/script.js"
+						strategy="afterInteractive"
+					/>
+				)}
 			</body>
 		</html>
 	);
