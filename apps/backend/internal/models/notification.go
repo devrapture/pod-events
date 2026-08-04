@@ -19,10 +19,10 @@ const (
 
 type NotificationChannel struct {
 	Base
-	UserID                 uuid.UUID   `json:"user_id" gorm:"type:uuid;not null;index;uniqueIndex:idx_user_channel_destination"`
-	ChannelType            ChannelType `json:"channel_type" gorm:"not null;uniqueIndex:idx_user_channel_destination"`
+	UserID                 uuid.UUID   `json:"user_id" gorm:"type:uuid;not null;index;uniqueIndex:idx_user_channel_destination,where:deleted_at IS NULL"`
+	ChannelType            ChannelType `json:"channel_type" gorm:"not null;uniqueIndex:idx_user_channel_destination,where:deleted_at IS NULL"`
 	Destination            string      `json:"-" gorm:"not null"`
-	DestinationFingerprint string      `json:"-" gorm:"type:char(64);not null;uniqueIndex:idx_user_channel_destination"`
+	DestinationFingerprint string      `json:"-" gorm:"type:char(64);not null;uniqueIndex:idx_user_channel_destination,where:deleted_at IS NULL"`
 	IsActive               bool        `json:"is_active" gorm:"type:bool;default:true"`
 	Label                  string      `json:"label"`
 	User                   User        `json:"-" gorm:"foreignkey:UserID"`
