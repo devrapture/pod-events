@@ -42,8 +42,7 @@ const STEPS = [
 	{
 		icon: Bell,
 		title: "Instant notifications",
-		description:
-			"Your team receives alerts on Slack, Discord, Telegram, or WhatsApp.",
+		description: "Your team receives alerts on Slack, Discord, or Telegram.",
 		color: "text-emerald-400",
 		bg: "bg-emerald-500/10 border-emerald-500/20",
 	},

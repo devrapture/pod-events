@@ -61,8 +61,7 @@ export default function PrivacyPage() {
 							<li>
 								<span className="text-zinc-300">Notification settings</span> you
 								configure, such as Slack or Discord webhook URLs, Telegram chat
-								IDs, WhatsApp destination numbers, channel labels, and whether a
-								channel is active.
+								IDs, channel labels, and whether a channel is active.
 							</li>
 							<li>
 								<span className="text-zinc-300">
@@ -138,9 +137,18 @@ export default function PrivacyPage() {
 							</li>
 						</ul>
 						<p className="mt-3">
-							We did not identify third-party advertising or analytics cookies
-							in the product codebase. If that changes, we will update this
-							policy.
+							PodEvents uses{" "}
+							<a
+								className="text-emerald-400 transition-colors hover:text-emerald-300"
+								href="https://www.sabilytics.com/"
+								rel="noopener noreferrer"
+								target="_blank"
+							>
+								Sabilytics
+							</a>{" "}
+							for website usage analytics. Sabilytics may process technical and
+							usage information when you visit the site. We do not use it for
+							third-party advertising.
 						</p>
 					</section>
 
@@ -166,11 +174,6 @@ export default function PrivacyPage() {
 								<span className="text-zinc-300">Telegram</span> — when you
 								connect a Telegram chat, we use Telegram APIs/webhooks to
 								deliver notifications.
-							</li>
-							<li>
-								<span className="text-zinc-300">WhatsApp</span> — when you
-								configure a WhatsApp destination, we use the destination details
-								you provide to deliver notifications.
 							</li>
 						</ul>
 						<p className="mt-3">

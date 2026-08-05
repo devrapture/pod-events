@@ -1,4 +1,4 @@
-h1:htm+8r9SAatgHeimQoZskGrwYGgPQy7IH3tmE8xHSms=
+h1:UG3oFV8hOEOwQTtgEj8YzYKu7if0G40V9wwUFjp/zk4=
 20260610223508_initial_schema.sql h1:aRWOc7j0IN64WrzZ9DrSFFSzk2gzBM/tEFqjD6UuSf8=
 20260613214534_add_spotify_tokens.sql h1:QPPAVGc06oqiG7cnBvDRwzTB9dYpwVfcuAlaJQHNB6I=
 20260628132546_notification_channels_table.sql h1:7J5MlB6OpncbbQ5gJlfdJgFnr4yMbDGwI+yOnNiovEE=
@@ -8,3 +8,4 @@ h1:htm+8r9SAatgHeimQoZskGrwYGgPQy7IH3tmE8xHSms=
 20260731194051_update_episode_fields.sql h1:OUdo+GtjtJZIXxL7m76MtIN0FCGWLpoO5r67mGyF+MU=
 20260803114808_add_notification_channel_fingerprint.sql h1:WSCbofk8UABOmI7mgQdxfYteSpBaqgqjJjTAZC2bF1g=
 20260803213110_make_channel_index_partial.sql h1:OLUFl1WxPxd+0Hrnouv1F2YAqNcsrkmlo4DGxhQL8UA=
+20260804010317_make_telegram_connection_indexes_partial.sql h1:s5iEQLFOGct/O54ElaIs5vJRpa2Zh4MMETSJb/tTEkY=

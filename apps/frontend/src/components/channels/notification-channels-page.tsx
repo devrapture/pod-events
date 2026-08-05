@@ -39,7 +39,9 @@ export function NotificationChannelsPage() {
 	const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
 	const { toast } = useToast();
 
-	const { data, isLoading, isFetching, isError, refetch } = useChannels({});
+	const { data, isLoading, isFetching, isError, refetch } = useChannels({
+		refetchOnWindowFocus: "always",
+	});
 
 	const { mutate: toggleChannel, isPending: isToggling } = useToggleChannel();
 	const { mutate: deleteChannel, isPending: isDeleting } = useDeleteChannel();
@@ -151,7 +153,7 @@ export function NotificationChannelsPage() {
 						</p>
 						<p className="mt-2 max-w-md text-sm text-zinc-500">
 							Add a channel to start receiving new episode alerts via Slack,
-							Discord, WhatsApp, or Telegram.
+							Discord, or Telegram.
 						</p>
 						<Button className="mt-6" onClick={() => setShowAddSection(true)}>
 							<Plus className="h-4 w-4" />
