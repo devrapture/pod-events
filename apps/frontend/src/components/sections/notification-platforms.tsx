@@ -1,9 +1,4 @@
-import {
-	MessageCircle,
-	MessageSquare,
-	Send,
-	SquareTerminal,
-} from "lucide-react";
+import { MessageSquare, Send, SquareTerminal } from "lucide-react";
 
 import {
 	AnimatedSection,
@@ -51,18 +46,6 @@ const PLATFORMS = [
 				<p className="mt-1 text-zinc-400">
 					Syntax FM just released a new episode.
 				</p>
-			</div>
-		),
-	},
-	{
-		icon: MessageCircle,
-		name: "WhatsApp",
-		description: "Business-ready message delivery.",
-		color: "#25D366",
-		preview: (
-			<div className="mt-4 rounded-lg border border-[#25D366]/30 bg-[#25D366]/5 p-3 text-xs">
-				<p className="text-zinc-300">PodEvents</p>
-				<p className="mt-1 text-zinc-400">🎧 New: Invest Like the Best</p>
 			</div>
 		),
 	},

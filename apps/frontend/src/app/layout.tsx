@@ -18,7 +18,7 @@ export const metadata: Metadata = {
 		template: "%s | PodEvents",
 	},
 	description:
-		"PodEvents monitors Spotify podcasts 24/7 and instantly delivers new episode notifications to Slack, Discord, Telegram, and WhatsApp.",
+		"PodEvents monitors Spotify podcasts 24/7 and instantly delivers new episode notifications to Slack, Discord, and Telegram.",
 	metadataBase: new URL(SITE_URL),
 	openGraph: {
 		type: "website",
@@ -27,7 +27,7 @@ export const metadata: Metadata = {
 		siteName: "PodEvents",
 		title: "PodEvents — Spotify Podcast Notifications for Your Entire Team",
 		description:
-			"PodEvents monitors Spotify podcasts 24/7 and instantly delivers new episode notifications to Slack, Discord, Telegram, and WhatsApp.",
+			"PodEvents monitors Spotify podcasts 24/7 and instantly delivers new episode notifications to Slack, Discord, and Telegram.",
 		images: [
 			{
 				url: "/opengraph-image",
@@ -41,7 +41,7 @@ export const metadata: Metadata = {
 		card: "summary_large_image",
 		title: "PodEvents — Spotify Podcast Notifications for Your Entire Team",
 		description:
-			"PodEvents monitors Spotify podcasts 24/7 and instantly delivers new episode notifications to Slack, Discord, Telegram, and WhatsApp.",
+			"PodEvents monitors Spotify podcasts 24/7 and instantly delivers new episode notifications to Slack, Discord, and Telegram.",
 		images: ["/opengraph-image"],
 	},
 	robots: {
@@ -54,7 +54,6 @@ export const metadata: Metadata = {
 		"Slack",
 		"Discord",
 		"Telegram",
-		"WhatsApp",
 		"open source",
 		"podcast monitoring",
 		"engineering podcasts",

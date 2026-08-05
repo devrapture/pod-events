@@ -153,7 +153,7 @@ export function NotificationChannelsPage() {
 						</p>
 						<p className="mt-2 max-w-md text-sm text-zinc-500">
 							Add a channel to start receiving new episode alerts via Slack,
-							Discord, WhatsApp, or Telegram.
+							Discord, or Telegram.
 						</p>
 						<Button className="mt-6" onClick={() => setShowAddSection(true)}>
 							<Plus className="h-4 w-4" />

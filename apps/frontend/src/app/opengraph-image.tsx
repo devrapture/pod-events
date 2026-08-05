@@ -68,8 +68,7 @@ export default function Image() {
 					lineHeight: 1.5,
 				}}
 			>
-				Monitor podcasts 24/7. Notify Slack, Discord, Telegram & WhatsApp
-				instantly.
+				Monitor podcasts 24/7. Notify Slack, Discord & Telegram instantly.
 			</p>
 		</div>,
 		{ ...size },
