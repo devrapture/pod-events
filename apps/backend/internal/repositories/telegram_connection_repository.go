@@ -29,9 +29,26 @@ func NewTelegramConnectionRepository(db *gorm.DB) TelegramConnectionRepository {
 }
 
 func (r *telegramConnectionRepository) Create(ctx context.Context, conn *models.TelegramConnection) error {
-	result := dbFromCtx(ctx, r.db).WithContext(ctx).Create(conn)
-	if result.Error != nil {
-		return fmt.Errorf("failed to create telegram connection: %w", result.Error)
+	var user models.User
+	err := dbFromCtx(ctx, r.db).Transaction(func(tx *gorm.DB) error {
+		// 1. Lock the row
+		if err := tx.Clauses(clause.Locking{Strength: "UPDATE"}).
+			Select("id").
+			Where("id = ?", conn.UserID).
+			First(&user).Error; err != nil {
+			return fmt.Errorf("failed to lock user: %w", err)
+		}
+		// 2. Now safely update it — no other request can interfere
+		if err := tx.Unscoped().Where("user_id = ?", conn.UserID).Delete(&models.TelegramConnection{}).Error; err != nil {
+			return fmt.Errorf("failed to delete previous telegram connection: %w", err)
+		}
+		if err := tx.Create(conn).Error; err != nil {
+			return fmt.Errorf("failed to create telegram connection: %w", err)
+		}
+		return nil
+	})
+	if err != nil {
+		return fmt.Errorf("failed to replace telegram connection: %w", err)
 	}
 	return nil
 }

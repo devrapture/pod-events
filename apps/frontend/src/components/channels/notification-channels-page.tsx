@@ -39,7 +39,9 @@ export function NotificationChannelsPage() {
 	const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
 	const { toast } = useToast();
 
-	const { data, isLoading, isFetching, isError, refetch } = useChannels({});
+	const { data, isLoading, isFetching, isError, refetch } = useChannels({
+		refetchOnWindowFocus: "always",
+	});
 
 	const { mutate: toggleChannel, isPending: isToggling } = useToggleChannel();
 	const { mutate: deleteChannel, isPending: isDeleting } = useDeleteChannel();
