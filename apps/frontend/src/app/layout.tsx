@@ -71,15 +71,14 @@ export default function RootLayout({
 		>
 			<body className="font-sans">
 				<Providers>{children}</Providers>
-				{process.env.NODE_ENV === "production" && (
-					<Script
-						async
-						data-domain="pod-event.vercel.app"
-						data-site="ekewhwo941ka"
-						src="https://www.sabilytics.com/script.js"
-						strategy="afterInteractive"
-					/>
-				)}
+				<Script
+					async
+					data-domain="pod-event.vercel.app"
+					data-site="ekewhwo941ka"
+					src="https://www.sabilytics.com/script.js"
+					strategy="afterInteractive"
+				/>
+
 			</body>
 		</html>
 	);
