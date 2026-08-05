@@ -61,8 +61,7 @@ export default function PrivacyPage() {
 							<li>
 								<span className="text-zinc-300">Notification settings</span> you
 								configure, such as Slack or Discord webhook URLs, Telegram chat
-								IDs, WhatsApp destination numbers, channel labels, and whether a
-								channel is active.
+								IDs, channel labels, and whether a channel is active.
 							</li>
 							<li>
 								<span className="text-zinc-300">
@@ -175,11 +174,6 @@ export default function PrivacyPage() {
 								<span className="text-zinc-300">Telegram</span> — when you
 								connect a Telegram chat, we use Telegram APIs/webhooks to
 								deliver notifications.
-							</li>
-							<li>
-								<span className="text-zinc-300">WhatsApp</span> — when you
-								configure a WhatsApp destination, we use the destination details
-								you provide to deliver notifications.
 							</li>
 						</ul>
 						<p className="mt-3">

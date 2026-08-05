@@ -109,9 +109,8 @@ export function Hero() {
 
 						<p className="mt-6 max-w-xl text-lg text-zinc-400 leading-relaxed">
 							PodEvents monitors Spotify podcasts 24/7 and instantly delivers
-							new episode notifications to Slack, Discord, Telegram, and
-							WhatsApp—so your team never misses important industry
-							conversations.
+							new episode notifications to Slack, Discord, and Telegram—so your
+							team never misses important industry conversations.
 						</p>
 
 						<div className="mt-8 flex flex-wrap gap-3">

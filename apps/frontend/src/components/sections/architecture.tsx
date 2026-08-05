@@ -19,7 +19,7 @@ const LABELS = [
 	"Idempotency",
 ] as const;
 
-const CHANNELS = ["Slack", "Discord", "Telegram", "WhatsApp"] as const;
+const CHANNELS = ["Slack", "Discord", "Telegram"] as const;
 
 function FlowNode({
 	label,

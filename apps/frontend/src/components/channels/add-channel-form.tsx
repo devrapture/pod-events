@@ -20,19 +20,17 @@ import { getAPIErrorMessage } from "@/lib/api-error";
 import { cn } from "@/lib/utils";
 import type { ChannelType } from "@/services/types";
 
-type UiChannelType = "slack" | "discord" | "whatsapp" | "telegram";
+type UiChannelType = "slack" | "discord" | "telegram";
 
 const CHANNEL_OPTIONS: { key: UiChannelType; label: string }[] = [
 	{ key: "slack", label: "Slack" },
 	{ key: "discord", label: "Discord" },
-	{ key: "whatsapp", label: "WhatsApp" },
 	{ key: "telegram", label: "Telegram" },
 ];
 
 const UI_TO_API_TYPE: Record<UiChannelType, ChannelType | null> = {
 	slack: "slack_webhook",
 	discord: "discord_webhook",
-	whatsapp: "whatsapp",
 	telegram: null,
 };
 
@@ -83,12 +81,6 @@ export function AddChannelForm({ onSuccess }: AddChannelFormProps) {
 			}
 		}
 
-		if (channelType === "whatsapp") {
-			if (!/^\[1-9]\d{1,14}$/.test(trimmed)) {
-				setValidationError("Use E.164 format, e.g. 2348012345678.");
-				return;
-			}
-		}
 		setValidationError(null);
 		createChannel(
 			{
@@ -275,43 +267,6 @@ export function AddChannelForm({ onSuccess }: AddChannelFormProps) {
 						</div>
 						<p className="text-xs text-zinc-500 leading-relaxed">
 							Get this from Discord Server Settings → Integrations → Webhooks.
-						</p>
-						<Button disabled={isPending} onClick={handleSave} type="button">
-							{isCreating && <Loader2 className="h-4 w-4 animate-spin" />}
-							Save Channel
-						</Button>
-					</div>
-				)}
-
-				{selectedType === "whatsapp" && (
-					<div className="space-y-3">
-						<div>
-							<label
-								className="mb-1.5 block text-sm text-zinc-300"
-								htmlFor="whatsapp-contact"
-							>
-								WhatsApp phone number
-							</label>
-							<input
-								className={cn(
-									INPUT_CLASS,
-									validationError && "border-red-500/50",
-								)}
-								id="whatsapp-contact"
-								onChange={(e) => {
-									setDestination(e.target.value);
-									setValidationError(null);
-								}}
-								placeholder="+2348012345678"
-								type="tel"
-								value={destination}
-							/>
-							{validationError && (
-								<p className="mt-1.5 text-red-400 text-xs">{validationError}</p>
-							)}
-						</div>
-						<p className="text-xs text-zinc-500 leading-relaxed">
-							Use E.164 format with country code, e.g. +2348012345678.
 						</p>
 						<Button disabled={isPending} onClick={handleSave} type="button">
 							{isCreating && <Loader2 className="h-4 w-4 animate-spin" />}

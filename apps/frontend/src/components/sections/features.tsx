@@ -31,8 +31,7 @@ const FEATURES = [
 	{
 		icon: Zap,
 		title: "Multi-channel Notifications",
-		description:
-			"Deliver alerts directly to Slack, Discord, Telegram, or WhatsApp.",
+		description: "Deliver alerts directly to Slack, Discord, or Telegram.",
 	},
 	{
 		icon: Users,
