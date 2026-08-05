@@ -138,8 +138,13 @@ export function AddChannelForm({ onSuccess }: AddChannelFormProps) {
 					);
 				}
 			},
-			onError: () => {
-				toast.error("Failed to connect Telegram. Please try again.");
+			onError: (error) => {
+				toast.error(
+					getAPIErrorMessage(
+						error,
+						"Failed to connect Telegram. Please try again.",
+					),
+				);
 			},
 		});
 	}, [generateTelegramLink, toast]);

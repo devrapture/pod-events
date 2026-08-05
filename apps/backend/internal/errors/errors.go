@@ -45,4 +45,6 @@ var (
 	ErrInvalidSpotifyShowIDs = errors.New("at least one valid spotify show id is required")
 	// ErrTooManySpotifyShowIDs is returned when a subscription batch exceeds the allowed size
 	ErrTooManySpotifyShowIDs = errors.New("too many spotify show ids")
+	// ErrNoTelegramConnectionFound is returned when a telegram connection cannot be found
+	ErrNoTelegramConnectionFound = errors.New("no telegram connection found")
 )
