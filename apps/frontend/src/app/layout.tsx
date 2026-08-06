@@ -74,7 +74,7 @@ export default function RootLayout({
 				<Script
 					async
 					data-domain="pod-event.vercel.app"
-					data-site="ekewhwo941ka"
+					data-site="ekewhwo94lka"
 					src="https://www.sabilytics.com/script.js"
 					strategy="afterInteractive"
 				/>
