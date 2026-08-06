@@ -7,6 +7,7 @@ import (
 
 	"github.com/devrapture/pod-events/internal/config"
 	handlers "github.com/devrapture/pod-events/internal/handler"
+	"github.com/devrapture/pod-events/internal/metrics"
 	"github.com/devrapture/pod-events/internal/middleware"
 	sentrygin "github.com/getsentry/sentry-go/gin"
 	"github.com/gin-gonic/gin"
@@ -27,10 +28,11 @@ type HandlerDependencies struct {
 	CronHandler      *handlers.CronJobHandler
 }
 
-func Setup(db *gorm.DB, deps HandlerDependencies, cfg *config.Config, logger *zap.Logger) *gin.Engine {
+func Setup(db *gorm.DB, deps HandlerDependencies, cfg *config.Config, logger *zap.Logger, recorder metrics.Recorder) *gin.Engine {
 	r := gin.New()
 	r.Use(middleware.RequestLogger(logger))
 	r.Use(gin.Recovery())
+	r.Use(middleware.MetricsRecorder(recorder))
 	if cfg.SentryDSN != "" {
 		r.Use(sentrygin.New(sentrygin.Options{
 			Repanic: true,

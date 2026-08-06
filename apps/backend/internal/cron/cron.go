@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/devrapture/pod-events/internal/metrics"
 	"github.com/devrapture/pod-events/internal/models"
 	"github.com/devrapture/pod-events/internal/repositories"
 	"github.com/devrapture/pod-events/internal/services"
@@ -22,6 +23,7 @@ type EpisodeChecker struct {
 	notifService  services.NotificationService
 	logger        *zap.Logger
 	spotifyClient *spotify.SpotifyClient
+	metrics       metrics.Recorder
 }
 
 func NewEpisodeChecker(
@@ -32,6 +34,7 @@ func NewEpisodeChecker(
 	notifService services.NotificationService,
 	logger *zap.Logger,
 	spotifyClient *spotify.SpotifyClient,
+	metrics metrics.Recorder,
 ) *EpisodeChecker {
 	return &EpisodeChecker{
 		subRepo:       subRepo,
@@ -41,6 +44,7 @@ func NewEpisodeChecker(
 		notifService:  notifService,
 		logger:        logger,
 		spotifyClient: spotifyClient,
+		metrics:       metrics,
 	}
 }
 
@@ -93,6 +97,15 @@ func (c *EpisodeChecker) Run(ctx context.Context) (*CheckResult, error) {
 		zap.Int("new_episodes", result.NewEpisodes),
 		zap.Int("errors", len(result.Errors)),
 	)
+
+	c.metrics.Distribution(
+		"cron.run.duration",
+		time.Since(startTime).Seconds(),
+		metrics.WithUnit(metrics.UnitSecond),
+	)
+	c.metrics.Gauge("cron.run.shows_checked", float64(result.ShowsChecked))
+	c.metrics.Gauge("cron.run.errors", float64(len(result.Errors)))
+	c.metrics.Count("episode.new", int64(result.NewEpisodes))
 	return result, nil
 }
 

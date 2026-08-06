@@ -49,6 +49,7 @@ import (
 	"github.com/devrapture/pod-events/internal/cron"
 	"github.com/devrapture/pod-events/internal/database"
 	handlers "github.com/devrapture/pod-events/internal/handler"
+	"github.com/devrapture/pod-events/internal/metrics"
 	"github.com/devrapture/pod-events/internal/notifications/telegram"
 	"github.com/devrapture/pod-events/internal/repositories"
 	"github.com/gin-gonic/gin"
@@ -147,15 +148,16 @@ func run() (exitStatus int) {
 	notificationLogRepo := repositories.NewNotificationLogRepository(db)
 
 	// ── Services ────────────────────────────────────────────────
+	recorder := metrics.New(context.Background(), cfg.SentryDSN != "")
 	authService := services.NewAuthService(cfg, tokenRepo, userRepo, spotifyClient, appCache, logger)
 	showService := services.NewShowServices(spotifyClient, authService, appCache, subscriptionRepo, showRepository)
 	channelService := services.NewChannelServices(channelRepo)
 	telegramConnectionService := services.NewTelegramConnectionService(telegramConnectionRepo, channelRepo, cfg)
 	dashboardService := services.NewDashboardSummaryService(dashboardSummaryRepo)
-	notifService := services.NewNotificationService(notificationLogRepo, logger, cfg, channelRepo)
+	notifService := services.NewNotificationService(notificationLogRepo, logger, cfg, channelRepo, recorder)
 
 	// ── Cron ────────────────────────────────────────────────
-	episodeChecker := cron.NewEpisodeChecker(subscriptionRepo, episodeRepo, showRepo, authService, notifService, logger, spotifyClient)
+	episodeChecker := cron.NewEpisodeChecker(subscriptionRepo, episodeRepo, showRepo, authService, notifService, logger, spotifyClient, recorder)
 
 	// ── Handlers ────────────────────────────────────────────────
 	authHandler := handlers.NewAuthHandler(authService, logger, cfg, userRepo)
@@ -178,7 +180,7 @@ func run() (exitStatus int) {
 	if cfg.IsProduction() {
 		gin.SetMode(gin.ReleaseMode)
 	}
-	r := routes.Setup(db, deps, cfg, logger)
+	r := routes.Setup(db, deps, cfg, logger, recorder)
 
 	srv := &http.Server{
 		Addr:    addr,
