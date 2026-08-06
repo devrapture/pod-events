@@ -1,16 +1,18 @@
 package dto
 
+import "time"
+
 type DashboardSummaryDTO struct {
-	Setup DashboardSetupResponse `json:"setup"`
-	Stats DashboardStatsResponse `json:"stats"`
+	Setup          DashboardSetupResponse   `json:"setup"`
+	Stats          DashboardStatsResponse   `json:"stats"`
+	RecentEpisodes []RecentEpisodesResponse `json:"recent_episodes"`
 }
 
 type DashboardSetupResponse struct {
-	Completed      int                      `json:"completed"`
-	Total          int                      `json:"total"`
-	Percent        int                      `json:"percent"`
-	Items          []DashboardItems         `json:"items"`
-	RecentEpisodes []RecentEpisodesResponse `json:"recent_episodes"`
+	Completed int              `json:"completed"`
+	Total     int              `json:"total"`
+	Percent   int              `json:"percent"`
+	Items     []DashboardItems `json:"items"`
 }
 
 type DashboardStatsResponse struct {
@@ -21,11 +23,11 @@ type DashboardStatsResponse struct {
 }
 
 type RecentEpisodesResponse struct {
-	EpisodeTitle string `json:"episode_title"`
-	PodcastName  string `json:"podcast_name"`
-	ReleaseDate  string `json:"release_date"`
-	Duration     string `json:"duration"`
-	URL          string `json:"url"`
+	EpisodeTitle string    `json:"episode_title"`
+	PodcastName  string    `json:"podcast_name"`
+	ReleaseDate  time.Time `json:"release_date"`
+	Duration     int       `json:"duration"`
+	URL          string    `json:"url"`
 }
 
 type DashboardItems struct {

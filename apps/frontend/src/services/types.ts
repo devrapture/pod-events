@@ -133,9 +133,18 @@ export interface DashboardStats {
 	notification_sent: number;
 }
 
+export interface RecentEpisode {
+	episode_title: string;
+	podcast_name: string;
+	release_date: string;
+	duration: number;
+	url: string;
+}
+
 export interface DashboardSummary {
 	setup: DashboardSetup;
 	stats: DashboardStats;
+	recent_episodes: RecentEpisode[];
 }
 
 export interface ShowSearchParams {
