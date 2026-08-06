@@ -99,7 +99,7 @@ func (r *dasboardSummaryRepository) GetDashboardSummary(ctx context.Context, use
 	`).Joins("JOIN episodes ON episodes.id = notification_logs.episode_id").
 		Joins("JOIN podcast_shows ON podcast_shows.id = episodes.podcast_show_id").
 		Where(
-			"notification_logs.user_id = ? AND notification_logs.status = ?",
+			"notification_logs.user_id = ? AND notification_logs.status = ? AND notification_logs.sent_at IS NOT NULL",
 			userID,
 			models.NotificationStatusSent,
 		).
