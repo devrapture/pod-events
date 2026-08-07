@@ -1,3 +1,4 @@
+import * as Sentry from "@sentry/nextjs";
 import { createMutation } from "react-query-kit";
 import { queryClient } from "@/lib/query-client";
 import { apis } from "@/services/api-services";
@@ -18,7 +19,10 @@ export const useCreateChannel = createMutation({
 		const response = await apis.channels.create(variables);
 		return response.data;
 	},
-	onSuccess: () => {
+	onSuccess: (_data, variables) => {
+		Sentry.metrics.count("podevents.channel.created", 1, {
+			attributes: { channel_type: variables.channel_type },
+		});
 		queryClient.invalidateQueries({ queryKey: channelKeys.all });
 	},
 });
@@ -31,6 +35,7 @@ export const useDeleteChannel = createMutation({
 		return response.data;
 	},
 	onSuccess: () => {
+		Sentry.metrics.count("podevents.channel.deleted");
 		queryClient.invalidateQueries({ queryKey: channelKeys.all });
 	},
 });
@@ -91,6 +96,11 @@ export const useToggleChannel = createMutation({
 	onSettled: () => {
 		queryClient.invalidateQueries({ queryKey: channelKeys.all });
 	},
+	onSuccess: (_data, variables) => {
+		Sentry.metrics.count("podevents.channel.status_changed", 1, {
+			attributes: { active: variables.is_active },
+		});
+	},
 });
 
 export const useGenerateTelegramLink = createMutation<
@@ -101,5 +111,8 @@ export const useGenerateTelegramLink = createMutation<
 	mutationFn: async () => {
 		const response = await apis.telegram.generateLink();
 		return response.data;
+	},
+	onSuccess: () => {
+		Sentry.metrics.count("podevents.telegram.link_generated");
 	},
 });

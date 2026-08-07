@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/devrapture/pod-events/internal/metrics"
 	"github.com/devrapture/pod-events/internal/models"
 	"github.com/devrapture/pod-events/internal/repositories"
 	"github.com/devrapture/pod-events/internal/services"
@@ -22,6 +23,7 @@ type EpisodeChecker struct {
 	notifService  services.NotificationService
 	logger        *zap.Logger
 	spotifyClient *spotify.SpotifyClient
+	metrics       metrics.Recorder
 }
 
 func NewEpisodeChecker(
@@ -32,6 +34,7 @@ func NewEpisodeChecker(
 	notifService services.NotificationService,
 	logger *zap.Logger,
 	spotifyClient *spotify.SpotifyClient,
+	metrics metrics.Recorder,
 ) *EpisodeChecker {
 	return &EpisodeChecker{
 		subRepo:       subRepo,
@@ -41,6 +44,7 @@ func NewEpisodeChecker(
 		notifService:  notifService,
 		logger:        logger,
 		spotifyClient: spotifyClient,
+		metrics:       metrics,
 	}
 }
 
@@ -55,20 +59,39 @@ type CheckResult struct {
 func (c *EpisodeChecker) Run(ctx context.Context) (*CheckResult, error) {
 	result := &CheckResult{}
 	startTime := time.Now()
+	// fatalFailures tracks run-level failures (repo errors, context cancellation)
+	// separately from per-show errors in result.Errors.
+	fatalFailures := 0
+
+	// Emit completion metrics on every exit path, including early returns.
+	defer func() {
+		c.metrics.Distribution(
+			"cron.run.duration",
+			time.Since(startTime).Seconds(),
+			metrics.WithUnit(metrics.UnitSecond),
+		)
+		c.metrics.Gauge("cron.run.shows_checked", float64(result.ShowsChecked))
+		c.metrics.Gauge("cron.run.errors", float64(len(result.Errors)+fatalFailures))
+		c.metrics.Count("episode.new", int64(result.NewEpisodes))
+	}()
+
 	c.logger.Info("cron job started: checking for new episodes")
 	shows, err := c.showRepo.GetAllTracked(ctx)
 	if err != nil {
+		fatalFailures++
 		return nil, fmt.Errorf("get tracked shows: %w", err)
 	}
 	c.logger.Info("found tracked shows", zap.Int("count", len(shows)))
 	for _, show := range shows {
 		if err := ctx.Err(); err != nil {
+			fatalFailures++
 			return result, err
 		}
 
 		result.ShowsChecked++
 		if err := c.checkShow(ctx, &show, result); err != nil {
 			if ctxErr := ctx.Err(); ctxErr != nil {
+				fatalFailures++
 				return result, ctxErr
 			}
 			c.logger.Error(
@@ -81,6 +104,7 @@ func (c *EpisodeChecker) Run(ctx context.Context) (*CheckResult, error) {
 
 		select {
 		case <-ctx.Done():
+			fatalFailures++
 			return result, ctx.Err()
 		case <-time.After(200 * time.Millisecond):
 		}
@@ -93,6 +117,7 @@ func (c *EpisodeChecker) Run(ctx context.Context) (*CheckResult, error) {
 		zap.Int("new_episodes", result.NewEpisodes),
 		zap.Int("errors", len(result.Errors)),
 	)
+
 	return result, nil
 }
 

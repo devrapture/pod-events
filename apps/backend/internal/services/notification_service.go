@@ -9,6 +9,7 @@ import (
 
 	"github.com/devrapture/pod-events/internal/config"
 	apperrors "github.com/devrapture/pod-events/internal/errors"
+	"github.com/devrapture/pod-events/internal/metrics"
 	"github.com/devrapture/pod-events/internal/models"
 	"github.com/devrapture/pod-events/internal/notifications"
 	"github.com/devrapture/pod-events/internal/notifications/discord"
@@ -16,6 +17,7 @@ import (
 	"github.com/devrapture/pod-events/internal/notifications/telegram"
 	"github.com/devrapture/pod-events/internal/repositories"
 	appcrypto "github.com/devrapture/pod-events/pkg/crypto"
+	"github.com/getsentry/sentry-go/attribute"
 	"github.com/google/uuid"
 	"go.uber.org/zap"
 )
@@ -29,14 +31,16 @@ type notificationService struct {
 	logger      *zap.Logger
 	cfg         *config.Config
 	channelRepo repositories.ChannelRepository
+	metrics     metrics.Recorder
 }
 
-func NewNotificationService(logRepo repositories.NotificationLogRepository, logger *zap.Logger, cfg *config.Config, channelRepo repositories.ChannelRepository) NotificationService {
+func NewNotificationService(logRepo repositories.NotificationLogRepository, logger *zap.Logger, cfg *config.Config, channelRepo repositories.ChannelRepository, metrics metrics.Recorder) NotificationService {
 	return &notificationService{
 		logRepo:     logRepo,
 		logger:      logger,
 		cfg:         cfg,
 		channelRepo: channelRepo,
+		metrics:     metrics,
 	}
 }
 
@@ -86,6 +90,7 @@ func (s *notificationService) NotifyUser(ctx context.Context, userID uuid.UUID, 
 				zap.String("episode_id", episode.ID.String()),
 				zap.String("channel_type", string(channel.ChannelType)))
 			s.saveLog(ctx, userID, episode.ID, channel.ChannelType, models.NotificationStatusFailed, "Channel is not active")
+			s.recordChannelMetric("notification.failed", channel.ChannelType)
 			sendErrors = append(sendErrors, fmt.Errorf("%s: Channel is not active", channel.ChannelType))
 			continue
 		}
@@ -93,6 +98,7 @@ func (s *notificationService) NotifyUser(ctx context.Context, userID uuid.UUID, 
 		if err != nil {
 			s.logger.Error("failed to build notifier", zap.String("channel_type", string(channel.ChannelType)), zap.Error(err))
 			s.saveLog(ctx, userID, episode.ID, channel.ChannelType, models.NotificationStatusFailed, err.Error())
+			s.recordChannelMetric("notification.failed", channel.ChannelType)
 			sendErrors = append(sendErrors, fmt.Errorf("%s: %w", channel.ChannelType, err))
 			continue
 		}
@@ -109,6 +115,7 @@ func (s *notificationService) NotifyUser(ctx context.Context, userID uuid.UUID, 
 				zap.Error(sendErr),
 			)
 			s.saveLog(ctx, userID, episode.ID, channel.ChannelType, models.NotificationStatusFailed, sendErr.Error())
+			s.recordChannelMetric("notification.failed", channel.ChannelType)
 			sendErrors = append(sendErrors, fmt.Errorf("%s: %w", channel.ChannelType, sendErr))
 		} else {
 			delivered = true
@@ -119,6 +126,7 @@ func (s *notificationService) NotifyUser(ctx context.Context, userID uuid.UUID, 
 				zap.String("channel_type", string(channel.ChannelType)),
 			)
 			s.saveLog(ctx, userID, episode.ID, channel.ChannelType, models.NotificationStatusSent, "")
+			s.recordChannelMetric("notification.sent", channel.ChannelType)
 		}
 	}
 
@@ -129,6 +137,10 @@ func (s *notificationService) NotifyUser(ctx context.Context, userID uuid.UUID, 
 		return false, fmt.Errorf("no notification delivered: %w", errors.Join(sendErrors...))
 	}
 	return false, fmt.Errorf("no notification delivered: all configured channels were already notified")
+}
+
+func (s *notificationService) recordChannelMetric(name string, channelType models.ChannelType) {
+	s.metrics.Count(name, 1, metrics.WithAttributes(attribute.String("channel_type", string(channelType))))
 }
 
 func (s *notificationService) buildNotifier(channel models.NotificationChannel) (notifications.Notifier, error) {

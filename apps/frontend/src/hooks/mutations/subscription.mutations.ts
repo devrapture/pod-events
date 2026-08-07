@@ -1,3 +1,4 @@
+import * as Sentry from "@sentry/nextjs";
 import { createMutation } from "react-query-kit";
 import { queryClient } from "@/lib/query-client";
 import { apis } from "@/services/api-services";
@@ -11,6 +12,7 @@ export const useUnsubscribe = createMutation({
 		return response.data;
 	},
 	onSuccess: () => {
+		Sentry.metrics.count("podevents.subscription.deleted");
 		queryClient.invalidateQueries({ queryKey: subscriptionKeys.all });
 	},
 });
