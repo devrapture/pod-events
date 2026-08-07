@@ -147,6 +147,13 @@ func (s *showServices) Subscribe(ctx context.Context, userID uuid.UUID, spotifyS
 		return nil, err
 	}
 
+	// Seed latest-episode watermark for first-time shows so the next cron run
+	// does not treat the show's current (already-published) episode as new.
+	// Only writes when latest_episode_id is still null.
+	if err := s.seedLatestEpisodesIfNull(ctx, userID, showModels); err != nil {
+		return nil, err
+	}
+
 	subscriptions := make([]models.Subscription, 0, len(showModels))
 	for _, show := range showModels {
 		subscriptions = append(subscriptions, models.Subscription{
@@ -161,6 +168,74 @@ func (s *showServices) Subscribe(ctx context.Context, userID uuid.UUID, spotifyS
 	}
 
 	return subscriptions, nil
+}
+
+// seedLatestEpisodesIfNull fetches each show's current latest episode from Spotify and
+// stores it as the watermark when latest_episode_id is null. Shows that already have a
+// watermark are skipped. Shows with no episodes are left null (cron handles that case).
+func (s *showServices) seedLatestEpisodesIfNull(ctx context.Context, userID uuid.UUID, shows []*models.PodcastShow) error {
+	needsSeed := make([]*models.PodcastShow, 0, len(shows))
+	for _, show := range shows {
+		if show.LatestEpisodeID == nil {
+			needsSeed = append(needsSeed, show)
+		}
+	}
+	if len(needsSeed) == 0 {
+		return nil
+	}
+
+	accessToken, err := s.authService.GetValidAccessToken(ctx, userID)
+	if err != nil {
+		return err
+	}
+
+	group, groupCtx := errgroup.WithContext(ctx)
+	group.SetLimit(maxConcurrentSpotifyShowRequests)
+
+	for _, show := range needsSeed {
+		show := show
+		group.Go(func() error {
+			latest, err := s.spotifyClient.GetShowLatestEpisode(groupCtx, accessToken, show.SpotifyShowID)
+			if err != nil {
+				if errors.Is(err, apperrors.ErrSpotifyResourceNotFound) {
+					// Show has no episodes yet — leave watermark null.
+					return nil
+				}
+				var rateLimitErr *spotify.RateLimitError
+				if errors.As(err, &rateLimitErr) {
+					return err
+				}
+				if errors.Is(err, apperrors.ErrSpotifyAuthorizationRequired) {
+					return err
+				}
+				return fmt.Errorf("%w: %w", apperrors.ErrSpotifyUnavailable, err)
+			}
+			if latest == nil {
+				return nil
+			}
+
+			publishedAt, err := latest.ParsedReleaseDate()
+			if err != nil {
+				return fmt.Errorf("parse latest episode publication date: %w", err)
+			}
+
+			applied, err := s.showRepository.UpdateLatestEpisodeIfNull(groupCtx, show.ID, latest.ID, publishedAt)
+			if err != nil {
+				return err
+			}
+			if !applied {
+				// Another writer already seeded the watermark; leave in-memory show unchanged.
+				return nil
+			}
+
+			episodeID := latest.ID
+			show.LatestEpisodeID = &episodeID
+			show.LatestEpisodePublishedAt = &publishedAt
+			return nil
+		})
+	}
+
+	return group.Wait()
 }
 
 func (s *showServices) Unsubscribe(ctx context.Context, userID uuid.UUID, subscriptionID uuid.UUID) error {
