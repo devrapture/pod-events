@@ -3,7 +3,9 @@ package services
 import (
 	"context"
 	"fmt"
+	"net/url"
 	"strconv"
+	"strings"
 
 	"github.com/devrapture/pod-events/internal/dto"
 	"github.com/devrapture/pod-events/internal/models"
@@ -31,6 +33,10 @@ func NewChannelServices(channelRepo repositories.ChannelRepository) ChannelServi
 func (s *channelServices) Create(ctx context.Context, userID uuid.UUID, req dto.CreateChannelRequest) (*models.NotificationChannel, error) {
 	if !req.ChannelType.IsValid() {
 		return nil, fmt.Errorf("invalid channel_type %q — must be one of: slack_webhook, discord_webhook, telegram, whatsapp", req.ChannelType)
+	}
+
+	if err := req.ChannelType.ValidateDestination(req.Destination); err != nil {
+		return nil, err
 	}
 
 	if err := s.validateDestination(req.ChannelType, req.Destination); err != nil {
@@ -66,12 +72,12 @@ func (s *channelServices) ToggleActive(ctx context.Context, userID, channelID uu
 func (s *channelServices) validateDestination(channelType models.ChannelType, destination string) error {
 	switch channelType {
 	case models.ChannelTypeSlack:
-		if len(destination) < 10 || destination[:8] != "https://" {
-			return fmt.Errorf("slack destination must be a valid HTTPS webhook URL")
+		if !s.isValidSlackWebhook(destination) {
+			return apperrors.ErrInvalidSlackWebhook
 		}
 	case models.ChannelTypeDiscord:
-		if len(destination) < 10 || destination[:8] != "https://" {
-			return fmt.Errorf("discord destination must be a valid HTTPS webhook URL")
+		if !s.isValidDiscordWebhook(destination) {
+			return apperrors.ErrInvalidDiscordWebhook
 		}
 	case models.ChannelTypeTelegram:
 		if _, err := strconv.ParseInt(destination, 10, 64); err != nil {
@@ -84,4 +90,52 @@ func (s *channelServices) validateDestination(channelType models.ChannelType, de
 		}
 	}
 	return nil
+}
+
+func (s *channelServices) isValidSlackWebhook(rawURL string) bool {
+	u, err := url.Parse(rawURL)
+	if err != nil {
+		return false
+	}
+
+	if u.Scheme != "https" {
+		return false
+	}
+	if !strings.EqualFold(u.Hostname(), "hooks.slack.com") {
+		return false
+	}
+
+	parts := splitPath(u.Path)
+
+	if len(parts) == 0 || parts[0] != "services" {
+		return false
+	}
+
+	return true
+}
+
+func (s *channelServices) isValidDiscordWebhook(rawURL string) bool {
+	u, err := url.Parse(rawURL)
+	if err != nil {
+		return false
+	}
+
+	if u.Scheme != "https" {
+		return false
+	}
+
+	if !strings.EqualFold(u.Hostname(), "discord.com") {
+		return false
+	}
+
+	return true
+}
+
+func splitPath(path string) []string {
+	path = strings.Trim(path, "/")
+	if path == "" {
+		return nil
+	}
+
+	return strings.Split(path, "/")
 }
