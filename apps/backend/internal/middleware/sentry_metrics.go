@@ -18,7 +18,7 @@ func MetricsRecorder(recorder metrics.Recorder) gin.HandlerFunc {
 
 		route := c.FullPath()
 		if route == "" {
-			route = c.Request.URL.Path
+			route = "unmatched"
 		}
 
 		attrs := []attribute.Builder{
