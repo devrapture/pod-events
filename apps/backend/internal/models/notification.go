@@ -1,10 +1,6 @@
 package models
 
 import (
-	"fmt"
-	"net/url"
-	"strings"
-
 	"github.com/google/uuid"
 )
 
@@ -44,66 +40,4 @@ func (c ChannelType) IsValid() bool {
 
 func (c ChannelType) IsWebhook() bool {
 	return c == ChannelTypeSlack || c == ChannelTypeDiscord
-}
-
-func (c ChannelType) ValidateDestination(destination string) error {
-	switch c {
-	case ChannelTypeSlack:
-		if !c.isValidSlackWebhook(destination) {
-			return fmt.Errorf("invalid slack webhook")
-		}
-	case ChannelTypeDiscord:
-		if !c.isValidDiscordWebhook(destination) {
-			return fmt.Errorf("invalid discord webhook")
-		}
-	}
-	return nil
-}
-
-func (c ChannelType) isValidSlackWebhook(rawURL string) bool {
-	u, err := url.Parse(rawURL)
-	if err != nil {
-		return false
-	}
-
-	if u.Scheme != "https" {
-		return false
-	}
-	if !strings.EqualFold(u.Hostname(), "hooks.slack.com") {
-		return false
-	}
-
-	parts := splitPath(u.Path)
-
-	if len(parts) == 0 || parts[0] != "services" {
-		return false
-	}
-
-	return true
-}
-
-func (c ChannelType) isValidDiscordWebhook(rawURL string) bool {
-	u, err := url.Parse(rawURL)
-	if err != nil {
-		return false
-	}
-
-	if u.Scheme != "https" {
-		return false
-	}
-
-	if !strings.EqualFold(u.Hostname(), "discord.com") {
-		return false
-	}
-
-	return true
-}
-
-func splitPath(path string) []string {
-	path = strings.Trim(path, "/")
-	if path == "" {
-		return nil
-	}
-
-	return strings.Split(path, "/")
 }

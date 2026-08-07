@@ -47,4 +47,8 @@ var (
 	ErrTooManySpotifyShowIDs = errors.New("too many spotify show ids")
 	// ErrNoTelegramConnectionFound is returned when a telegram connection cannot be found
 	ErrNoTelegramConnectionFound = errors.New("no telegram connection found")
+	// ErrInvalidDiscordWebhook is returned when a discord webhook is invalid
+	ErrInvalidDiscordWebhook = errors.New("discord destination must be a valid HTTPS webhook URL")
+	// ErrInvalidSlackWebhook is returned when a slack webhook is invalid
+	ErrInvalidSlackWebhook = errors.New("slack destination must be a valid HTTPS webhook URL")
 )
