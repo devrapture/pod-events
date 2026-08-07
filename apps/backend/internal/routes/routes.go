@@ -31,8 +31,8 @@ type HandlerDependencies struct {
 func Setup(db *gorm.DB, deps HandlerDependencies, cfg *config.Config, logger *zap.Logger, recorder metrics.Recorder) *gin.Engine {
 	r := gin.New()
 	r.Use(middleware.RequestLogger(logger))
-	r.Use(gin.Recovery())
 	r.Use(middleware.MetricsRecorder(recorder))
+	r.Use(gin.Recovery())
 	if cfg.SentryDSN != "" {
 		r.Use(sentrygin.New(sentrygin.Options{
 			Repanic: true,
