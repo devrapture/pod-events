@@ -20,8 +20,9 @@ type ShowRepository interface {
 	GetBySpotifyID(ctx context.Context, spotifyShowID string) (*models.PodcastShow, error)
 	UpdateLatestEpisode(ctx context.Context, showID uuid.UUID, episodeID string, publishedAt interface{}) error
 	// UpdateLatestEpisodeIfNull sets the latest-episode watermark only when it is currently null.
-	// Returns applied=true when a row was updated. applied=false with nil error means another
-	// writer already seeded the show (race-safe no-op).
+	// Returns applied=true when a row was updated. applied=false with nil error means either the
+	// show does not exist or latest_episode_id is already populated (this method does not
+	// distinguish those cases).
 	UpdateLatestEpisodeIfNull(ctx context.Context, showID uuid.UUID, episodeID string, publishedAt interface{}) (bool, error)
 }
 
@@ -170,7 +171,8 @@ func (r *showRepository) UpdateLatestEpisode(ctx context.Context, showID uuid.UU
 // UpdateLatestEpisodeIfNull sets latest_episode_id / latest_episode_published_at only when
 // latest_episode_id is currently NULL. Used on subscribe to seed a baseline without
 // overwriting a watermark already established by another subscriber or the cron job.
-// Returns applied=true when the conditional update modified a row.
+// Returns applied=true when the conditional update modified a row. applied=false with nil
+// error means either the show is missing or latest_episode_id is already set.
 func (r *showRepository) UpdateLatestEpisodeIfNull(ctx context.Context, showID uuid.UUID, episodeID string, publishedAt interface{}) (bool, error) {
 	result := dbFromCtx(ctx, r.db).WithContext(ctx).
 		Model(&models.PodcastShow{}).
