@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"strings"
-	"time"
 
 	"github.com/devrapture/pod-events/internal/dto"
 	apperrors "github.com/devrapture/pod-events/internal/errors"
@@ -215,21 +214,23 @@ func (s *showServices) seedLatestEpisodesIfNull(ctx context.Context, userID uuid
 				return nil
 			}
 
-			var publishedAt interface{}
-			var publishedAtPtr *time.Time
-			if parsed, parseErr := latest.ParsedReleaseDate(); parseErr == nil {
-				publishedAt = parsed
-				t := parsed
-				publishedAtPtr = &t
+			publishedAt, err := latest.ParsedReleaseDate()
+			if err != nil {
+				return fmt.Errorf("parse latest episode publication date: %w", err)
 			}
 
-			if err := s.showRepository.UpdateLatestEpisodeIfNull(groupCtx, show.ID, latest.ID, publishedAt); err != nil {
+			applied, err := s.showRepository.UpdateLatestEpisodeIfNull(groupCtx, show.ID, latest.ID, publishedAt)
+			if err != nil {
 				return err
+			}
+			if !applied {
+				// Another writer already seeded the watermark; leave in-memory show unchanged.
+				return nil
 			}
 
 			episodeID := latest.ID
 			show.LatestEpisodeID = &episodeID
-			show.LatestEpisodePublishedAt = publishedAtPtr
+			show.LatestEpisodePublishedAt = &publishedAt
 			return nil
 		})
 	}

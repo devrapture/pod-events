@@ -20,8 +20,9 @@ type ShowRepository interface {
 	GetBySpotifyID(ctx context.Context, spotifyShowID string) (*models.PodcastShow, error)
 	UpdateLatestEpisode(ctx context.Context, showID uuid.UUID, episodeID string, publishedAt interface{}) error
 	// UpdateLatestEpisodeIfNull sets the latest-episode watermark only when it is currently null.
-	// RowsAffected may be 0 if another writer already seeded the show; that is not an error.
-	UpdateLatestEpisodeIfNull(ctx context.Context, showID uuid.UUID, episodeID string, publishedAt interface{}) error
+	// Returns applied=true when a row was updated. applied=false with nil error means another
+	// writer already seeded the show (race-safe no-op).
+	UpdateLatestEpisodeIfNull(ctx context.Context, showID uuid.UUID, episodeID string, publishedAt interface{}) (bool, error)
 }
 
 type showRepository struct {
@@ -169,7 +170,8 @@ func (r *showRepository) UpdateLatestEpisode(ctx context.Context, showID uuid.UU
 // UpdateLatestEpisodeIfNull sets latest_episode_id / latest_episode_published_at only when
 // latest_episode_id is currently NULL. Used on subscribe to seed a baseline without
 // overwriting a watermark already established by another subscriber or the cron job.
-func (r *showRepository) UpdateLatestEpisodeIfNull(ctx context.Context, showID uuid.UUID, episodeID string, publishedAt interface{}) error {
+// Returns applied=true when the conditional update modified a row.
+func (r *showRepository) UpdateLatestEpisodeIfNull(ctx context.Context, showID uuid.UUID, episodeID string, publishedAt interface{}) (bool, error) {
 	result := dbFromCtx(ctx, r.db).WithContext(ctx).
 		Model(&models.PodcastShow{}).
 		Where("id = ? AND latest_episode_id IS NULL", showID).
@@ -179,7 +181,7 @@ func (r *showRepository) UpdateLatestEpisodeIfNull(ctx context.Context, showID u
 		})
 
 	if result.Error != nil {
-		return fmt.Errorf("failed to seed latest episode: %w", result.Error)
+		return false, fmt.Errorf("failed to seed latest episode: %w", result.Error)
 	}
-	return nil
+	return result.RowsAffected > 0, nil
 }
