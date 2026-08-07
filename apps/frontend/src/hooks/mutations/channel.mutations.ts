@@ -11,6 +11,7 @@ import type {
 } from "@/services/types";
 
 import { channelKeys } from "../keys/channel.keys";
+import { dashboardKeys } from "../keys/dashboard.keys";
 
 export const useCreateChannel = createMutation({
 	mutationFn: async (
@@ -22,6 +23,10 @@ export const useCreateChannel = createMutation({
 	onSuccess: (_data, variables) => {
 		Sentry.metrics.count("podevents.channel.created", 1, {
 			attributes: { channel_type: variables.channel_type },
+		});
+		queryClient.invalidateQueries({
+			queryKey: dashboardKeys.all,
+			refetchType: "all",
 		});
 		queryClient.invalidateQueries({ queryKey: channelKeys.all });
 	},
@@ -37,6 +42,10 @@ export const useDeleteChannel = createMutation({
 	onSuccess: () => {
 		Sentry.metrics.count("podevents.channel.deleted");
 		queryClient.invalidateQueries({ queryKey: channelKeys.all });
+		queryClient.invalidateQueries({
+			queryKey: dashboardKeys.all,
+			refetchType: "all",
+		});
 	},
 });
 
