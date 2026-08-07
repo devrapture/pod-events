@@ -4,6 +4,7 @@ import { queryClient } from "@/lib/query-client";
 import { apis } from "@/services/api-services";
 import type { APIResponse } from "@/services/types";
 
+import { dashboardKeys } from "../keys/dashboard.keys";
 import { showKeys } from "../keys/show.keys";
 import { subscriptionKeys } from "../keys/subscription.keys";
 
@@ -20,6 +21,10 @@ export const useSubscribeToShow = createMutation({
 		});
 		queryClient.invalidateQueries({ queryKey: showKeys.all });
 		queryClient.invalidateQueries({ queryKey: subscriptionKeys.all });
+		queryClient.invalidateQueries({
+			queryKey: dashboardKeys.all,
+			refetchType: "all",
+		});
 	},
 });
 
@@ -38,5 +43,9 @@ export const useBulkTrackShows = createMutation({
 		);
 		queryClient.invalidateQueries({ queryKey: showKeys.all });
 		queryClient.invalidateQueries({ queryKey: subscriptionKeys.all });
+		queryClient.invalidateQueries({
+			queryKey: dashboardKeys.all,
+			refetchType: "all",
+		});
 	},
 });

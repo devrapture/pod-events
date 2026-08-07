@@ -1,6 +1,7 @@
 "use client";
 
 import { Loader2, RefreshCw, Search, X } from "lucide-react";
+import Link from "next/link";
 import pluralize from "pluralize";
 import { useCallback, useMemo, useState } from "react";
 
@@ -154,6 +155,16 @@ export function SearchPodcastsPage() {
 						<p className="mt-2 max-w-md text-sm text-zinc-500">
 							Try &ldquo;tech&rdquo;, &ldquo;Productivity&rdquo;,
 							&ldquo;Entrepreneurship&rdquo;, or any podcast name.
+						</p>
+						<p className="mt-3 max-w-md text-sm text-zinc-500">
+							Already subscribed on Spotify?{" "}
+							<Link
+								className="text-emerald-400 hover:text-emerald-300"
+								href="/dashboard/import"
+							>
+								Import from Spotify
+							</Link>{" "}
+							to start tracking those shows.
 						</p>
 					</div>
 				) : isLoading ? (

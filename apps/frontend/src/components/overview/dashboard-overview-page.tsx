@@ -99,8 +99,12 @@ export function DashboardOverviewPage() {
 					{summary.setup.percent < 100 && (
 						<SetupChecklist setup={summary.setup} />
 					)}
-					<StatsCards stats={summary.stats} />
-					<RecentEpisodes episodes={summary.recent_episodes ?? []} />
+					{summary.setup.percent === 100 && (
+						<>
+							<StatsCards stats={summary.stats} />
+							<RecentEpisodes episodes={summary.recent_episodes ?? []} />
+						</>
+					)}
 				</>
 			)}
 		</div>
