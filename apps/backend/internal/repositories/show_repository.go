@@ -19,6 +19,9 @@ type ShowRepository interface {
 	GetByID(ctx context.Context, id uuid.UUID) (*models.PodcastShow, error)
 	GetBySpotifyID(ctx context.Context, spotifyShowID string) (*models.PodcastShow, error)
 	UpdateLatestEpisode(ctx context.Context, showID uuid.UUID, episodeID string, publishedAt interface{}) error
+	// UpdateLatestEpisodeIfNull sets the latest-episode watermark only when it is currently null.
+	// RowsAffected may be 0 if another writer already seeded the show; that is not an error.
+	UpdateLatestEpisodeIfNull(ctx context.Context, showID uuid.UUID, episodeID string, publishedAt interface{}) error
 }
 
 type showRepository struct {
@@ -159,6 +162,24 @@ func (r *showRepository) UpdateLatestEpisode(ctx context.Context, showID uuid.UU
 	}
 	if result.RowsAffected == 0 {
 		return apperrors.ErrPodcastShowNotFound
+	}
+	return nil
+}
+
+// UpdateLatestEpisodeIfNull sets latest_episode_id / latest_episode_published_at only when
+// latest_episode_id is currently NULL. Used on subscribe to seed a baseline without
+// overwriting a watermark already established by another subscriber or the cron job.
+func (r *showRepository) UpdateLatestEpisodeIfNull(ctx context.Context, showID uuid.UUID, episodeID string, publishedAt interface{}) error {
+	result := dbFromCtx(ctx, r.db).WithContext(ctx).
+		Model(&models.PodcastShow{}).
+		Where("id = ? AND latest_episode_id IS NULL", showID).
+		Updates(map[string]interface{}{
+			"latest_episode_id":           episodeID,
+			"latest_episode_published_at": publishedAt,
+		})
+
+	if result.Error != nil {
+		return fmt.Errorf("failed to seed latest episode: %w", result.Error)
 	}
 	return nil
 }
