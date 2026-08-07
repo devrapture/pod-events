@@ -21,7 +21,10 @@ export const useSubscribeToShow = createMutation({
 		});
 		queryClient.invalidateQueries({ queryKey: showKeys.all });
 		queryClient.invalidateQueries({ queryKey: subscriptionKeys.all });
-		queryClient.invalidateQueries({ queryKey: dashboardKeys.all });
+		queryClient.invalidateQueries({
+			queryKey: dashboardKeys.all,
+			refetchType: "all",
+		});
 	},
 });
 
