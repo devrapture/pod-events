@@ -50,13 +50,14 @@
 		"@types/react": "^19.2.18",
 		"@types/react-dom": "^19.2.4",
 		"husky": "^9.1.7",
-		"postcss": "^8.5.23",
+		"postcss": "^8.5.26",
 		"tailwindcss": "^4.3.3",
 		"typescript": "^5.9.3"
 	},
 	"overrides": {
-		"postcss": "8.5.23",
-		"sharp": "0.35.0"
+		"postcss": "8.5.26",
+		"sharp": "0.35.0",
+		"nanoid": "3.3.18"
 	},
 	"ct3aMetadata": {
 		"initVersion": "7.40.0"

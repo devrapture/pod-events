@@ -13,6 +13,7 @@ import (
 	"github.com/gin-gonic/gin"
 	swaggerFiles "github.com/swaggo/files"
 	ginSwagger "github.com/swaggo/gin-swagger"
+	"golang.org/x/time/rate"
 
 	_ "github.com/devrapture/pod-events/docs"
 	"go.uber.org/zap"
@@ -30,6 +31,8 @@ type HandlerDependencies struct {
 
 func Setup(db *gorm.DB, deps HandlerDependencies, cfg *config.Config, logger *zap.Logger, recorder metrics.Recorder) *gin.Engine {
 	r := gin.New()
+	ipStore := middleware.NewRateLimiterStore(rate.Limit(5), 10, logger, cfg.TrustedProxies)
+	r.Use(middleware.IPRateLimiter(ipStore))
 	r.Use(middleware.RequestLogger(logger))
 	r.Use(middleware.MetricsRecorder(recorder))
 	r.Use(gin.Recovery())
