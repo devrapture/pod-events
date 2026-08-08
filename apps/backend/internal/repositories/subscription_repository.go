@@ -43,7 +43,9 @@ func (r *subscriptionRepository) Create(ctx context.Context, subscription *model
 		return apperrors.ErrSubscriptionAlreadyExists
 	}
 
-	if err := dbFromCtx(ctx, r.db).WithContext(ctx).Create(subscription).Error; err != nil {
+	if err := dbFromCtx(ctx, r.db).WithContext(ctx).
+		Omit("User", "PodcastShow").
+		Create(subscription).Error; err != nil {
 		if isUniqueViolation(err) {
 			return apperrors.ErrSubscriptionAlreadyExists
 		}
@@ -53,12 +55,15 @@ func (r *subscriptionRepository) Create(ctx context.Context, subscription *model
 }
 
 // CreateBatch creates all subscriptions in one atomic insert.
+// Associations (User, PodcastShow) are omitted so GORM only inserts subscription rows.
 func (r *subscriptionRepository) CreateBatch(ctx context.Context, subscriptions []models.Subscription) error {
 	if len(subscriptions) == 0 {
 		return nil
 	}
 
-	if err := dbFromCtx(ctx, r.db).WithContext(ctx).Create(&subscriptions).Error; err != nil {
+	if err := dbFromCtx(ctx, r.db).WithContext(ctx).
+		Omit("User", "PodcastShow").
+		Create(&subscriptions).Error; err != nil {
 		if isUniqueViolation(err) {
 			return apperrors.ErrSubscriptionAlreadyExists
 		}

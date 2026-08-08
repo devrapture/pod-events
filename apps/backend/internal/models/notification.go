@@ -1,6 +1,12 @@
 package models
 
 import (
+	"fmt"
+	"net/url"
+	"strconv"
+	"strings"
+
+	apperrors "github.com/devrapture/pod-events/internal/errors"
 	"github.com/google/uuid"
 )
 
@@ -40,4 +46,67 @@ func (c ChannelType) IsValid() bool {
 
 func (c ChannelType) IsWebhook() bool {
 	return c == ChannelTypeSlack || c == ChannelTypeDiscord
+}
+
+// ValidateDestination checks that destination is well-formed for the channel type.
+func (c ChannelType) ValidateDestination(destination string) error {
+	switch c {
+	case ChannelTypeSlack:
+		if !isValidSlackWebhook(destination) {
+			return apperrors.ErrInvalidSlackWebhook
+		}
+	case ChannelTypeDiscord:
+		if !isValidDiscordWebhook(destination) {
+			return apperrors.ErrInvalidDiscordWebhook
+		}
+	case ChannelTypeTelegram:
+		if _, err := strconv.ParseInt(destination, 10, 64); err != nil {
+			return fmt.Errorf("telegram destination must be a chat_id (numeric string)")
+		}
+	case ChannelTypeWhatsApp:
+		if len(destination) < 10 || destination[0] != '+' {
+			return fmt.Errorf("whatsapp destination must be a phone number in E.164 format (e.g., +2348012345678)")
+		}
+	}
+	return nil
+}
+
+func isValidSlackWebhook(rawURL string) bool {
+	u, err := url.Parse(rawURL)
+	if err != nil {
+		return false
+	}
+	if u.Scheme != "https" {
+		return false
+	}
+	if !strings.EqualFold(u.Hostname(), "hooks.slack.com") {
+		return false
+	}
+	parts := splitPath(u.Path)
+	if len(parts) == 0 || parts[0] != "services" {
+		return false
+	}
+	return true
+}
+
+func isValidDiscordWebhook(rawURL string) bool {
+	u, err := url.Parse(rawURL)
+	if err != nil {
+		return false
+	}
+	if u.Scheme != "https" {
+		return false
+	}
+	if !strings.EqualFold(u.Hostname(), "discord.com") {
+		return false
+	}
+	return true
+}
+
+func splitPath(path string) []string {
+	path = strings.Trim(path, "/")
+	if path == "" {
+		return nil
+	}
+	return strings.Split(path, "/")
 }

@@ -150,7 +150,7 @@ func run() (exitStatus int) {
 	// ── Services ────────────────────────────────────────────────
 	recorder := metrics.New(context.Background(), cfg.SentryDSN != "")
 	authService := services.NewAuthService(cfg, tokenRepo, userRepo, spotifyClient, appCache, logger)
-	showService := services.NewShowServices(spotifyClient, authService, appCache, subscriptionRepo, showRepository)
+	showService := services.NewShowServices(spotifyClient, authService, appCache, subscriptionRepo, showRepository, logger)
 	channelService := services.NewChannelServices(channelRepo)
 	telegramConnectionService := services.NewTelegramConnectionService(telegramConnectionRepo, channelRepo, cfg)
 	dashboardService := services.NewDashboardSummaryService(dashboardSummaryRepo)

@@ -159,6 +159,9 @@ func (h *ChannelHandler) Delete(c *gin.Context) {
 }
 
 func isChannelValidationError(err error) bool {
+	if errors.Is(err, apperrors.ErrInvalidSlackWebhook) || errors.Is(err, apperrors.ErrInvalidDiscordWebhook) {
+		return true
+	}
 	msg := err.Error()
 
 	return strings.Contains(msg, "invalid channel_type") ||
