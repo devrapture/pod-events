@@ -3,10 +3,13 @@ package middleware
 import (
 	"net"
 	"net/http"
+	"strconv"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"golang.org/x/time/rate"
 )
 
 func mustCIDR(t *testing.T, cidr string) *net.IPNet {
@@ -14,6 +17,34 @@ func mustCIDR(t *testing.T, cidr string) *net.IPNet {
 	_, network, err := net.ParseCIDR(cidr)
 	require.NoError(t, err)
 	return network
+}
+
+func TestRateLimiterStoreGetEvictsLeastRecentlySeenAtCapacity(t *testing.T) {
+	t.Parallel()
+
+	store := &RateLimiterStore{
+		limiters: make(map[string]*clientLimiter, maxRateLimiterEntries),
+		rate:     rate.Limit(1),
+		burst:    1,
+	}
+	baseTime := time.Now().Add(-time.Hour)
+	for i := 0; i < maxRateLimiterEntries; i++ {
+		store.limiters["client-"+strconv.Itoa(i)] = &clientLimiter{
+			limiter:  rate.NewLimiter(store.rate, store.burst),
+			lastSeen: baseTime.Add(time.Duration(i) * time.Nanosecond),
+		}
+	}
+
+	oldestLimiter := store.limiters["client-0"].limiter
+	store.get("client-0")
+	refreshedLastSeen := store.limiters["client-0"].lastSeen
+	newLimiter := store.get("new-client")
+
+	assert.Len(t, store.limiters, maxRateLimiterEntries)
+	assert.Same(t, oldestLimiter, store.limiters["client-0"].limiter)
+	assert.True(t, refreshedLastSeen.After(baseTime))
+	assert.NotContains(t, store.limiters, "client-1")
+	assert.Same(t, newLimiter, store.limiters["new-client"].limiter)
 }
 
 func TestClientIPForRateLimit_IgnoresXFFWithoutTrustedProxy(t *testing.T) {

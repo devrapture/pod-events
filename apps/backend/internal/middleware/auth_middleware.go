@@ -15,6 +15,8 @@ import (
 	"golang.org/x/time/rate"
 )
 
+const maxRateLimiterEntries = 10_000
+
 type clientLimiter struct {
 	limiter  *rate.Limiter
 	lastSeen time.Time
@@ -61,16 +63,30 @@ func (s *RateLimiterStore) get(key string) *rate.Limiter {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
+	now := time.Now()
 	entry, exists := s.limiters[key]
-
-	if !exists {
-		entry = &clientLimiter{
-			limiter: rate.NewLimiter(s.rate, s.burst),
-		}
-		s.limiters[key] = entry
+	if exists {
+		entry.lastSeen = now
+		return entry.limiter
 	}
 
-	entry.lastSeen = time.Now()
+	if len(s.limiters) >= maxRateLimiterEntries {
+		var oldestKey string
+		var oldestSeen time.Time
+		for candidateKey, candidate := range s.limiters {
+			if oldestKey == "" || candidate.lastSeen.Before(oldestSeen) {
+				oldestKey = candidateKey
+				oldestSeen = candidate.lastSeen
+			}
+		}
+		delete(s.limiters, oldestKey)
+	}
+
+	entry = &clientLimiter{
+		limiter:  rate.NewLimiter(s.rate, s.burst),
+		lastSeen: now,
+	}
+	s.limiters[key] = entry
 
 	return entry.limiter
 }
