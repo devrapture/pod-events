@@ -31,7 +31,7 @@ type HandlerDependencies struct {
 
 func Setup(db *gorm.DB, deps HandlerDependencies, cfg *config.Config, logger *zap.Logger, recorder metrics.Recorder) *gin.Engine {
 	r := gin.New()
-	ipStore := middleware.NewRateLimiterStore(rate.Limit(5), 10)
+	ipStore := middleware.NewRateLimiterStore(rate.Limit(5), 10, logger)
 	r.Use(middleware.IPRateLimiter(ipStore))
 	r.Use(middleware.RequestLogger(logger))
 	r.Use(middleware.MetricsRecorder(recorder))

@@ -11,6 +11,7 @@ import (
 	"github.com/devrapture/pod-events/pkg/jwt"
 	"github.com/devrapture/pod-events/pkg/response"
 	"github.com/gin-gonic/gin"
+	"go.uber.org/zap"
 	"golang.org/x/time/rate"
 )
 
@@ -24,13 +25,15 @@ type RateLimiterStore struct {
 	limiters map[string]*clientLimiter
 	rate     rate.Limit // request per second
 	burst    int
+	logger   *zap.Logger
 }
 
-func NewRateLimiterStore(r rate.Limit, burst int) *RateLimiterStore {
+func NewRateLimiterStore(r rate.Limit, burst int, logger *zap.Logger) *RateLimiterStore {
 	store := &RateLimiterStore{
 		limiters: make(map[string]*clientLimiter),
 		rate:     r,
 		burst:    burst,
+		logger:   logger,
 	}
 	// Background cleanup: remove entries not seen in 10 minutes
 	go store.cleanupLoop()
@@ -76,8 +79,19 @@ func IPRateLimiter(store *RateLimiterStore) gin.HandlerFunc {
 		if ip == "" {
 			ip, _, _ = net.SplitHostPort(c.Request.RemoteAddr)
 		}
+		if ip == "" {
+			ip = c.ClientIP()
+		}
 
 		if !store.get(ip).Allow() {
+			if store.logger != nil {
+				store.logger.Warn(
+					"rate limit exceeded",
+					zap.String("ip", ip),
+					zap.String("method", c.Request.Method),
+					zap.String("path", c.Request.URL.Path),
+				)
+			}
 			c.AbortWithStatusJSON(http.StatusTooManyRequests, gin.H{
 				"error": "Too many requests from your IP",
 			})
