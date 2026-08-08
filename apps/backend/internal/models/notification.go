@@ -83,10 +83,10 @@ func isValidSlackWebhook(rawURL string) bool {
 		return false
 	}
 	parts := splitPath(u.Path)
-	if len(parts) == 0 || parts[0] != "services" {
+	if len(parts) != 4 || parts[0] != "services" {
 		return false
 	}
-	return true
+	return parts[1] != "" && parts[2] != "" && parts[3] != ""
 }
 
 func isValidDiscordWebhook(rawURL string) bool {
@@ -100,7 +100,11 @@ func isValidDiscordWebhook(rawURL string) bool {
 	if !strings.EqualFold(u.Hostname(), "discord.com") {
 		return false
 	}
-	return true
+	parts := splitPath(u.Path)
+	if len(parts) != 4 || parts[0] != "api" || parts[1] != "webhooks" {
+		return false
+	}
+	return parts[2] != "" && parts[3] != ""
 }
 
 func splitPath(path string) []string {
