@@ -35,6 +35,39 @@ func TestCreateSubscriptionsBatch_Success(t *testing.T) {
 	assert.NoError(t, mock.ExpectationsWereMet())
 }
 
+func TestCreateSubscriptionsBatch_OmitsAssociations(t *testing.T) {
+	db, mock := setupMockDB(t)
+	repo := NewSubscriptionRepository(db)
+	userID := uuid.New()
+	showID := uuid.New()
+	subscriptions := []models.Subscription{
+		{
+			UserID:        userID,
+			PodcastShowID: showID,
+			// Populated association must not cause extra INSERT/UPDATE statements.
+			PodcastShow: models.PodcastShow{
+				SpotifyShowID: "spotify-show-1",
+				Name:          "Test Show",
+				Description:   "desc",
+				ImageURL:      "https://example.com/img.jpg",
+				SpotifyURL:    "https://open.spotify.com/show/1",
+			},
+		},
+	}
+	subscriptions[0].PodcastShow.ID = showID
+
+	mock.ExpectBegin()
+	// Only subscription insert — no podcast_shows / users association writes.
+	mock.ExpectExec(`INSERT INTO "subscriptions"`).
+		WillReturnResult(sqlmock.NewResult(0, 1))
+	mock.ExpectCommit()
+
+	err := repo.CreateBatch(context.Background(), subscriptions)
+
+	require.NoError(t, err)
+	assert.NoError(t, mock.ExpectationsWereMet())
+}
+
 func TestCreateSubscriptionsBatch_Duplicate(t *testing.T) {
 	db, mock := setupMockDB(t)
 	repo := NewSubscriptionRepository(db)

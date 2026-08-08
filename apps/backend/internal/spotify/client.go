@@ -100,18 +100,25 @@ func (c *SpotifyClient) GetShow(ctx context.Context, accessToken, spotifyShowID 
 	return &result, nil
 }
 
+// latestEpisodePageSize is larger than 1 so we can skip leading null placeholders
+// Spotify inserts for market-unavailable / restricted episodes.
+const latestEpisodePageSize = 5
+
 func (c *SpotifyClient) GetShowLatestEpisode(ctx context.Context, accessToken, spotifyShowID string) (*SpotifyEpisode, error) {
-	endpoint := fmt.Sprintf("shows/%s/episodes?limit=1", spotifyShowID)
+	endpoint := fmt.Sprintf("shows/%s/episodes?limit=%d", spotifyShowID, latestEpisodePageSize)
+	// Pointer items so JSON null becomes nil instead of a zero-value episode.
 	var result struct {
-		Items []SpotifyEpisode `json:"items"`
+		Items []*SpotifyEpisode `json:"items"`
 	}
 	if err := c.get(ctx, accessToken, endpoint, &result); err != nil {
 		return nil, err
 	}
-	if len(result.Items) == 0 {
-		return nil, apperrors.ErrSpotifyResourceNotFound
+	for _, ep := range result.Items {
+		if ep != nil && ep.ID != "" {
+			return ep, nil
+		}
 	}
-	return &result.Items[0], nil
+	return nil, apperrors.ErrSpotifyResourceNotFound
 }
 
 func (c *SpotifyClient) GetUserSavedShows(ctx context.Context, accessToken string, offset, limit int) (*SpotifySavedShowsResponse, error) {

@@ -187,7 +187,7 @@ func (s *authService) GetValidAccessToken(ctx context.Context, userID uuid.UUID)
 	}
 
 	if token == nil {
-		return "", fmt.Errorf("no spotify token found for user")
+		return "", apperrors.ErrorSpotifyTokenNotFound
 	}
 	// Token is still valid — return it directly
 	if !token.IsExpired() {

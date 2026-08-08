@@ -12,25 +12,43 @@ func TestValidateDestination(t *testing.T) {
 		{
 			name:        "slack valid",
 			channelType: ChannelTypeSlack,
-			destination: "https://hooks.slack.com/services/test/webhook",
+			destination: "https://hooks.slack.com/services/T00000000/B00000000/XXXXXXXXXXXXXXXXXXXXXXXX",
 			wantErr:     false,
 		},
 		{
 			name:        "slack invalid host",
 			channelType: ChannelTypeSlack,
-			destination: "https://example.com/services/test/webhook",
+			destination: "https://example.com/services/T00000000/B00000000/XXXXXXXXXXXXXXXXXXXXXXXX",
 			wantErr:     true,
 		},
 		{
 			name:        "slack non-https",
 			channelType: ChannelTypeSlack,
-			destination: "http://hooks.slack.com/services/test/webhook",
+			destination: "http://hooks.slack.com/services/T00000000/B00000000/XXXXXXXXXXXXXXXXXXXXXXXX",
 			wantErr:     true,
 		},
 		{
 			name:        "slack empty path",
 			channelType: ChannelTypeSlack,
 			destination: "https://hooks.slack.com",
+			wantErr:     true,
+		},
+		{
+			name:        "slack services alone",
+			channelType: ChannelTypeSlack,
+			destination: "https://hooks.slack.com/services",
+			wantErr:     true,
+		},
+		{
+			name:        "slack partial path",
+			channelType: ChannelTypeSlack,
+			destination: "https://hooks.slack.com/services/T00000000/B00000000",
+			wantErr:     true,
+		},
+		{
+			name:        "slack wrong prefix",
+			channelType: ChannelTypeSlack,
+			destination: "https://hooks.slack.com/api/T00000000/B00000000/XXXXXXXXXXXXXXXXXXXXXXXX",
 			wantErr:     true,
 		},
 		{
@@ -43,6 +61,24 @@ func TestValidateDestination(t *testing.T) {
 			name:        "discord invalid host",
 			channelType: ChannelTypeDiscord,
 			destination: "https://example.com/api/webhooks/123456789012345678/abcdefghijklmnop",
+			wantErr:     true,
+		},
+		{
+			name:        "discord missing token",
+			channelType: ChannelTypeDiscord,
+			destination: "https://discord.com/api/webhooks/123456789012345678",
+			wantErr:     true,
+		},
+		{
+			name:        "discord unrelated path",
+			channelType: ChannelTypeDiscord,
+			destination: "https://discord.com/foo",
+			wantErr:     true,
+		},
+		{
+			name:        "discord wrong prefix",
+			channelType: ChannelTypeDiscord,
+			destination: "https://discord.com/api/other/123456789012345678/abcdefghijklmnop",
 			wantErr:     true,
 		},
 		{
