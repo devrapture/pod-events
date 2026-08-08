@@ -1,14 +1,21 @@
 package services
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"testing"
+	"time"
 
+	"github.com/devrapture/pod-events/internal/config"
 	apperrors "github.com/devrapture/pod-events/internal/errors"
+	"github.com/devrapture/pod-events/internal/models"
 	"github.com/devrapture/pod-events/internal/spotify"
+	"github.com/google/uuid"
+	gocache "github.com/patrickmn/go-cache"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.uber.org/zap"
 )
 
 func TestMapSubscribeSpotifyError(t *testing.T) {
@@ -82,4 +89,38 @@ func TestMapSubscribeSpotifyErrorWrappedNotFound(t *testing.T) {
 	err := fmt.Errorf("%w: gone", apperrors.ErrSpotifyResourceNotFound)
 	got := mapSubscribeSpotifyError(err)
 	require.ErrorIs(t, got, apperrors.ErrPodcastShowNotFound)
+}
+
+type stubTokenRepository struct{}
+
+func (stubTokenRepository) Upsert(context.Context, *models.SpotifyToken) error { return nil }
+func (stubTokenRepository) UpdateAccessToken(context.Context, uuid.UUID, string, time.Time) error {
+	return nil
+}
+func (stubTokenRepository) GetByUserID(context.Context, uuid.UUID) (*models.SpotifyToken, error) {
+	return nil, nil
+}
+func (stubTokenRepository) Delete(context.Context, uuid.UUID) error { return nil }
+
+func TestSubscribeMissingToken(t *testing.T) {
+	authService := NewAuthService(
+		&config.Config{},
+		stubTokenRepository{},
+		nil,
+		nil,
+		gocache.New(gocache.DefaultExpiration, gocache.DefaultExpiration),
+		zap.NewNop(),
+	)
+	svc := NewShowServices(
+		nil,
+		authService,
+		gocache.New(gocache.DefaultExpiration, gocache.DefaultExpiration),
+		nil,
+		nil,
+		zap.NewNop(),
+	)
+
+	_, err := svc.Subscribe(context.Background(), uuid.New(), []string{"uncached-spotify-show"})
+
+	require.ErrorIs(t, err, apperrors.ErrorSpotifyTokenNotFound)
 }
