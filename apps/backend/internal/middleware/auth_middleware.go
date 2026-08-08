@@ -109,7 +109,7 @@ func IPRateLimiter(store *RateLimiterStore) gin.HandlerFunc {
 func clientIPForRateLimit(r *http.Request, trustedProxies []*net.IPNet) string {
 	peer := parseIPFromRemoteAddr(r.RemoteAddr)
 	if peer != nil && isTrustedProxy(peer, trustedProxies) {
-		if forwarded := firstForwardedIP(r.Header.Get("X-Forwarded-For")); forwarded != nil {
+		if forwarded := firstForwardedIP(r.Header.Get("X-Forwarded-For"), trustedProxies); forwarded != nil {
 			return forwarded.String()
 		}
 	}
@@ -135,20 +135,17 @@ func parseIPFromRemoteAddr(remoteAddr string) net.IP {
 	return net.ParseIP(host)
 }
 
-func firstForwardedIP(xff string) net.IP {
+func firstForwardedIP(xff string, trustedProxies []*net.IPNet) net.IP {
 	if xff == "" {
 		return nil
 	}
-	for _, part := range strings.Split(xff, ",") {
-		part = strings.TrimSpace(part)
+	parts := strings.Split(xff, ",")
+	for i := len(parts) - 1; i >= 0; i-- {
+		part := strings.TrimSpace(parts[i])
 		if part == "" {
 			continue
 		}
-		// Some proxies append port; try host:port then bare IP.
-		if host, _, err := net.SplitHostPort(part); err == nil {
-			part = host
-		}
-		if ip := net.ParseIP(part); ip != nil {
+		if ip := parseIPFromRemoteAddr(part); ip != nil && !isTrustedProxy(ip, trustedProxies) {
 			return ip
 		}
 	}

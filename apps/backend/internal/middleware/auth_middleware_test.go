@@ -41,6 +41,19 @@ func TestClientIPForRateLimit_UsesXFFWhenRemoteIsTrusted(t *testing.T) {
 	assert.Equal(t, "198.51.100.1", ip)
 }
 
+func TestClientIPForRateLimit_RejectsLeftmostSpoofAppendedByTrustedProxy(t *testing.T) {
+	t.Parallel()
+
+	req := &http.Request{
+		RemoteAddr: "10.0.0.5:443",
+		Header:     http.Header{"X-Forwarded-For": []string{"192.0.2.123, 198.51.100.20"}},
+	}
+	trusted := []*net.IPNet{mustCIDR(t, "10.0.0.0/8")}
+
+	ip := clientIPForRateLimit(req, trusted)
+	assert.Equal(t, "198.51.100.20", ip)
+}
+
 func TestClientIPForRateLimit_IgnoresXFFWhenRemoteUntrusted(t *testing.T) {
 	t.Parallel()
 
@@ -79,6 +92,19 @@ func TestClientIPForRateLimit_TrustedButInvalidXFFUsesPeer(t *testing.T) {
 	assert.Equal(t, "10.0.0.5", ip)
 }
 
+func TestClientIPForRateLimit_TrustedOnlyXFFUsesPeer(t *testing.T) {
+	t.Parallel()
+
+	req := &http.Request{
+		RemoteAddr: "10.0.0.5:443",
+		Header:     http.Header{"X-Forwarded-For": []string{"10.0.0.3, 10.0.0.4"}},
+	}
+	trusted := []*net.IPNet{mustCIDR(t, "10.0.0.0/8")}
+
+	ip := clientIPForRateLimit(req, trusted)
+	assert.Equal(t, "10.0.0.5", ip)
+}
+
 func TestParseIPFromRemoteAddr(t *testing.T) {
 	t.Parallel()
 
@@ -91,8 +117,11 @@ func TestParseIPFromRemoteAddr(t *testing.T) {
 func TestFirstForwardedIP(t *testing.T) {
 	t.Parallel()
 
-	assert.Equal(t, "198.51.100.1", firstForwardedIP("198.51.100.1, 10.0.0.1").String())
-	assert.Equal(t, "198.51.100.1", firstForwardedIP(" 198.51.100.1 ").String())
-	assert.Nil(t, firstForwardedIP(""))
-	assert.Nil(t, firstForwardedIP("not-an-ip, still-bad"))
+	trusted := []*net.IPNet{mustCIDR(t, "10.0.0.0/8")}
+
+	assert.Equal(t, "198.51.100.1", firstForwardedIP("198.51.100.1, 10.0.0.1", trusted).String())
+	assert.Equal(t, "198.51.100.1", firstForwardedIP(" 198.51.100.1 ", trusted).String())
+	assert.Nil(t, firstForwardedIP("10.0.0.1", trusted))
+	assert.Nil(t, firstForwardedIP("", trusted))
+	assert.Nil(t, firstForwardedIP("not-an-ip, still-bad", trusted))
 }
