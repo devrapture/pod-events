@@ -10,8 +10,10 @@ Sentry.init({
 	// Add optional integrations for additional features
 	integrations: [Sentry.replayIntegration()],
 
-	// Keep full tracing during development while limiting production volume.
-	tracesSampleRate: process.env.NODE_ENV === "production" ? 0.1 : 1,
+	// Match server/edge config: disable performance tracing in local dev to
+	// avoid MaxListenersExceededWarning noise from OTEL HTTP instrumentation.
+	// See sentry.server.config.ts.
+	tracesSampleRate: process.env.NODE_ENV === "production" ? 0.1 : 0,
 	// Enable logs to be sent to Sentry
 	enableLogs: true,
 
