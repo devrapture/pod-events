@@ -13,6 +13,7 @@ import (
 	"github.com/devrapture/pod-events/internal/spotify"
 	"github.com/google/uuid"
 	gocache "github.com/patrickmn/go-cache"
+	"go.uber.org/zap"
 	"golang.org/x/sync/errgroup"
 )
 
@@ -30,6 +31,7 @@ type showServices struct {
 	cache                  *gocache.Cache
 	subscriptionRepository repositories.SubscriptionRepository
 	showRepository         repositories.ShowRepository
+	logger                 *zap.Logger
 }
 
 const (
@@ -38,13 +40,14 @@ const (
 	spotifyShowCachePrefix           = "spotify:show:"
 )
 
-func NewShowServices(sc *spotify.SpotifyClient, authService AuthService, cache *gocache.Cache, subscriptionRepository repositories.SubscriptionRepository, showRepository repositories.ShowRepository) ShowServices {
+func NewShowServices(sc *spotify.SpotifyClient, authService AuthService, cache *gocache.Cache, subscriptionRepository repositories.SubscriptionRepository, showRepository repositories.ShowRepository, logger *zap.Logger) ShowServices {
 	return &showServices{
 		spotifyClient:          sc,
 		authService:            authService,
 		cache:                  cache,
 		subscriptionRepository: subscriptionRepository,
 		showRepository:         showRepository,
+		logger:                 logger,
 	}
 }
 
@@ -125,10 +128,7 @@ func (s *showServices) Subscribe(ctx context.Context, userID uuid.UUID, spotifyS
 	}
 	showsData, err := s.fetchShowsFromSpotify(ctx, userID, uniqueIDs)
 	if err != nil {
-		if errors.Is(err, apperrors.ErrSpotifyResourceNotFound) {
-			return nil, apperrors.ErrPodcastShowNotFound
-		}
-		return nil, fmt.Errorf("%w: %w", apperrors.ErrSpotifyUnavailable, err)
+		return nil, mapSubscribeSpotifyError(err)
 	}
 
 	showModels := make([]*models.PodcastShow, 0, len(showsData))
@@ -147,12 +147,13 @@ func (s *showServices) Subscribe(ctx context.Context, userID uuid.UUID, spotifyS
 		return nil, err
 	}
 
+	// Create subscriptions before seeding watermarks so Spotify episode-seed
+	// failures cannot leave orphaned shows with no subscription rows.
 	subscriptions := make([]models.Subscription, 0, len(showModels))
 	for _, show := range showModels {
 		subscriptions = append(subscriptions, models.Subscription{
 			UserID:        userID,
 			PodcastShowID: show.ID,
-			PodcastShow:   *show,
 		})
 	}
 
@@ -160,7 +161,117 @@ func (s *showServices) Subscribe(ctx context.Context, userID uuid.UUID, spotifyS
 		return nil, err
 	}
 
+	// Best-effort: seed latest-episode watermarks so the next cron run does not
+	// treat already-published episodes as new. Failures are logged only.
+	s.seedLatestEpisodesIfNull(ctx, userID, showModels)
+
+	for i, show := range showModels {
+		subscriptions[i].PodcastShow = *show
+	}
+
 	return subscriptions, nil
+}
+
+// seedLatestEpisodesIfNull fetches each show's current latest episode from Spotify and
+// stores it as the watermark when latest_episode_id is null. Shows that already have a
+// watermark are skipped. Shows with no episodes are left null.
+//
+// This is best-effort: individual show failures are logged and never fail Subscribe.
+func (s *showServices) seedLatestEpisodesIfNull(ctx context.Context, userID uuid.UUID, shows []*models.PodcastShow) {
+	needsSeed := make([]*models.PodcastShow, 0, len(shows))
+	for _, show := range shows {
+		if show.LatestEpisodeID == nil {
+			needsSeed = append(needsSeed, show)
+		}
+	}
+	if len(needsSeed) == 0 {
+		return
+	}
+
+	accessToken, err := s.authService.GetValidAccessToken(ctx, userID)
+	if err != nil {
+		s.logger.Warn(
+			"skipping episode watermark seed: could not get spotify access token",
+			zap.String("user_id", userID.String()),
+			zap.Error(err),
+		)
+		return
+	}
+
+	group, groupCtx := errgroup.WithContext(ctx)
+	group.SetLimit(maxConcurrentSpotifyShowRequests)
+
+	for _, show := range needsSeed {
+		show := show
+		group.Go(func() error {
+			if err := s.seedOneShowLatestEpisode(groupCtx, accessToken, show); err != nil {
+				s.logger.Warn(
+					"failed to seed latest episode watermark",
+					zap.String("show_id", show.ID.String()),
+					zap.String("spotify_show_id", show.SpotifyShowID),
+					zap.String("show", show.Name),
+					zap.Error(err),
+				)
+			}
+			// Always return nil so one show failure cannot cancel sibling seeds
+			// or block the already-created subscriptions.
+			return nil
+		})
+	}
+
+	_ = group.Wait()
+}
+
+func (s *showServices) seedOneShowLatestEpisode(ctx context.Context, accessToken string, show *models.PodcastShow) error {
+	latest, err := s.spotifyClient.GetShowLatestEpisode(ctx, accessToken, show.SpotifyShowID)
+	if err != nil {
+		if errors.Is(err, apperrors.ErrSpotifyResourceNotFound) {
+			// Show has no episodes yet — leave watermark null.
+			return nil
+		}
+		return err
+	}
+	if latest == nil {
+		return nil
+	}
+
+	publishedAt, err := latest.ParsedReleaseDate()
+	if err != nil {
+		return fmt.Errorf("parse latest episode publication date: %w", err)
+	}
+
+	applied, err := s.showRepository.UpdateLatestEpisodeIfNull(ctx, show.ID, latest.ID, publishedAt)
+	if err != nil {
+		return err
+	}
+	if !applied {
+		// Another writer already seeded the watermark; leave in-memory show unchanged.
+		return nil
+	}
+
+	episodeID := latest.ID
+	show.LatestEpisodeID = &episodeID
+	show.LatestEpisodePublishedAt = &publishedAt
+	return nil
+}
+
+// mapSubscribeSpotifyError preserves sentinel / typed Spotify errors for the handler
+// instead of wrapping everything as ErrSpotifyUnavailable.
+func mapSubscribeSpotifyError(err error) error {
+	if errors.Is(err, apperrors.ErrSpotifyResourceNotFound) || errors.Is(err, apperrors.ErrPodcastShowNotFound) {
+		return apperrors.ErrPodcastShowNotFound
+	}
+	if errors.Is(err, apperrors.ErrorSpotifyTokenNotFound) || errors.Is(err, apperrors.ErrSpotifyAuthorizationRequired) {
+		return err
+	}
+	var rateLimitErr *spotify.RateLimitError
+	if errors.As(err, &rateLimitErr) {
+		return err
+	}
+	if errors.Is(err, apperrors.ErrSpotifyUnavailable) {
+		return err
+	}
+	return fmt.Errorf("%w: %w", apperrors.ErrSpotifyUnavailable, err)
 }
 
 func (s *showServices) Unsubscribe(ctx context.Context, userID uuid.UUID, subscriptionID uuid.UUID) error {

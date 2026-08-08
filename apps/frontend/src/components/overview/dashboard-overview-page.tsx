@@ -3,6 +3,7 @@
 import { RefreshCw } from "lucide-react";
 
 import { OverviewHeader } from "@/components/overview/overview-header";
+import { RecentEpisodes } from "@/components/overview/recent-episodes";
 import { SetupChecklist } from "@/components/overview/setup-checklist";
 import { StatsCards } from "@/components/overview/stats-cards";
 import { Button } from "@/components/ui/button";
@@ -98,7 +99,12 @@ export function DashboardOverviewPage() {
 					{summary.setup.percent < 100 && (
 						<SetupChecklist setup={summary.setup} />
 					)}
-					<StatsCards stats={summary.stats} />
+					{summary.setup.percent === 100 && (
+						<>
+							<StatsCards stats={summary.stats} />
+							<RecentEpisodes episodes={summary.recent_episodes ?? []} />
+						</>
+					)}
 				</>
 			)}
 		</div>

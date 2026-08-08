@@ -1,3 +1,4 @@
+import * as Sentry from "@sentry/nextjs";
 import { createMutation } from "react-query-kit";
 import { queryClient } from "@/lib/query-client";
 import { apis } from "@/services/api-services";
@@ -10,6 +11,7 @@ import type {
 } from "@/services/types";
 
 import { channelKeys } from "../keys/channel.keys";
+import { dashboardKeys } from "../keys/dashboard.keys";
 
 export const useCreateChannel = createMutation({
 	mutationFn: async (
@@ -18,7 +20,14 @@ export const useCreateChannel = createMutation({
 		const response = await apis.channels.create(variables);
 		return response.data;
 	},
-	onSuccess: () => {
+	onSuccess: (_data, variables) => {
+		Sentry.metrics.count("podevents.channel.created", 1, {
+			attributes: { channel_type: variables.channel_type },
+		});
+		queryClient.invalidateQueries({
+			queryKey: dashboardKeys.all,
+			refetchType: "all",
+		});
 		queryClient.invalidateQueries({ queryKey: channelKeys.all });
 	},
 });
@@ -31,7 +40,12 @@ export const useDeleteChannel = createMutation({
 		return response.data;
 	},
 	onSuccess: () => {
+		Sentry.metrics.count("podevents.channel.deleted");
 		queryClient.invalidateQueries({ queryKey: channelKeys.all });
+		queryClient.invalidateQueries({
+			queryKey: dashboardKeys.all,
+			refetchType: "all",
+		});
 	},
 });
 
@@ -91,6 +105,11 @@ export const useToggleChannel = createMutation({
 	onSettled: () => {
 		queryClient.invalidateQueries({ queryKey: channelKeys.all });
 	},
+	onSuccess: (_data, variables) => {
+		Sentry.metrics.count("podevents.channel.status_changed", 1, {
+			attributes: { active: variables.is_active },
+		});
+	},
 });
 
 export const useGenerateTelegramLink = createMutation<
@@ -101,5 +120,8 @@ export const useGenerateTelegramLink = createMutation<
 	mutationFn: async () => {
 		const response = await apis.telegram.generateLink();
 		return response.data;
+	},
+	onSuccess: () => {
+		Sentry.metrics.count("podevents.telegram.link_generated");
 	},
 });

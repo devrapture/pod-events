@@ -848,6 +848,12 @@ const docTemplate = `{
         "github_com_devrapture_pod-events_internal_dto.DashboardSummaryDTO": {
             "type": "object",
             "properties": {
+                "recent_episodes": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/github_com_devrapture_pod-events_internal_dto.RecentEpisodesResponse"
+                    }
+                },
                 "setup": {
                     "$ref": "#/definitions/github_com_devrapture_pod-events_internal_dto.DashboardSetupResponse"
                 },
@@ -881,6 +887,26 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "spotify_url": {
+                    "type": "string"
+                }
+            }
+        },
+        "github_com_devrapture_pod-events_internal_dto.RecentEpisodesResponse": {
+            "type": "object",
+            "properties": {
+                "duration": {
+                    "type": "integer"
+                },
+                "episode_title": {
+                    "type": "string"
+                },
+                "podcast_name": {
+                    "type": "string"
+                },
+                "release_date": {
+                    "type": "string"
+                },
+                "url": {
                     "type": "string"
                 }
             }

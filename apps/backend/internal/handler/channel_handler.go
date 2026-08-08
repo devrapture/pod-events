@@ -7,6 +7,7 @@ import (
 
 	"github.com/devrapture/pod-events/internal/dto"
 	apperrors "github.com/devrapture/pod-events/internal/errors"
+	"github.com/devrapture/pod-events/internal/models"
 	"github.com/devrapture/pod-events/internal/services"
 	"github.com/devrapture/pod-events/pkg/response"
 	"github.com/gin-gonic/gin"
@@ -44,6 +45,11 @@ func (h *ChannelHandler) CreateChannel(c *gin.Context) {
 	var req dto.CreateChannelRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		response.ValidationError(c, err)
+		return
+	}
+
+	if err := models.ChannelType(req.ChannelType).ValidateDestination(req.Destination); err != nil {
+		response.ErrorResponse(c, http.StatusBadRequest, err.Error())
 		return
 	}
 	channel, err := h.channelService.Create(c.Request.Context(), userID.(uuid.UUID), req)
@@ -153,6 +159,9 @@ func (h *ChannelHandler) Delete(c *gin.Context) {
 }
 
 func isChannelValidationError(err error) bool {
+	if errors.Is(err, apperrors.ErrInvalidSlackWebhook) || errors.Is(err, apperrors.ErrInvalidDiscordWebhook) {
+		return true
+	}
 	msg := err.Error()
 
 	return strings.Contains(msg, "invalid channel_type") ||
