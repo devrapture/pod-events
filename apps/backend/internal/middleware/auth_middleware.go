@@ -21,19 +21,21 @@ type clientLimiter struct {
 }
 
 type RateLimiterStore struct {
-	mu       sync.Mutex
-	limiters map[string]*clientLimiter
-	rate     rate.Limit // request per second
-	burst    int
-	logger   *zap.Logger
+	mu             sync.Mutex
+	limiters       map[string]*clientLimiter
+	rate           rate.Limit // request per second
+	burst          int
+	logger         *zap.Logger
+	trustedProxies []*net.IPNet
 }
 
-func NewRateLimiterStore(r rate.Limit, burst int, logger *zap.Logger) *RateLimiterStore {
+func NewRateLimiterStore(r rate.Limit, burst int, logger *zap.Logger, trustedProxies []*net.IPNet) *RateLimiterStore {
 	store := &RateLimiterStore{
-		limiters: make(map[string]*clientLimiter),
-		rate:     r,
-		burst:    burst,
-		logger:   logger,
+		limiters:       make(map[string]*clientLimiter),
+		rate:           r,
+		burst:          burst,
+		logger:         logger,
+		trustedProxies: trustedProxies,
 	}
 	// Background cleanup: remove entries not seen in 10 minutes
 	go store.cleanupLoop()
@@ -75,12 +77,13 @@ func (s *RateLimiterStore) get(key string) *rate.Limiter {
 
 func IPRateLimiter(store *RateLimiterStore) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		ip := c.GetHeader("X-Forwarded-For")
-		if ip == "" {
-			ip, _, _ = net.SplitHostPort(c.Request.RemoteAddr)
-		}
-		if ip == "" {
-			ip = c.ClientIP()
+		ip := clientIPForRateLimit(c.Request, store.trustedProxies)
+		if ip == "unknown" && store.logger != nil {
+			store.logger.Warn(
+				"rate limit using unknown client IP",
+				zap.String("remote_addr", c.Request.RemoteAddr),
+				zap.String("x_forwarded_for", c.GetHeader("X-Forwarded-For")),
+			)
 		}
 
 		if !store.get(ip).Allow() {
@@ -99,6 +102,69 @@ func IPRateLimiter(store *RateLimiterStore) gin.HandlerFunc {
 		}
 		c.Next()
 	}
+}
+
+// clientIPForRateLimit returns a validated client IP for rate limiting.
+// X-Forwarded-For is only trusted when RemoteAddr belongs to a configured trusted proxy.
+func clientIPForRateLimit(r *http.Request, trustedProxies []*net.IPNet) string {
+	peer := parseIPFromRemoteAddr(r.RemoteAddr)
+	if peer != nil && isTrustedProxy(peer, trustedProxies) {
+		if forwarded := firstForwardedIP(r.Header.Get("X-Forwarded-For")); forwarded != nil {
+			return forwarded.String()
+		}
+	}
+	if peer != nil {
+		return peer.String()
+	}
+	return "unknown"
+}
+
+func parseIPFromRemoteAddr(remoteAddr string) net.IP {
+	if remoteAddr == "" {
+		return nil
+	}
+	host, _, err := net.SplitHostPort(remoteAddr)
+	if err != nil {
+		// Bare IP without port (or already stripped).
+		host = remoteAddr
+	}
+	// Strip zone identifier from IPv6 (e.g. fe80::1%lo0).
+	if i := strings.IndexByte(host, '%'); i >= 0 {
+		host = host[:i]
+	}
+	return net.ParseIP(host)
+}
+
+func firstForwardedIP(xff string) net.IP {
+	if xff == "" {
+		return nil
+	}
+	for _, part := range strings.Split(xff, ",") {
+		part = strings.TrimSpace(part)
+		if part == "" {
+			continue
+		}
+		// Some proxies append port; try host:port then bare IP.
+		if host, _, err := net.SplitHostPort(part); err == nil {
+			part = host
+		}
+		if ip := net.ParseIP(part); ip != nil {
+			return ip
+		}
+	}
+	return nil
+}
+
+func isTrustedProxy(ip net.IP, trusted []*net.IPNet) bool {
+	if ip == nil || len(trusted) == 0 {
+		return false
+	}
+	for _, network := range trusted {
+		if network != nil && network.Contains(ip) {
+			return true
+		}
+	}
+	return false
 }
 func AuthMiddleware(cfg *config.Config) gin.HandlerFunc {
 	return func(c *gin.Context) {

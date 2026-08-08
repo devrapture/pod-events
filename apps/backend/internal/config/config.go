@@ -3,8 +3,10 @@ package config
 import (
 	"fmt"
 	"log"
+	"net"
 	"os"
 	"strconv"
+	"strings"
 
 	"github.com/joho/godotenv"
 
@@ -30,6 +32,9 @@ type Config struct {
 	SentryRelease          string
 	SentryTracesSampleRate float64
 	SentryEnableLogs       bool
+	// TrustedProxies are CIDRs/IPs allowed to set X-Forwarded-For for rate limiting.
+	// Empty means X-Forwarded-For is never trusted.
+	TrustedProxies []*net.IPNet
 }
 
 func Load() (*Config, error) {
@@ -47,6 +52,10 @@ func Load() (*Config, error) {
 	sentryEnableLogs, err := strconv.ParseBool(getEnv("SENTRY_ENABLE_LOGS", "true"))
 	if err != nil {
 		return nil, fmt.Errorf("SENTRY_ENABLE_LOGS must be true or false")
+	}
+	trustedProxies, err := parseTrustedProxies(getEnv("TRUSTED_PROXIES", ""))
+	if err != nil {
+		return nil, fmt.Errorf("TRUSTED_PROXIES: %w", err)
 	}
 
 	config := &Config{
@@ -68,9 +77,47 @@ func Load() (*Config, error) {
 		SentryRelease:          getEnv("SENTRY_RELEASE", ""),
 		SentryTracesSampleRate: sentryTracesSampleRate,
 		SentryEnableLogs:       sentryEnableLogs,
+		TrustedProxies:         trustedProxies,
 	}
 
 	return config, config.validate()
+}
+
+// parseTrustedProxies parses a comma-separated list of IPs or CIDRs into IPNet entries.
+// A bare IP is treated as a single-host prefix (/32 or /128).
+func parseTrustedProxies(raw string) ([]*net.IPNet, error) {
+	raw = strings.TrimSpace(raw)
+	if raw == "" {
+		return nil, nil
+	}
+
+	parts := strings.Split(raw, ",")
+	nets := make([]*net.IPNet, 0, len(parts))
+	for _, part := range parts {
+		part = strings.TrimSpace(part)
+		if part == "" {
+			continue
+		}
+		if strings.Contains(part, "/") {
+			_, ipNet, err := net.ParseCIDR(part)
+			if err != nil {
+				return nil, fmt.Errorf("invalid CIDR %q: %w", part, err)
+			}
+			nets = append(nets, ipNet)
+			continue
+		}
+		ip := net.ParseIP(part)
+		if ip == nil {
+			return nil, fmt.Errorf("invalid IP %q", part)
+		}
+		bits := 128
+		if ip.To4() != nil {
+			bits = 32
+			ip = ip.To4()
+		}
+		nets = append(nets, &net.IPNet{IP: ip, Mask: net.CIDRMask(bits, bits)})
+	}
+	return nets, nil
 }
 
 func (c *Config) validate() error {
