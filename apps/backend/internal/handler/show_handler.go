@@ -94,9 +94,8 @@ func (h *ShowHandler) SearchShows(c *gin.Context) {
 //	@Failure     422 {object} response.APIResponse "invalid request"
 //	@Failure     404 {object} response.APIResponse "podcast show not found"
 //	@Failure     409 {object} response.APIResponse "already subscribed"
-//	@Failure     424 {object} response.APIResponse "Spotify authorization required"
 //	@Failure     429 {object} response.APIResponse "Spotify rate limit exceeded"
-//	@Failure     503 {object} response.APIResponse "Spotify unavailable"
+//	@Failure     503 {object} response.APIResponse "Spotify temporarily unavailable"
 //	@Failure     500 {object} response.APIResponse "internal server error"
 //	@Router      /shows/subscribe [post]
 func (h *ShowHandler) Subscribe(c *gin.Context) {

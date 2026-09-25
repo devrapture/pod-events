@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strings"
 
 	"github.com/devrapture/pod-events/internal/models"
 	"github.com/google/uuid"
@@ -80,7 +81,8 @@ func (r *userRepo) GetByGoogleUserID(ctx context.Context, googleUserID string) (
 
 func (r *userRepo) GetByEmail(ctx context.Context, email string) (*models.User, error) {
 	var user models.User
-	err := r.db.WithContext(ctx).First(&user, "email = ?", email).Error
+	normalizedEmail := strings.ToLower(strings.TrimSpace(email))
+	err := r.db.WithContext(ctx).First(&user, "LOWER(email) = ?", normalizedEmail).Error
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, nil

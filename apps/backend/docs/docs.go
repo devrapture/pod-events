@@ -590,12 +590,6 @@ const docTemplate = `{
                             "$ref": "#/definitions/response.APIResponse"
                         }
                     },
-                    "424": {
-                        "description": "Spotify authorization required",
-                        "schema": {
-                            "$ref": "#/definitions/response.APIResponse"
-                        }
-                    },
                     "429": {
                         "description": "Spotify rate limit exceeded",
                         "schema": {
@@ -609,7 +603,7 @@ const docTemplate = `{
                         }
                     },
                     "503": {
-                        "description": "Spotify unavailable",
+                        "description": "Spotify temporarily unavailable",
                         "schema": {
                             "$ref": "#/definitions/response.APIResponse"
                         }

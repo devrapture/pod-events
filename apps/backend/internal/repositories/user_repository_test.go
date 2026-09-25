@@ -159,6 +159,63 @@ func TestGetByID_DBError(t *testing.T) {
 	assert.NoError(t, mock.ExpectationsWereMet())
 }
 
+// ── GetByEmail ─────────────────────────────────────────────────────────
+
+func TestGetByEmail_NormalizesCaseAndWhitespace(t *testing.T) {
+	db, mock := setupMockDB(t)
+	repo := NewUserRepository(db)
+	user := testUser()
+	user.Email = "Test@Example.com"
+
+	rows := sqlmock.NewRows([]string{
+		"id", "created_at", "updated_at", "deleted_at",
+		"name", "email", "avatar_url", "google_user_id", "spotify_user_id",
+	}).AddRow(
+		user.ID, user.CreatedAt, user.UpdatedAt, nil,
+		user.Name, user.Email, user.AvatarURL, user.GoogleUserID, user.SpotifyUserID,
+	)
+
+	mock.ExpectQuery(`SELECT \* FROM "users" WHERE LOWER\(email\) = \$1 AND "users"\."deleted_at" IS NULL ORDER BY "users"\."id" LIMIT \$2`).
+		WithArgs("test@example.com", 1).WillReturnRows(rows)
+
+	got, err := repo.GetByEmail(context.Background(), "  TEST@EXAMPLE.COM  ")
+
+	require.NoError(t, err)
+	require.NotNil(t, got)
+	assert.Equal(t, user.ID, got.ID)
+	assert.Equal(t, user.Email, got.Email)
+	assert.NoError(t, mock.ExpectationsWereMet())
+}
+
+func TestGetByEmail_NotFound(t *testing.T) {
+	db, mock := setupMockDB(t)
+	repo := NewUserRepository(db)
+
+	mock.ExpectQuery(`SELECT \* FROM "users" WHERE LOWER\(email\) = \$1 AND "users"\."deleted_at" IS NULL ORDER BY "users"\."id" LIMIT \$2`).
+		WithArgs("missing@example.com", 1).WillReturnError(gorm.ErrRecordNotFound)
+
+	got, err := repo.GetByEmail(context.Background(), "Missing@Example.com")
+
+	assert.Nil(t, got)
+	assert.NoError(t, err)
+	assert.NoError(t, mock.ExpectationsWereMet())
+}
+
+func TestGetByEmail_DBError(t *testing.T) {
+	db, mock := setupMockDB(t)
+	repo := NewUserRepository(db)
+
+	mock.ExpectQuery(`SELECT \* FROM "users" WHERE LOWER\(email\) = \$1 AND "users"\."deleted_at" IS NULL ORDER BY "users"\."id" LIMIT \$2`).
+		WithArgs("test@example.com", 1).WillReturnError(errors.New("database is down"))
+
+	got, err := repo.GetByEmail(context.Background(), "Test@Example.com")
+
+	assert.Nil(t, got)
+	assert.ErrorContains(t, err, "failed to get user")
+	assert.ErrorContains(t, err, "database is down")
+	assert.NoError(t, mock.ExpectationsWereMet())
+}
+
 // ── Update ─────────────────────────────────────────────────────────────
 
 func TestUpdateUser_Success(t *testing.T) {
