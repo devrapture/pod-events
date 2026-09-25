@@ -44,12 +44,6 @@ func (c *SpotifyClient) AuthorizationURL(state string) string {
 	params.Set("state", state)
 	params.Set("redirect_uri", c.cfg.SpotifyRedirectURL)
 	params.Set("response_type", "code")
-	params.Set("scope", strings.Join([]string{
-		"user-read-email",   // Read user's email and profile
-		"user-read-private", // Read subscription status
-		"user-library-read", // Read saved shows
-		"user-follow-read",  // Read followed podcasts
-	}, " "))
 
 	return fmt.Sprintf("%s/?%s", spotifyAuthURL, params.Encode())
 }
@@ -70,14 +64,6 @@ func (c *SpotifyClient) RefreshAccessToken(ctx context.Context, refreshToken str
 	data.Set("client_id", c.cfg.SpotifyClientID)
 
 	return c.requestToken(ctx, data)
-}
-
-func (c *SpotifyClient) GetCurrentUser(ctx context.Context, accessToken string) (*SpotifyUser, error) {
-	var user SpotifyUser
-	if err := c.get(ctx, accessToken, "me", &user); err != nil {
-		return nil, err
-	}
-	return &user, nil
 }
 
 func (c *SpotifyClient) SearchShows(ctx context.Context, accessToken, query string, limit, offset int) (*ShowSearchResult, error) {
@@ -119,42 +105,6 @@ func (c *SpotifyClient) GetShowLatestEpisode(ctx context.Context, accessToken, s
 		}
 	}
 	return nil, apperrors.ErrSpotifyResourceNotFound
-}
-
-func (c *SpotifyClient) GetUserSavedShows(ctx context.Context, accessToken string, offset, limit int) (*SpotifySavedShowsResponse, error) {
-	endpoint := fmt.Sprintf("me/shows?offset=%d&limit=%d", offset, limit)
-	var show SpotifySavedShowsResponse
-	if err := c.get(ctx, accessToken, endpoint, &show); err != nil {
-		return nil, err
-	}
-	return &show, nil
-}
-
-func (c *SpotifyClient) GetAllUserSavedShows(ctx context.Context, accessToken string) (*SpotifySavedShowsResponse, error) {
-	const limit = 50
-	all := &SpotifySavedShowsResponse{
-		Limit: limit,
-		Items: []SpotifySavedShowItem{},
-	}
-
-	firstPage := true
-	for offset := 0; ; offset += limit {
-		page, err := c.GetUserSavedShows(ctx, accessToken, offset, limit)
-		if err != nil {
-			return nil, err
-		}
-		if firstPage {
-			all.Href = page.Href
-			all.Total = page.Total
-			firstPage = false
-		}
-
-		all.Items = append(all.Items, page.Items...)
-		if page.Next == "" || len(all.Items) >= page.Total {
-			break
-		}
-	}
-	return all, nil
 }
 
 func (c *SpotifyClient) requestToken(ctx context.Context, data url.Values) (*TokenResponse, error) {

@@ -48,6 +48,7 @@ import (
 	"github.com/devrapture/pod-events/internal/config"
 	"github.com/devrapture/pod-events/internal/cron"
 	"github.com/devrapture/pod-events/internal/database"
+	"github.com/devrapture/pod-events/internal/googleauth"
 	handlers "github.com/devrapture/pod-events/internal/handler"
 	"github.com/devrapture/pod-events/internal/metrics"
 	"github.com/devrapture/pod-events/internal/notifications/telegram"
@@ -131,6 +132,7 @@ func run() (exitStatus int) {
 
 	// ── Clients ────────────────────────────────────────────────
 	spotifyClient := spotify.NewSpotifyClient(cfg, logger)
+	googleClient := googleauth.NewClient(cfg)
 
 	// ── Notifier ────────────────────────────────────────────────
 	telegramNotifier := telegram.NewNotifier(cfg, 0, logger)
@@ -142,14 +144,14 @@ func run() (exitStatus int) {
 	telegramConnectionRepo := repositories.NewTelegramConnectionRepository(db)
 	subscriptionRepo := repositories.NewSubscriptionRepository(db)
 	showRepository := repositories.NewShowRepository(db)
-	dashboardSummaryRepo := repositories.NewDashboardSummaryRepository(db, tokenRepo)
+	dashboardSummaryRepo := repositories.NewDashboardSummaryRepository(db)
 	episodeRepo := repositories.NewEpisodeRepository(db)
 	showRepo := repositories.NewShowRepository(db)
 	notificationLogRepo := repositories.NewNotificationLogRepository(db)
 
 	// ── Services ────────────────────────────────────────────────
 	recorder := metrics.New(context.Background(), cfg.SentryDSN != "")
-	authService := services.NewAuthService(cfg, tokenRepo, userRepo, spotifyClient, appCache, logger)
+	authService := services.NewAuthService(cfg, tokenRepo, userRepo, googleClient, spotifyClient, appCache, logger)
 	showService := services.NewShowServices(spotifyClient, authService, appCache, subscriptionRepo, showRepository, logger)
 	channelService := services.NewChannelServices(channelRepo)
 	telegramConnectionService := services.NewTelegramConnectionService(telegramConnectionRepo, channelRepo, cfg)

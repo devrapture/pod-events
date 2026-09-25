@@ -32,6 +32,8 @@ func setupMockDB(t *testing.T) (*gorm.DB, sqlmock.Sqlmock) {
 }
 
 func testUser() *models.User {
+	googleUserID := "google_user_123"
+	spotifyUserID := "spotify_user_123"
 	return &models.User{
 		Base: models.Base{
 			ID:        uuid.New(),
@@ -41,7 +43,8 @@ func testUser() *models.User {
 		Name:          "Test User",
 		Email:         "test@example.com",
 		AvatarURL:     "https://example.com/avatar.png",
-		SpotifyUserID: "spotify_user_123",
+		GoogleUserID:  &googleUserID,
+		SpotifyUserID: &spotifyUserID,
 	}
 }
 
@@ -54,7 +57,7 @@ func TestCreateUser_Success(t *testing.T) {
 
 	mock.ExpectBegin()
 	mock.ExpectExec(
-		`INSERT INTO "users" \("id","created_at","updated_at","deleted_at","name","email","avatar_url","spotify_user_id"\) VALUES \(\$1,\$2,\$3,\$4,\$5,\$6,\$7,\$8\)`,
+		`INSERT INTO "users" \("id","created_at","updated_at","deleted_at","name","email","avatar_url","google_user_id","spotify_user_id"\) VALUES \(\$1,\$2,\$3,\$4,\$5,\$6,\$7,\$8,\$9\)`,
 	).WithArgs(
 		user.ID,
 		sqlmock.AnyArg(),
@@ -63,6 +66,7 @@ func TestCreateUser_Success(t *testing.T) {
 		user.Name,
 		user.Email,
 		user.AvatarURL,
+		user.GoogleUserID,
 		user.SpotifyUserID,
 	).WillReturnResult(sqlmock.NewResult(1, 1))
 	mock.ExpectCommit()
@@ -80,7 +84,7 @@ func TestCreateUser_DBError(t *testing.T) {
 
 	mock.ExpectBegin()
 	mock.ExpectExec(
-		`INSERT INTO "users" \("id","created_at","updated_at","deleted_at","name","email","avatar_url","spotify_user_id"\) VALUES \(\$1,\$2,\$3,\$4,\$5,\$6,\$7,\$8\)`,
+		`INSERT INTO "users" \("id","created_at","updated_at","deleted_at","name","email","avatar_url","google_user_id","spotify_user_id"\) VALUES \(\$1,\$2,\$3,\$4,\$5,\$6,\$7,\$8,\$9\)`,
 	).WillReturnError(errors.New("connection refused"))
 	mock.ExpectRollback()
 
@@ -100,10 +104,10 @@ func TestGetByID_Success(t *testing.T) {
 
 	rows := sqlmock.NewRows([]string{
 		"id", "created_at", "updated_at", "deleted_at",
-		"name", "email", "avatar_url", "spotify_user_id",
+		"name", "email", "avatar_url", "google_user_id", "spotify_user_id",
 	}).AddRow(
 		user.ID, user.CreatedAt, user.UpdatedAt, nil,
-		user.Name, user.Email, user.AvatarURL, user.SpotifyUserID,
+		user.Name, user.Email, user.AvatarURL, user.GoogleUserID, user.SpotifyUserID,
 	)
 
 	mock.ExpectQuery(`SELECT \* FROM "users" WHERE id = \$1 AND "users"\."deleted_at" IS NULL ORDER BY "users"\."id" LIMIT \$2`).
@@ -117,6 +121,7 @@ func TestGetByID_Success(t *testing.T) {
 	assert.Equal(t, user.Name, got.Name)
 	assert.Equal(t, user.Email, got.Email)
 	assert.Equal(t, user.AvatarURL, got.AvatarURL)
+	assert.Equal(t, user.GoogleUserID, got.GoogleUserID)
 	assert.Equal(t, user.SpotifyUserID, got.SpotifyUserID)
 	assert.False(t, got.CreatedAt.IsZero())
 	assert.False(t, got.UpdatedAt.IsZero())
@@ -163,7 +168,7 @@ func TestUpdateUser_Success(t *testing.T) {
 
 	mock.ExpectBegin()
 	mock.ExpectExec(
-		`UPDATE "users" SET "created_at"=\$1,"updated_at"=\$2,"deleted_at"=\$3,"name"=\$4,"email"=\$5,"avatar_url"=\$6,"spotify_user_id"=\$7 WHERE "users"\."deleted_at" IS NULL AND "id" = \$8`,
+		`UPDATE "users" SET "created_at"=\$1,"updated_at"=\$2,"deleted_at"=\$3,"name"=\$4,"email"=\$5,"avatar_url"=\$6,"google_user_id"=\$7,"spotify_user_id"=\$8 WHERE "users"\."deleted_at" IS NULL AND "id" = \$9`,
 	).WithArgs(
 		user.CreatedAt,
 		sqlmock.AnyArg(),
@@ -171,6 +176,7 @@ func TestUpdateUser_Success(t *testing.T) {
 		user.Name,
 		user.Email,
 		user.AvatarURL,
+		user.GoogleUserID,
 		user.SpotifyUserID,
 		user.ID,
 	).WillReturnResult(sqlmock.NewResult(0, 1))
@@ -189,7 +195,7 @@ func TestUpdateUser_DBError(t *testing.T) {
 
 	mock.ExpectBegin()
 	mock.ExpectExec(
-		`UPDATE "users" SET "created_at"=\$1,"updated_at"=\$2,"deleted_at"=\$3,"name"=\$4,"email"=\$5,"avatar_url"=\$6,"spotify_user_id"=\$7 WHERE "users"\."deleted_at" IS NULL AND "id" = \$8`,
+		`UPDATE "users" SET "created_at"=\$1,"updated_at"=\$2,"deleted_at"=\$3,"name"=\$4,"email"=\$5,"avatar_url"=\$6,"google_user_id"=\$7,"spotify_user_id"=\$8 WHERE "users"\."deleted_at" IS NULL AND "id" = \$9`,
 	).WillReturnError(errors.New("connection lost"))
 	mock.ExpectRollback()
 

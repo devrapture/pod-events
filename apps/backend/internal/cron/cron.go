@@ -11,7 +11,6 @@ import (
 	"github.com/devrapture/pod-events/internal/repositories"
 	"github.com/devrapture/pod-events/internal/services"
 	"github.com/devrapture/pod-events/internal/spotify"
-	"github.com/google/uuid"
 	"go.uber.org/zap"
 )
 
@@ -82,6 +81,14 @@ func (c *EpisodeChecker) Run(ctx context.Context) (*CheckResult, error) {
 		return nil, fmt.Errorf("get tracked shows: %w", err)
 	}
 	c.logger.Info("found tracked shows", zap.Int("count", len(shows)))
+	if len(shows) == 0 {
+		return result, nil
+	}
+	accessToken, err := c.authService.GetSpotifyAccessToken(ctx)
+	if err != nil {
+		fatalFailures++
+		return nil, fmt.Errorf("get shared spotify access token: %w", err)
+	}
 	for _, show := range shows {
 		if err := ctx.Err(); err != nil {
 			fatalFailures++
@@ -89,7 +96,7 @@ func (c *EpisodeChecker) Run(ctx context.Context) (*CheckResult, error) {
 		}
 
 		result.ShowsChecked++
-		if err := c.checkShow(ctx, &show, result); err != nil {
+		if err := c.checkShow(ctx, &show, accessToken, result); err != nil {
 			if ctxErr := ctx.Err(); ctxErr != nil {
 				fatalFailures++
 				return result, ctxErr
@@ -121,11 +128,7 @@ func (c *EpisodeChecker) Run(ctx context.Context) (*CheckResult, error) {
 	return result, nil
 }
 
-func (c *EpisodeChecker) checkShow(ctx context.Context, show *models.PodcastShow, result *CheckResult) error {
-	accessToken, err := c.getAccessTokenForShow(ctx, show.ID)
-	if err != nil {
-		return fmt.Errorf("get access token: %w", err)
-	}
+func (c *EpisodeChecker) checkShow(ctx context.Context, show *models.PodcastShow, accessToken string, result *CheckResult) error {
 	latestEpisode, err := c.spotifyClient.GetShowLatestEpisode(ctx, accessToken, show.SpotifyShowID)
 	if err != nil {
 		var rateLimiterErr *spotify.RateLimitError
@@ -215,29 +218,4 @@ func (c *EpisodeChecker) checkShow(ctx context.Context, show *models.PodcastShow
 		}
 	}
 	return nil
-}
-
-func (c *EpisodeChecker) getAccessTokenForShow(ctx context.Context, showID uuid.UUID) (string, error) {
-	subscribers, err := c.subRepo.GetSubscribedUsersByShowID(ctx, showID)
-	if err != nil {
-		return "", fmt.Errorf("get subscribers: %w", err)
-	}
-
-	if len(subscribers) == 0 {
-		return "", fmt.Errorf("show has no subscribers")
-	}
-
-	for _, user := range subscribers {
-		token, err := c.authService.GetValidAccessToken(ctx, user.ID)
-		if err != nil {
-			c.logger.Warn(
-				"could not get token for subscriber",
-				zap.String("user_id", user.ID.String()),
-				zap.Error(err),
-			)
-			continue
-		}
-		return token, nil
-	}
-	return "", fmt.Errorf("no subscriber has a valid spotify token")
 }

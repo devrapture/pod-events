@@ -128,7 +128,7 @@ export function Hero() {
 									) : (
 										<Headphones className="h-4 w-4" />
 									)}
-									{isLoggingIn ? "Signing in..." : "Sign in with Spotify"}
+									{isLoggingIn ? "Signing in..." : "Sign in with Google"}
 								</Button>
 							)}
 							<Button asChild size="lg" variant="secondary">

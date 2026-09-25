@@ -56,7 +56,7 @@ export function LandingHeader() {
 							</Button>
 							<div className="flex items-center gap-2 rounded-lg border border-white/10 bg-white/5 px-3 py-1.5">
 								{user.avatar_url ? (
-									// biome-ignore lint/performance/noImgElement: dynamic avatar URL from Spotify
+									// biome-ignore lint/performance/noImgElement: dynamic avatar URL from Google
 									<img
 										alt={user.name}
 										className="h-6 w-6 rounded-full"
@@ -92,7 +92,7 @@ export function LandingHeader() {
 										Signing in...
 									</>
 								) : (
-									"Sign In"
+									"Sign in with Google"
 								)}
 							</Button>
 						</>
@@ -163,7 +163,7 @@ export function LandingHeader() {
 												Signing in...
 											</>
 										) : (
-											"Sign In"
+											"Sign in with Google"
 										)}
 									</Button>
 									<Button

@@ -11,8 +11,6 @@ import { Card, CardContent } from "@/components/ui/card";
 import { useDashboardSummary } from "@/hooks/queries/dashboard.queries";
 
 const SETUP_CHECKLIST_SKELETON_KEYS = [
-	"connect-spotify",
-	"import-spotify",
 	"subscribe-podcast",
 	"add-channel",
 	"receive-notification",
@@ -99,12 +97,8 @@ export function DashboardOverviewPage() {
 					{summary.setup.percent < 100 && (
 						<SetupChecklist setup={summary.setup} />
 					)}
-					{summary.setup.percent === 100 && (
-						<>
-							<StatsCards stats={summary.stats} />
-							<RecentEpisodes episodes={summary.recent_episodes ?? []} />
-						</>
-					)}
+					<StatsCards stats={summary.stats} />
+					<RecentEpisodes episodes={summary.recent_episodes ?? []} />
 				</>
 			)}
 		</div>

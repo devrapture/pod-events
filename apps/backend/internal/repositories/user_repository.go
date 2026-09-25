@@ -18,6 +18,7 @@ type UserRepository interface {
 	Create(ctx context.Context, user *models.User) error
 	GetByID(ctx context.Context, userID uuid.UUID) (*models.User, error)
 	Update(ctx context.Context, user *models.User) error
+	GetByGoogleUserID(ctx context.Context, googleUserID string) (*models.User, error)
 	GetBySpotifyUserID(ctx context.Context, spotifyUserID string) (*models.User, error)
 	GetByEmail(ctx context.Context, email string) (*models.User, error)
 }
@@ -61,6 +62,18 @@ func (r *userRepo) GetBySpotifyUserID(ctx context.Context, spotifyUserID string)
 			return nil, nil
 		}
 		return nil, fmt.Errorf("failed to get user: %w", err)
+	}
+	return &user, nil
+}
+
+func (r *userRepo) GetByGoogleUserID(ctx context.Context, googleUserID string) (*models.User, error) {
+	var user models.User
+	err := r.db.WithContext(ctx).First(&user, "google_user_id = ?", googleUserID).Error
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, nil
+		}
+		return nil, fmt.Errorf("failed to get user by google id: %w", err)
 	}
 	return &user, nil
 }

@@ -7,7 +7,7 @@ export const metadata: Metadata = {
 		"How PodEvents collects, uses, and protects information when you use our podcast notification service.",
 };
 
-const LAST_UPDATED = "August 1, 2026";
+const LAST_UPDATED = "September 25, 2026";
 const CONTACT_EMAIL = "devrapture@proton.me";
 
 export default function PrivacyPage() {
@@ -41,16 +41,16 @@ export default function PrivacyPage() {
 						<ul className="list-disc space-y-2 pl-5">
 							<li>
 								<span className="text-zinc-300">Account and profile data</span>{" "}
-								from Spotify when you sign in, such as your name, email address,
-								profile avatar URL, and Spotify user ID.
+								from Google when you sign in, such as your name, verified email
+								address, profile avatar URL, and Google account identifier.
 							</li>
 							<li>
 								<span className="text-zinc-300">
 									Authentication credentials
 								</span>{" "}
-								needed to keep your session working, including Spotify access
-								and refresh tokens (stored encrypted) and a PodEvents session
-								token.
+								needed to keep your session working, including a PodEvents
+								session token. Individual users do not provide Spotify access or
+								refresh tokens.
 							</li>
 							<li>
 								<span className="text-zinc-300">Podcast preferences</span> you
@@ -89,8 +89,8 @@ export default function PrivacyPage() {
 							<li>Create and maintain your PodEvents account</li>
 							<li>Authenticate you and keep your session secure</li>
 							<li>
-								Access Spotify on your behalf (within the permissions you grant)
-								to find shows and monitor new episodes
+								Search Spotify&apos;s podcast catalog and monitor new episodes
+								using the service operator&apos;s credential
 							</li>
 							<li>
 								Send new-episode notifications to the channels you connect
@@ -132,8 +132,9 @@ export default function PrivacyPage() {
 								for storing your PodEvents session token
 							</li>
 							<li>
-								Short-lived OAuth state values used during Spotify sign-in to
-								help prevent CSRF attacks
+								Short-lived OAuth state values used during Google sign-in and
+								the operator-only Spotify setup flow to help prevent CSRF
+								attacks
 							</li>
 						</ul>
 						<p className="mt-3">
@@ -161,9 +162,15 @@ export default function PrivacyPage() {
 						</p>
 						<ul className="list-disc space-y-2 pl-5">
 							<li>
-								<span className="text-zinc-300">Spotify</span> — used for
-								sign-in and podcast library access via OAuth. Spotify may
+								<span className="text-zinc-300">Google</span> — used for account
+								sign-in and basic profile information via OAuth. Google may
 								process your data under its own privacy policy.
+							</li>
+							<li>
+								<span className="text-zinc-300">Spotify</span> — used by the
+								service operator to search the podcast catalog and retrieve show
+								and episode metadata. Your personal Spotify account is not
+								connected.
 							</li>
 							<li>
 								<span className="text-zinc-300">Slack and Discord</span> — when
@@ -188,18 +195,12 @@ export default function PrivacyPage() {
 							5. Music, podcast, and listening-related data
 						</h2>
 						<p className="mb-3">
-							PodEvents is focused on podcast show monitoring, not full music
-							playback history. With your Spotify authorization, we may access:
+							PodEvents is focused on podcast show monitoring and does not
+							request your Spotify authorization, saved library, or playback
+							history. The service processes:
 						</p>
 						<ul className="list-disc space-y-2 pl-5">
-							<li>
-								Profile information needed for account creation (including email
-								and basic profile fields)
-							</li>
-							<li>
-								Saved shows and followed podcasts so you can import or subscribe
-								to shows you care about
-							</li>
+							<li>The podcasts you explicitly subscribe to in PodEvents</li>
 							<li>
 								Show and episode metadata needed to detect new releases and
 								compose notifications
@@ -207,8 +208,8 @@ export default function PrivacyPage() {
 						</ul>
 						<p className="mt-3">
 							We store the podcast subscriptions and notification preferences
-							you set up in PodEvents. We do not use your Spotify connection to
-							build advertising profiles.
+							you set up in PodEvents. We do not import a personal Spotify
+							library or build advertising profiles.
 						</p>
 					</section>
 
@@ -225,8 +226,8 @@ export default function PrivacyPage() {
 								example, posting a new-episode alert to a Slack webhook)
 							</li>
 							<li>
-								With Spotify as required to authenticate and retrieve podcast
-								data under the scopes you grant
+								With Google as required to authenticate your account, and with
+								Spotify to retrieve public podcast catalog data
 							</li>
 							<li>
 								With infrastructure providers that host or process the
@@ -257,9 +258,8 @@ export default function PrivacyPage() {
 							periods are not fixed in the product code. If you delete or stop
 							using connected channels, or if account-deletion tooling becomes
 							available, related data will be removed or disabled according to
-							that process. You can also disconnect third-party services
-							(including Spotify authorizations) through those providers&apos;
-							settings.
+							that process. You can also revoke Google account access through
+							Google&apos;s settings.
 						</p>
 					</section>
 
@@ -272,8 +272,11 @@ export default function PrivacyPage() {
 							including:
 						</p>
 						<ul className="list-disc space-y-2 pl-5">
-							<li>OAuth 2.0 for Spotify authentication</li>
-							<li>AES-256-GCM encryption for stored Spotify credentials</li>
+							<li>OAuth 2.0 for Google authentication</li>
+							<li>
+								Owner-only Spotify authorization with AES-256-GCM encryption for
+								the stored service credential
+							</li>
 							<li>JWT-based session authentication for API access</li>
 							<li>
 								Secure cookie attributes for the session cookie where supported
@@ -311,8 +314,8 @@ export default function PrivacyPage() {
 								Remove notification channels you no longer want PodEvents to use
 							</li>
 							<li>
-								Manage or revoke Spotify app access from your Spotify account
-								settings
+								Manage or revoke PodEvents&apos; Google access from your Google
+								account settings
 							</li>
 							<li>
 								Contact us to request help with access, correction, or deletion
