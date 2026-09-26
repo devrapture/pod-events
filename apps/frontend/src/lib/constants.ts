@@ -1,4 +1,4 @@
-export const SITE_URL = "https://podevents.dev";
+export const SITE_URL = "https://pod-event.vercel.app";
 
 export const GITHUB_URL = "https://github.com/devrapture/pod-events";
 export const DOCS_URL = "https://github.com/devrapture/pod-events#readme";
