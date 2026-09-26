@@ -29,27 +29,6 @@ func NewShowHandler(showService services.ShowServices, logger *zap.Logger) *Show
 	}
 }
 
-// GetUserSavedShows returns a list of shows saved by a user on Spotify.
-//
-//	@Summary     Get saved shows
-//	@Description Get the current user's saved/podcasts from Spotify
-//	@Tags        Shows
-//	@Security    BearerAuth
-//	@Param       q query string false "Search query to filter saved shows"
-//	@Success     200 {object} response.APIResponse{data=[]dto.SavedShowResponse} "show fetched successfully"
-//	@Router      /shows/saved [get]
-func (h *ShowHandler) GetUserSavedShows(c *gin.Context) {
-	userID, _ := c.Get("userID")
-	query := c.Query("q")
-	show, err := h.showService.GetUserSavedShows(c.Request.Context(), userID.(uuid.UUID), query)
-	if err != nil {
-		h.logger.Error("failed to get saved shows", zap.Error(err))
-		response.ErrorResponse(c, http.StatusInternalServerError, "failed to get saved shows")
-		return
-	}
-	response.SuccessResponse(c, http.StatusOK, "show fetched successfully", show, nil)
-}
-
 // SearchShows searches for shows on Spotify.
 //
 //	@Summary     Search shows
@@ -63,7 +42,6 @@ func (h *ShowHandler) GetUserSavedShows(c *gin.Context) {
 //	@Failure     400 {object} response.APIResponse "invalid parameters"
 //	@Router      /shows/search [get]
 func (h *ShowHandler) SearchShows(c *gin.Context) {
-	userID, _ := c.Get("userID")
 	query := strings.TrimSpace(c.Query("q"))
 
 	limit := c.DefaultQuery("limit", "10")
@@ -91,8 +69,12 @@ func (h *ShowHandler) SearchShows(c *gin.Context) {
 		response.ErrorResponse(c, http.StatusBadRequest, "query is required")
 		return
 	}
-	show, err := h.showService.SearchShows(c.Request.Context(), userID.(uuid.UUID), query, limitInt, offsetInt)
+	show, err := h.showService.SearchShows(c.Request.Context(), query, limitInt, offsetInt)
 	if err != nil {
+		if errors.Is(err, apperrors.ErrorSpotifyTokenNotFound) || errors.Is(err, apperrors.ErrSpotifyAuthorizationRequired) {
+			response.ErrorResponse(c, http.StatusServiceUnavailable, "Spotify search is temporarily unavailable")
+			return
+		}
 		h.logger.Error("failed to search shows", zap.Error(err))
 		response.ErrorResponse(c, http.StatusInternalServerError, "failed to search shows")
 		return
@@ -112,9 +94,8 @@ func (h *ShowHandler) SearchShows(c *gin.Context) {
 //	@Failure     422 {object} response.APIResponse "invalid request"
 //	@Failure     404 {object} response.APIResponse "podcast show not found"
 //	@Failure     409 {object} response.APIResponse "already subscribed"
-//	@Failure     424 {object} response.APIResponse "Spotify authorization required"
 //	@Failure     429 {object} response.APIResponse "Spotify rate limit exceeded"
-//	@Failure     503 {object} response.APIResponse "Spotify unavailable"
+//	@Failure     503 {object} response.APIResponse "Spotify temporarily unavailable"
 //	@Failure     500 {object} response.APIResponse "internal server error"
 //	@Router      /shows/subscribe [post]
 func (h *ShowHandler) Subscribe(c *gin.Context) {
@@ -141,7 +122,7 @@ func (h *ShowHandler) Subscribe(c *gin.Context) {
 			response.ErrorResponse(c, http.StatusConflict, "you are already subscribed to one or more selected shows")
 			return
 		case errors.Is(err, apperrors.ErrorSpotifyTokenNotFound), errors.Is(err, apperrors.ErrSpotifyAuthorizationRequired):
-			response.ErrorResponse(c, http.StatusFailedDependency, "your Spotify connection has expired; reconnect Spotify and try again")
+			response.ErrorResponse(c, http.StatusServiceUnavailable, "Spotify is temporarily unavailable")
 			return
 		}
 

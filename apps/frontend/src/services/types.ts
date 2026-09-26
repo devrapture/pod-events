@@ -23,7 +23,10 @@ export interface User {
 	name: string;
 	email: string;
 	avatar_url: string;
-	spotify_user_id: string;
+}
+
+export interface SpotifyOwnerAuthorization {
+	authorization_url: string;
 }
 
 export interface AuthExchangeRequest {
@@ -151,8 +154,4 @@ export interface ShowSearchParams {
 	q: string;
 	limit?: number;
 	offset?: number;
-}
-
-export interface SavedShowsParams {
-	q?: string;
 }

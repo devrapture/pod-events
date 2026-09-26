@@ -4,7 +4,7 @@ Guide for AI coding agents working on this repository.
 
 ## Project Overview
 
-**PodEvents** is a podcast notification platform. Users sign in with Spotify, subscribe to shows, and receive notifications when new episodes drop via **Slack**, **Discord**, or **Telegram**.
+**PodEvents** is a podcast notification platform. Users sign in with Google, subscribe to shows from the Spotify catalog, and receive notifications when new episodes drop via **Slack**, **Discord**, or **Telegram**.
 
 ### Tech Stack
 
@@ -12,7 +12,7 @@ Guide for AI coding agents working on this repository.
 |---|---|
 | Frontend | Next.js 16 (App Router), React 19, TypeScript ~5.9, Tailwind CSS v4, Bun |
 | Backend | Go 1.25, Gin (HTTP), GORM (ORM), PostgreSQL 17 |
-| Auth | Spotify OAuth (backend), JWT (backend), React auth context + localStorage token (frontend) |
+| Auth | Google OAuth (public sign-in), owner-only Spotify OAuth service credential, JWT (backend), React auth context + localStorage token (frontend) |
 | Database | PostgreSQL 17 (Docker Compose), Atlas (SQL migrations generated from GORM models) |
 | Observability | Sentry (backend: gin + zap; frontend: `@sentry/nextjs`) |
 | Tooling | Biome (frontend lint/format), Husky + lint-staged, Air (Go hot-reload), Docker Compose, Swag |
@@ -28,7 +28,7 @@ Frontend (Next.js 16) --> Backend (Gin + GORM) --> PostgreSQL 17
                          External cron --> POST /cron/check-episodes
 ```
 
-Auth flow: User logs in via Spotify OAuth on the backend, receives a temporary exchange code, then the frontend exchanges it for a JWT. The JWT is stored (localStorage) and sent as `Authorization: Bearer` on API requests.
+Auth flow: Users log in via Google OAuth on the backend, receive a temporary exchange code, then the frontend exchanges it for a JWT. The JWT is stored (localStorage) and sent as `Authorization: Bearer` on API requests. The configured owner separately authorizes Spotify through the unlinked `/owner/spotify` frontend route; that encrypted refreshable token is used server-side for all Spotify API calls.
 
 Episode detection is **not** an in-process scheduler. An external caller hits `POST /cron/check-episodes` with header `X-Cron-Secret: <CRON_SECRET>`.
 
@@ -45,6 +45,7 @@ pod-events/
 │   │   │   ├── database/       # GORM PostgreSQL connection
 │   │   │   ├── dto/            # Request/response DTOs
 │   │   │   ├── errors/         # Sentinel errors (package apperrors)
+│   │   │   ├── googleauth/     # Google OAuth client
 │   │   │   ├── handler/        # HTTP handlers (Gin)
 │   │   │   ├── metrics/        # Sentry metrics helpers
 │   │   │   ├── middleware/     # JWT auth, IP rate limit, cron secret, logging, metrics
@@ -67,7 +68,7 @@ pod-events/
 │   └── frontend/               # Next.js App Router app
 │       ├── src/
 │       │   ├── app/            # Routes: (marketing), dashboard/*, auth/callback
-│       │   ├── components/     # ui/, channels/, overview/, search/, import/, subscriptions/, sections/
+│       │   ├── components/     # ui/, channels/, overview/, search/, subscriptions/, sections/
 │       │   ├── hooks/          # keys/, queries/, mutations/ (TanStack Query + react-query-kit)
 │       │   ├── lib/            # Auth, Axios, API helpers, constants
 │       │   ├── services/       # api-services.ts + types.ts
@@ -150,6 +151,7 @@ make migrate-prod-up
 - **Rate limiting**: Global IP rate limiter in `routes.Setup` (5 req/s, burst 10). Trust `X-Forwarded-For` only when peer is in `TRUSTED_PROXIES`
 - **Logging**: Zap, constructor-injected; Sentry zap core when DSN configured
 - **Swagger**: Annotation comments on handlers; regenerate with `make swagger-docs`
+- **Spotify access**: All catalog/search/episode requests use the single owner-authorized encrypted token; never require or store per-user Spotify credentials
 - **Subscribe flow**: Upsert shows → create subscriptions → **best-effort** seed of `latest_episode_id` (must not fail subscribe). Spotify episode lists may contain leading `null` items — client skips nulls (`limit=5`)
 
 ### Frontend (TypeScript/React)
@@ -178,7 +180,9 @@ make migrate-prod-up
 | Variable | Required | Notes |
 |---|---|---|
 | `DATABASE_URL` | yes | Local example uses port **5433** and DB `podevents` |
-| `SPOTIFY_CLIENT_ID` / `SPOTIFY_CLIENT_SECRET` / `SPOTIFY_REDIRECT_URL` | yes | Redirect must match Spotify dashboard |
+| `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` / `GOOGLE_REDIRECT_URL` | yes | Public user sign-in; redirect must match Google Cloud OAuth configuration |
+| `OWNER_EMAIL` | yes | Verified Google email allowed to authorize the shared Spotify credential |
+| `SPOTIFY_CLIENT_ID` / `SPOTIFY_CLIENT_SECRET` / `SPOTIFY_REDIRECT_URL` | yes | Owner-only service credential; redirect must match Spotify dashboard |
 | `TOKEN_ENCRYPTION_KEY` | yes | Base64 32-byte AES key (`make generate-encryption-key`) |
 | `FRONTEND_URL` | yes | CORS + OAuth redirect target |
 | `JWT_SECRET` | yes | |
@@ -204,9 +208,9 @@ Protected routes use `AuthMiddleware` unless noted.
 | Area | Methods / paths |
 |---|---|
 | Health | `GET /api/v1/health` (public) |
-| Auth | `GET /api/v1/auth/spotify/login`, `.../callback`, `POST /api/v1/auth/exchange`; `GET /api/v1/auth/me` (auth) |
+| Auth | `GET /api/v1/auth/google/login`, `.../callback`, `POST /api/v1/auth/exchange`; `GET /api/v1/auth/me` (auth); owner-only `GET /api/v1/auth/spotify/owner/login` + callback |
 | Dashboard | `GET /api/v1/dashboard/summary` |
-| Shows | `GET /api/v1/shows/saved`, `GET /api/v1/shows/search`, `POST /api/v1/shows/subscribe` |
+| Shows | `GET /api/v1/shows/search`, `POST /api/v1/shows/subscribe` (saved-show import is disabled) |
 | Subscriptions | `GET /api/v1/subscriptions`, `DELETE /api/v1/subscriptions/:id` |
 | Channels | `GET/POST /api/v1/channels`, `POST .../toggle`, `DELETE .../:channelID` |
 | Telegram | `POST /api/v1/telegram/generate-link`; webhook `POST /api/v1/webhooks/telegram` |

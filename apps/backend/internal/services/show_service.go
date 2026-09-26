@@ -18,8 +18,7 @@ import (
 )
 
 type ShowServices interface {
-	GetUserSavedShows(ctx context.Context, userID uuid.UUID, query string) ([]dto.SavedShowResponse, error)
-	SearchShows(ctx context.Context, userID uuid.UUID, query string, limit, offset int) ([]dto.SavedShowResponse, error)
+	SearchShows(ctx context.Context, query string, limit, offset int) ([]dto.SavedShowResponse, error)
 	GetSubscriptions(ctx context.Context, userID uuid.UUID) ([]models.Subscription, error)
 	Subscribe(ctx context.Context, userID uuid.UUID, spotifyShowIDs []string) ([]models.Subscription, error)
 	Unsubscribe(ctx context.Context, userID uuid.UUID, subscriptionID uuid.UUID) error
@@ -51,48 +50,8 @@ func NewShowServices(sc *spotify.SpotifyClient, authService AuthService, cache *
 	}
 }
 
-func (s *showServices) GetUserSavedShows(ctx context.Context, userID uuid.UUID, query string) ([]dto.SavedShowResponse, error) {
-	cacheKey := fmt.Sprintf("user:%s:saved-shows", userID.String())
-	if cachedShows, found := s.cache.Get(cacheKey); found {
-		shows, ok := cachedShows.([]dto.SavedShowResponse)
-		if ok {
-			return s.filterShows(shows, query), nil
-		}
-	}
-	accessToken, err := s.authService.GetValidAccessToken(ctx, userID)
-	if err != nil {
-		return nil, err
-	}
-
-	savedShows, err := s.spotifyClient.GetAllUserSavedShows(ctx, accessToken)
-	if err != nil {
-		return nil, err
-	}
-	s.cacheSavedShows(savedShows)
-
-	shows := savedShows.ToSavedShows()
-	s.cache.Set(cacheKey, shows, gocache.DefaultExpiration)
-	return s.filterShows(shows, query), nil
-}
-
-func (s *showServices) filterShows(shows []dto.SavedShowResponse, query string) []dto.SavedShowResponse {
-	query = strings.TrimSpace(strings.ToLower(query))
-	if query == "" {
-		return shows
-	}
-	filtered := make([]dto.SavedShowResponse, 0, len(shows))
-	for _, item := range shows {
-		if strings.Contains(strings.ToLower(item.Name), query) ||
-			strings.Contains(strings.ToLower(item.Description), query) {
-			filtered = append(filtered, item)
-		}
-	}
-
-	return filtered
-}
-
-func (s *showServices) SearchShows(ctx context.Context, userID uuid.UUID, query string, limit, offset int) ([]dto.SavedShowResponse, error) {
-	accessToken, err := s.authService.GetValidAccessToken(ctx, userID)
+func (s *showServices) SearchShows(ctx context.Context, query string, limit, offset int) ([]dto.SavedShowResponse, error) {
+	accessToken, err := s.authService.GetSpotifyAccessToken(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -126,7 +85,7 @@ func (s *showServices) Subscribe(ctx context.Context, userID uuid.UUID, spotifyS
 	if len(uniqueIDs) > maxSpotifyShowIDs {
 		return nil, fmt.Errorf("%w: maximum is %d, got %d", apperrors.ErrTooManySpotifyShowIDs, maxSpotifyShowIDs, len(uniqueIDs))
 	}
-	showsData, err := s.fetchShowsFromSpotify(ctx, userID, uniqueIDs)
+	showsData, err := s.fetchShowsFromSpotify(ctx, uniqueIDs)
 	if err != nil {
 		return nil, mapSubscribeSpotifyError(err)
 	}
@@ -163,7 +122,7 @@ func (s *showServices) Subscribe(ctx context.Context, userID uuid.UUID, spotifyS
 
 	// Best-effort: seed latest-episode watermarks so the next cron run does not
 	// treat already-published episodes as new. Failures are logged only.
-	s.seedLatestEpisodesIfNull(ctx, userID, showModels)
+	s.seedLatestEpisodesIfNull(ctx, showModels)
 
 	for i, show := range showModels {
 		subscriptions[i].PodcastShow = *show
@@ -177,7 +136,7 @@ func (s *showServices) Subscribe(ctx context.Context, userID uuid.UUID, spotifyS
 // watermark are skipped. Shows with no episodes are left null.
 //
 // This is best-effort: individual show failures are logged and never fail Subscribe.
-func (s *showServices) seedLatestEpisodesIfNull(ctx context.Context, userID uuid.UUID, shows []*models.PodcastShow) {
+func (s *showServices) seedLatestEpisodesIfNull(ctx context.Context, shows []*models.PodcastShow) {
 	needsSeed := make([]*models.PodcastShow, 0, len(shows))
 	for _, show := range shows {
 		if show.LatestEpisodeID == nil {
@@ -188,11 +147,10 @@ func (s *showServices) seedLatestEpisodesIfNull(ctx context.Context, userID uuid
 		return
 	}
 
-	accessToken, err := s.authService.GetValidAccessToken(ctx, userID)
+	accessToken, err := s.authService.GetSpotifyAccessToken(ctx)
 	if err != nil {
 		s.logger.Warn(
 			"skipping episode watermark seed: could not get spotify access token",
-			zap.String("user_id", userID.String()),
 			zap.Error(err),
 		)
 		return
@@ -297,7 +255,7 @@ func cleanShowIDs(showIDs []string) []string {
 	return unique
 }
 
-func (s *showServices) fetchShowsFromSpotify(ctx context.Context, userID uuid.UUID, showIDs []string) ([]*spotify.SpotifyShow, error) {
+func (s *showServices) fetchShowsFromSpotify(ctx context.Context, showIDs []string) ([]*spotify.SpotifyShow, error) {
 	result := make([]*spotify.SpotifyShow, len(showIDs))
 	missingIndexes := make([]int, 0, len(showIDs))
 
@@ -313,7 +271,7 @@ func (s *showServices) fetchShowsFromSpotify(ctx context.Context, userID uuid.UU
 		return result, nil
 	}
 
-	accessToken, err := s.authService.GetValidAccessToken(ctx, userID)
+	accessToken, err := s.authService.GetSpotifyAccessToken(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -345,12 +303,6 @@ func (s *showServices) fetchShowsFromSpotify(ctx context.Context, userID uuid.UU
 	}
 
 	return result, nil
-}
-
-func (s *showServices) cacheSavedShows(response *spotify.SpotifySavedShowsResponse) {
-	for _, item := range response.Items {
-		s.cacheSpotifyShow(item.Show)
-	}
 }
 
 func (s *showServices) cacheSearchResults(result *spotify.ShowSearchResult) {

@@ -10,21 +10,16 @@ import {
 	CardHeader,
 	CardTitle,
 } from "@/components/ui/card";
-import { LOGIN_URL } from "@/lib/auth";
 import { cn } from "@/lib/utils";
 import type { DashboardSetup } from "@/services/types";
 
 const CHECKLIST_LINKS: Record<string, string | null> = {
-	connect_spotify: LOGIN_URL,
-	import_spotify: "/dashboard/import",
 	subscribe_podcast: "/dashboard/search",
 	add_channel: "/dashboard/channels",
 	receive_notification: null,
 };
 
 const CHECKLIST_CTA_LABELS: Record<string, string> = {
-	connect_spotify: "Connect Spotify",
-	import_spotify: "Import from Spotify",
 	subscribe_podcast: "Subscribe to a podcast",
 	add_channel: "Add a notification channel",
 };
@@ -86,23 +81,14 @@ export function SetupChecklist({ setup }: SetupChecklistProps) {
 					))}
 				</ul>
 
-				{ctaHref &&
-					ctaLabel &&
-					(nextItem?.key === "connect_spotify" ? (
-						<a
-							className="inline-flex items-center gap-1 font-medium text-emerald-400 text-sm transition-colors hover:text-emerald-300"
-							href={ctaHref}
-						>
-							{ctaLabel} →
-						</a>
-					) : (
-						<Link
-							className="inline-flex items-center gap-1 font-medium text-emerald-400 text-sm transition-colors hover:text-emerald-300"
-							href={ctaHref}
-						>
-							{ctaLabel} →
-						</Link>
-					))}
+				{ctaHref && ctaLabel && (
+					<Link
+						className="inline-flex items-center gap-1 font-medium text-emerald-400 text-sm transition-colors hover:text-emerald-300"
+						href={ctaHref}
+					>
+						{ctaLabel} →
+					</Link>
+				)}
 			</CardContent>
 		</Card>
 	);

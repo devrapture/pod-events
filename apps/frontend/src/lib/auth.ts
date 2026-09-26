@@ -7,10 +7,9 @@ export interface User {
 	name: string;
 	email: string;
 	avatar_url: string;
-	spotify_user_id: string;
 }
 
-export const LOGIN_URL = `${process.env.NEXT_PUBLIC_API_URL}/auth/spotify/login`;
+export const LOGIN_URL = `${process.env.NEXT_PUBLIC_API_URL}/auth/google/login`;
 
 export function getToken(): string | null {
 	if (typeof window === "undefined") return null;

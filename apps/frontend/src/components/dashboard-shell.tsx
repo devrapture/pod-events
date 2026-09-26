@@ -2,7 +2,6 @@
 
 import {
 	Bell,
-	Download,
 	LayoutDashboard,
 	LogOut,
 	Menu,
@@ -40,12 +39,6 @@ const NAV_ITEMS = [
 		href: "/dashboard/channels",
 		icon: Bell,
 		exact: true,
-	},
-	{
-		label: "Import from Spotify",
-		href: "/dashboard/import",
-		icon: Download,
-		exact: false,
 	},
 ] as const;
 
@@ -96,7 +89,7 @@ export function DashboardShell({ children }: { children: ReactNode }) {
 					) : user ? (
 						<div className="flex items-center gap-3">
 							{user.avatar_url ? (
-								// biome-ignore lint/performance/noImgElement: dynamic avatar URL from Spotify
+								// biome-ignore lint/performance/noImgElement: dynamic avatar URL from Google
 								<img
 									alt={user.name}
 									className="h-9 w-9 rounded-full"
@@ -180,7 +173,7 @@ export function DashboardShell({ children }: { children: ReactNode }) {
 							<div className="mt-4 flex items-center justify-between border-white/6 border-t pt-4">
 								<div className="flex items-center gap-3">
 									{user.avatar_url ? (
-										// biome-ignore lint/performance/noImgElement: dynamic avatar URL from Spotify
+										// biome-ignore lint/performance/noImgElement: dynamic avatar URL from Google
 										<img
 											alt={user.name}
 											className="h-8 w-8 rounded-full"

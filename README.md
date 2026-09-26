@@ -2,12 +2,13 @@
 
 # Pod Events
 
-Podcast notification platform — sign in with Spotify, subscribe to shows, and get notified when new episodes drop via **Slack**, **Discord**, or **Telegram**.
+Podcast notification platform — sign in with Google, subscribe to shows from the Spotify catalog, and get notified when new episodes drop via **Slack**, **Discord**, or **Telegram**.
 
 ## Features
 
-- Spotify OAuth sign-in and JWT session for the SPA
-- Search Spotify catalog and import saved/followed shows
+- Google OAuth sign-in and JWT session for the SPA
+- Search the Spotify catalog without connecting each user's Spotify account
+- Owner-only Spotify authorization supplies one encrypted service credential
 - Subscribe to one or many shows; manage subscriptions
 - Notification channels: Slack webhooks, Discord webhooks, Telegram (bot link)
 - Dashboard summary (setup checklist, stats, recent activity)
@@ -30,7 +31,7 @@ Podcast notification platform — sign in with Spotify, subscribe to shows, and 
                      └──────────────────┘
 ```
 
-**Auth:** Spotify OAuth (backend) → temporary exchange code → JWT for the frontend  
+**Auth:** Google OAuth (backend) → temporary exchange code → JWT for the frontend
 **Episode checks:** External scheduler calls `POST /cron/check-episodes` with `X-Cron-Secret`
 
 ## Prerequisites
@@ -85,9 +86,13 @@ make dev
 | Variable | Description |
 |---|---|
 | `DATABASE_URL` | Postgres connection string (local example: host port **5433**, DB `podevents`) |
-| `SPOTIFY_CLIENT_ID` | Spotify OAuth client ID |
-| `SPOTIFY_CLIENT_SECRET` | Spotify OAuth client secret |
-| `SPOTIFY_REDIRECT_URL` | Must match Spotify dashboard redirect URI (e.g. `http://localhost:8080/api/v1/auth/spotify/callback`) |
+| `GOOGLE_CLIENT_ID` | Google OAuth web client ID used for public sign-in |
+| `GOOGLE_CLIENT_SECRET` | Google OAuth web client secret |
+| `GOOGLE_REDIRECT_URL` | Authorized Google callback URI (e.g. `http://localhost:8080/api/v1/auth/google/callback`) |
+| `OWNER_EMAIL` | Verified Google email allowed to run the hidden Spotify owner setup |
+| `SPOTIFY_CLIENT_ID` | Spotify OAuth client ID for the owner service credential |
+| `SPOTIFY_CLIENT_SECRET` | Spotify OAuth client secret for the owner service credential |
+| `SPOTIFY_REDIRECT_URL` | Spotify callback URI (e.g. `http://localhost:8080/api/v1/auth/spotify/owner/callback`) |
 | `JWT_SECRET` | Random secret (`openssl rand -base64 32`) |
 | `JWT_EXPIRES_IN_HOURS` | JWT lifetime in hours (default `24`) |
 | `TOKEN_ENCRYPTION_KEY` | AES-256 key (`make generate-encryption-key`) |
@@ -172,13 +177,19 @@ Docker Compose exposes Postgres on **host port 5433**. `make db-up` starts the c
 ## Authentication Flow
 
 ```
-User → GET /api/v1/auth/spotify/login → Spotify authorize
-→ GET /api/v1/auth/spotify/callback (code + state)
-→ backend stores encrypted Spotify tokens, creates short-lived exchange code
+User → GET /api/v1/auth/google/login → Google authorize
+→ GET /api/v1/auth/google/callback (code + state)
+→ backend links/creates the user and creates a short-lived exchange code
 → redirect to frontend /auth/callback?code={exchangeCode}
 → POST ${NEXT_PUBLIC_API_URL}/auth/exchange
 → JWT + user returned to SPA; subsequent API calls use Authorization: Bearer
 ```
+
+Spotify is connected once by the operator, not by each user. Sign in with the
+Google account matching `OWNER_EMAIL`, open the unlinked `/owner/spotify` page,
+and complete Spotify authorization. The encrypted refreshable credential is
+then shared server-side for catalog search, subscription hydration, and episode
+polling. The saved/followed-show import endpoint and UI are disabled.
 
 ## Episode Monitoring & Notifications
 
@@ -193,7 +204,7 @@ The endpoint is guarded by a constant-time compare of `X-Cron-Secret` to `CRON_S
 
 When triggered, the backend:
 
-1. Loads tracked shows and fetches each show’s latest available episode from Spotify (skips null placeholders in Spotify’s episode list; handles rate limits).
+1. Loads the owner service credential and tracked shows, then fetches each show’s latest available episode from Spotify (skips null placeholders in Spotify’s episode list; handles rate limits).
 2. Persists new episodes and updates the show’s `latest_episode_id` watermark.
 3. Notifies each subscriber on their active channels: **Slack**, **Discord**, or **Telegram**.
 
@@ -214,6 +225,7 @@ Delivery is recorded in `notification_logs`. Duplicate notifications for the sam
 │   │   │   ├── database/         # GORM connection
 │   │   │   ├── dto/              # Request/response DTOs
 │   │   │   ├── errors/           # Sentinel errors
+│   │   │   ├── googleauth/       # Google OAuth client
 │   │   │   ├── handler/          # HTTP handlers
 │   │   │   ├── metrics/          # Application metrics (Sentry)
 │   │   │   ├── middleware/       # Auth, rate limit, cron secret, logging

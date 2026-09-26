@@ -62,13 +62,15 @@ func Setup(db *gorm.DB, deps HandlerDependencies, cfg *config.Config, logger *za
 		auth := v1.Group("/auth")
 
 		auth.
-			GET("/spotify/login", deps.AuthHandler.SpotifyLogin).
-			GET("/spotify/callback", deps.AuthHandler.SpotifyCallback).
+			GET("/google/login", deps.AuthHandler.GoogleLogin).
+			GET("/google/callback", deps.AuthHandler.GoogleCallback).
+			GET("/spotify/owner/callback", deps.AuthHandler.SpotifyOwnerCallback).
 			POST("/exchange", deps.AuthHandler.ExchangeAuthCode)
 
 		protected := v1.Group("")
 		protected.Use(middleware.AuthMiddleware(cfg))
 		protected.GET("/auth/me", deps.AuthHandler.Me)
+		protected.GET("/auth/spotify/owner/login", deps.AuthHandler.SpotifyOwnerLogin)
 
 		// dashboard
 		dashboard := protected.Group("/dashboard")
@@ -78,7 +80,6 @@ func Setup(db *gorm.DB, deps HandlerDependencies, cfg *config.Config, logger *za
 		// shows
 		shows := protected.Group("/shows")
 		shows.
-			GET("/saved", deps.ShowHandler.GetUserSavedShows).
 			GET("/search", deps.ShowHandler.SearchShows).
 			POST("/subscribe", deps.ShowHandler.Subscribe)
 

@@ -1,7 +1,5 @@
-"use client";
-
-import { ImportSpotifyPage } from "@/components/import/import-spotify-page";
+import { redirect } from "next/navigation";
 
 export default function ImportPage() {
-	return <ImportSpotifyPage />;
+	redirect("/dashboard/search");
 }

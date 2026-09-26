@@ -44,7 +44,7 @@ frontend-install:                                                    ## Install 
 # ── API Documentation ──────────────────────────────────────
 
 swagger-docs:                                                            ## Generate Swagger API documentation from Go annotations
-	cd apps/backend && swag init -g cmd/api/main.go -o docs --parseDependency --parseInternal
+	cd apps/backend && swag init -g cmd/api/main.go -o docs --parseInternal --parseGoList=false
 
 # ── Tests ──────────────────────────────────────────────────
 

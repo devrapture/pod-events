@@ -112,19 +112,12 @@ export function SubscriptionsPage() {
 						</div>
 						<p className="font-medium text-zinc-200">No subscriptions yet</p>
 						<p className="mt-2 max-w-md text-sm text-zinc-500">
-							You&apos;re not tracking any podcasts yet.{" "}
-							<Link
-								className="text-emerald-400 hover:text-emerald-300"
-								href="/dashboard/import"
-							>
-								Import podcasts from Spotify
-							</Link>{" "}
-							or{" "}
+							You&apos;re not tracking any podcasts yet. Use{" "}
 							<Link
 								className="text-emerald-400 hover:text-emerald-300"
 								href="/dashboard/search"
 							>
-								search for podcasts
+								podcast search
 							</Link>{" "}
 							to start tracking them.
 						</p>

@@ -1,6 +1,6 @@
 basePath: /api/v1
 definitions:
-  github_com_devrapture_pod-events_internal_dto.AuthExchangeRequest:
+  dto.AuthExchangeRequest:
     properties:
       code:
         example: abc123
@@ -8,11 +8,11 @@ definitions:
     required:
     - code
     type: object
-  github_com_devrapture_pod-events_internal_dto.CreateChannelRequest:
+  dto.CreateChannelRequest:
     properties:
       channel_type:
         allOf:
-        - $ref: '#/definitions/github_com_devrapture_pod-events_internal_models.ChannelType'
+        - $ref: '#/definitions/models.ChannelType'
         description: 'Channel type: slack_webhook, discord_webhook, whatsapp, or telegram'
         enum:
         - slack_webhook
@@ -32,7 +32,7 @@ definitions:
     - channel_type
     - destination
     type: object
-  github_com_devrapture_pod-events_internal_dto.DashboardItems:
+  dto.DashboardItems:
     properties:
       completed:
         type: boolean
@@ -41,20 +41,20 @@ definitions:
       label:
         type: string
     type: object
-  github_com_devrapture_pod-events_internal_dto.DashboardSetupResponse:
+  dto.DashboardSetupResponse:
     properties:
       completed:
         type: integer
       items:
         items:
-          $ref: '#/definitions/github_com_devrapture_pod-events_internal_dto.DashboardItems'
+          $ref: '#/definitions/dto.DashboardItems'
         type: array
       percent:
         type: integer
       total:
         type: integer
     type: object
-  github_com_devrapture_pod-events_internal_dto.DashboardStatsResponse:
+  dto.DashboardStatsResponse:
     properties:
       active_channels:
         type: integer
@@ -65,18 +65,18 @@ definitions:
       podcasts_tracked:
         type: integer
     type: object
-  github_com_devrapture_pod-events_internal_dto.DashboardSummaryDTO:
+  dto.DashboardSummaryDTO:
     properties:
       recent_episodes:
         items:
-          $ref: '#/definitions/github_com_devrapture_pod-events_internal_dto.RecentEpisodesResponse'
+          $ref: '#/definitions/dto.RecentEpisodesResponse'
         type: array
       setup:
-        $ref: '#/definitions/github_com_devrapture_pod-events_internal_dto.DashboardSetupResponse'
+        $ref: '#/definitions/dto.DashboardSetupResponse'
       stats:
-        $ref: '#/definitions/github_com_devrapture_pod-events_internal_dto.DashboardStatsResponse'
+        $ref: '#/definitions/dto.DashboardStatsResponse'
     type: object
-  github_com_devrapture_pod-events_internal_dto.PodcastShowResponse:
+  dto.PodcastShowResponse:
     properties:
       description:
         type: string
@@ -95,7 +95,7 @@ definitions:
       spotify_url:
         type: string
     type: object
-  github_com_devrapture_pod-events_internal_dto.RecentEpisodesResponse:
+  dto.RecentEpisodesResponse:
     properties:
       duration:
         type: integer
@@ -108,7 +108,7 @@ definitions:
       url:
         type: string
     type: object
-  github_com_devrapture_pod-events_internal_dto.SavedShowResponse:
+  dto.SavedShowResponse:
     properties:
       added_at:
         example: "2024-01-15T10:30:00Z"
@@ -132,7 +132,7 @@ definitions:
         example: 200
         type: integer
     type: object
-  github_com_devrapture_pod-events_internal_dto.SubscribeShowsRequest:
+  dto.SubscribeShowsRequest:
     properties:
       spotify_show_ids:
         items:
@@ -143,14 +143,14 @@ definitions:
     required:
     - spotify_show_ids
     type: object
-  github_com_devrapture_pod-events_internal_dto.SubscriptionResponse:
+  dto.SubscriptionResponse:
     properties:
       created_at:
         type: string
       id:
         type: string
       podcast_show:
-        $ref: '#/definitions/github_com_devrapture_pod-events_internal_dto.PodcastShowResponse'
+        $ref: '#/definitions/dto.PodcastShowResponse'
       podcast_show_id:
         type: string
       updated_at:
@@ -158,7 +158,7 @@ definitions:
       user_id:
         type: string
     type: object
-  github_com_devrapture_pod-events_internal_dto.ToggleActiveChannelRequest:
+  dto.ToggleActiveChannelRequest:
     properties:
       is_active:
         example: true
@@ -166,7 +166,7 @@ definitions:
     required:
     - is_active
     type: object
-  github_com_devrapture_pod-events_internal_models.ChannelType:
+  models.ChannelType:
     enum:
     - slack_webhook
     - discord_webhook
@@ -178,51 +178,19 @@ definitions:
     - ChannelTypeDiscord
     - ChannelTypeTelegram
     - ChannelTypeWhatsApp
-  github_com_devrapture_pod-events_internal_notifications_telegram.Chat:
-    properties:
-      id:
-        type: integer
-    type: object
-  github_com_devrapture_pod-events_internal_notifications_telegram.Message:
-    properties:
-      chat:
-        $ref: '#/definitions/github_com_devrapture_pod-events_internal_notifications_telegram.Chat'
-      from:
-        $ref: '#/definitions/github_com_devrapture_pod-events_internal_notifications_telegram.User'
-      message_id:
-        type: integer
-      text:
-        type: string
-    type: object
-  github_com_devrapture_pod-events_internal_notifications_telegram.Update:
-    properties:
-      message:
-        $ref: '#/definitions/github_com_devrapture_pod-events_internal_notifications_telegram.Message'
-      update_id:
-        type: integer
-    type: object
-  github_com_devrapture_pod-events_internal_notifications_telegram.User:
-    properties:
-      first_name:
-        type: string
-      id:
-        type: integer
-      last_name:
-        type: string
-    type: object
-  github_com_devrapture_pod-events_pkg_response.APIResponse:
+  response.APIResponse:
     properties:
       data: {}
       error:
-        $ref: '#/definitions/github_com_devrapture_pod-events_pkg_response.ErrorInfo'
+        $ref: '#/definitions/response.ErrorInfo'
       message:
         type: string
       meta:
-        $ref: '#/definitions/github_com_devrapture_pod-events_pkg_response.PaginationMeta'
+        $ref: '#/definitions/response.PaginationMeta'
       success:
         type: boolean
     type: object
-  github_com_devrapture_pod-events_pkg_response.ErrorInfo:
+  response.ErrorInfo:
     properties:
       details:
         additionalProperties:
@@ -231,7 +199,7 @@ definitions:
       message:
         type: string
     type: object
-  github_com_devrapture_pod-events_pkg_response.PaginationMeta:
+  response.PaginationMeta:
     properties:
       page:
         type: integer
@@ -241,6 +209,38 @@ definitions:
         type: integer
       total:
         type: integer
+    type: object
+  telegram.Chat:
+    properties:
+      id:
+        type: integer
+    type: object
+  telegram.Message:
+    properties:
+      chat:
+        $ref: '#/definitions/telegram.Chat'
+      from:
+        $ref: '#/definitions/telegram.User'
+      message_id:
+        type: integer
+      text:
+        type: string
+    type: object
+  telegram.Update:
+    properties:
+      message:
+        $ref: '#/definitions/telegram.Message'
+      update_id:
+        type: integer
+    type: object
+  telegram.User:
+    properties:
+      first_name:
+        type: string
+      id:
+        type: integer
+      last_name:
+        type: string
     type: object
 host: localhost:8080
 info:
@@ -259,31 +259,62 @@ paths:
     post:
       consumes:
       - application/json
-      description: Exchanges the temporary auth code (obtained from the frontend callback
-        redirect) for a JWT token
+      description: Exchanges the temporary code obtained from the frontend callback
+        redirect
       parameters:
       - description: Auth exchange request
         in: body
         name: request
         required: true
         schema:
-          $ref: '#/definitions/github_com_devrapture_pod-events_internal_dto.AuthExchangeRequest'
+          $ref: '#/definitions/dto.AuthExchangeRequest'
       produces:
       - application/json
       responses:
         "200":
           description: Authentication completed
           schema:
-            $ref: '#/definitions/github_com_devrapture_pod-events_pkg_response.APIResponse'
+            $ref: '#/definitions/response.APIResponse'
         "400":
           description: missing auth exchange code
           schema:
-            $ref: '#/definitions/github_com_devrapture_pod-events_pkg_response.APIResponse'
+            $ref: '#/definitions/response.APIResponse'
         "401":
           description: invalid or expired auth exchange code
           schema:
-            $ref: '#/definitions/github_com_devrapture_pod-events_pkg_response.APIResponse'
+            $ref: '#/definitions/response.APIResponse'
       summary: Exchange auth code for JWT
+      tags:
+      - Auth
+  /auth/google/callback:
+    get:
+      description: Exchanges the Google code, links or creates a user, and redirects
+        to the frontend
+      parameters:
+      - description: Authorization code from Google
+        in: query
+        name: code
+        required: true
+        type: string
+      - description: OAuth state token for CSRF protection
+        in: query
+        name: state
+        required: true
+        type: string
+      responses:
+        "307":
+          description: Temporary Redirect
+      summary: Google OAuth callback
+      tags:
+      - Auth
+  /auth/google/login:
+    get:
+      description: Generates an OAuth state token and redirects to Google's authorization
+        page
+      responses:
+        "307":
+          description: Temporary Redirect
+      summary: Initiate Google OAuth login
       tags:
       - Auth
   /auth/me:
@@ -293,20 +324,19 @@ paths:
         "200":
           description: User fetched successfully
           schema:
-            $ref: '#/definitions/github_com_devrapture_pod-events_pkg_response.APIResponse'
+            $ref: '#/definitions/response.APIResponse'
         "401":
           description: unauthorized
           schema:
-            $ref: '#/definitions/github_com_devrapture_pod-events_pkg_response.APIResponse'
+            $ref: '#/definitions/response.APIResponse'
       security:
       - BearerAuth: []
       summary: Get current user
       tags:
       - Auth
-  /auth/spotify/callback:
+  /auth/spotify/owner/callback:
     get:
-      description: Handles the redirect from Spotify after user authorization, exchanges
-        code for tokens, and redirects to frontend with an exchange code
+      description: Completes the owner-only Spotify authorization flow
       parameters:
       - description: Authorization code from Spotify
         in: query
@@ -321,17 +351,25 @@ paths:
       responses:
         "307":
           description: Temporary Redirect
-      summary: Spotify OAuth callback
+      summary: Owner Spotify OAuth callback
       tags:
       - Auth
-  /auth/spotify/login:
+  /auth/spotify/owner/login:
     get:
-      description: Generates an OAuth state token and redirects to Spotify's authorization
-        page
+      description: Returns a Spotify authorization URL for the configured application
+        owner
       responses:
-        "307":
-          description: Temporary Redirect
-      summary: Initiate Spotify OAuth login
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/response.APIResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/response.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Initiate owner Spotify authorization
       tags:
       - Auth
   /channels:
@@ -343,7 +381,7 @@ paths:
         "200":
           description: Channels fetched
           schema:
-            $ref: '#/definitions/github_com_devrapture_pod-events_pkg_response.APIResponse'
+            $ref: '#/definitions/response.APIResponse'
       security:
       - BearerAuth: []
       summary: List notification channels
@@ -359,22 +397,22 @@ paths:
         name: channel
         required: true
         schema:
-          $ref: '#/definitions/github_com_devrapture_pod-events_internal_dto.CreateChannelRequest'
+          $ref: '#/definitions/dto.CreateChannelRequest'
       produces:
       - application/json
       responses:
         "200":
           description: Channel created
           schema:
-            $ref: '#/definitions/github_com_devrapture_pod-events_pkg_response.APIResponse'
+            $ref: '#/definitions/response.APIResponse'
         "409":
           description: Notification channel already exists
           schema:
-            $ref: '#/definitions/github_com_devrapture_pod-events_pkg_response.APIResponse'
+            $ref: '#/definitions/response.APIResponse'
         "422":
           description: validation error
           schema:
-            $ref: '#/definitions/github_com_devrapture_pod-events_pkg_response.APIResponse'
+            $ref: '#/definitions/response.APIResponse'
       security:
       - BearerAuth: []
       summary: Create notification channel
@@ -395,11 +433,11 @@ paths:
         "200":
           description: Channel deleted
           schema:
-            $ref: '#/definitions/github_com_devrapture_pod-events_pkg_response.APIResponse'
+            $ref: '#/definitions/response.APIResponse'
         "404":
           description: Channel not found
           schema:
-            $ref: '#/definitions/github_com_devrapture_pod-events_pkg_response.APIResponse'
+            $ref: '#/definitions/response.APIResponse'
       security:
       - BearerAuth: []
       summary: Delete notification channel
@@ -421,18 +459,18 @@ paths:
         name: body
         required: true
         schema:
-          $ref: '#/definitions/github_com_devrapture_pod-events_internal_dto.ToggleActiveChannelRequest'
+          $ref: '#/definitions/dto.ToggleActiveChannelRequest'
       produces:
       - application/json
       responses:
         "200":
           description: Channel status updated
           schema:
-            $ref: '#/definitions/github_com_devrapture_pod-events_pkg_response.APIResponse'
+            $ref: '#/definitions/response.APIResponse'
         "404":
           description: Channel not found
           schema:
-            $ref: '#/definitions/github_com_devrapture_pod-events_pkg_response.APIResponse'
+            $ref: '#/definitions/response.APIResponse'
       security:
       - BearerAuth: []
       summary: Toggle notification channel
@@ -454,11 +492,11 @@ paths:
         "202":
           description: Cron job started or already running
           schema:
-            $ref: '#/definitions/github_com_devrapture_pod-events_pkg_response.APIResponse'
+            $ref: '#/definitions/response.APIResponse'
         "401":
           description: Unauthorized
           schema:
-            $ref: '#/definitions/github_com_devrapture_pod-events_pkg_response.APIResponse'
+            $ref: '#/definitions/response.APIResponse'
       summary: Trigger episode check
       tags:
       - Cron
@@ -472,15 +510,15 @@ paths:
           description: dashboard summary fetched successfully
           schema:
             allOf:
-            - $ref: '#/definitions/github_com_devrapture_pod-events_pkg_response.APIResponse'
+            - $ref: '#/definitions/response.APIResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/github_com_devrapture_pod-events_internal_dto.DashboardSummaryDTO'
+                  $ref: '#/definitions/dto.DashboardSummaryDTO'
               type: object
         "500":
           description: failed to get dashboard summary
           schema:
-            $ref: '#/definitions/github_com_devrapture_pod-events_pkg_response.APIResponse'
+            $ref: '#/definitions/response.APIResponse'
       security:
       - BearerAuth: []
       summary: Get dashboard summary
@@ -505,31 +543,6 @@ paths:
       summary: Health check
       tags:
       - Health
-  /shows/saved:
-    get:
-      description: Get the current user's saved/podcasts from Spotify
-      parameters:
-      - description: Search query to filter saved shows
-        in: query
-        name: q
-        type: string
-      responses:
-        "200":
-          description: show fetched successfully
-          schema:
-            allOf:
-            - $ref: '#/definitions/github_com_devrapture_pod-events_pkg_response.APIResponse'
-            - properties:
-                data:
-                  items:
-                    $ref: '#/definitions/github_com_devrapture_pod-events_internal_dto.SavedShowResponse'
-                  type: array
-              type: object
-      security:
-      - BearerAuth: []
-      summary: Get saved shows
-      tags:
-      - Shows
   /shows/search:
     get:
       description: Search for podcast shows on Spotify
@@ -552,17 +565,17 @@ paths:
           description: show fetched successfully
           schema:
             allOf:
-            - $ref: '#/definitions/github_com_devrapture_pod-events_pkg_response.APIResponse'
+            - $ref: '#/definitions/response.APIResponse'
             - properties:
                 data:
                   items:
-                    $ref: '#/definitions/github_com_devrapture_pod-events_internal_dto.SavedShowResponse'
+                    $ref: '#/definitions/dto.SavedShowResponse'
                   type: array
               type: object
         "400":
           description: invalid parameters
           schema:
-            $ref: '#/definitions/github_com_devrapture_pod-events_pkg_response.APIResponse'
+            $ref: '#/definitions/response.APIResponse'
       security:
       - BearerAuth: []
       summary: Search shows
@@ -578,44 +591,40 @@ paths:
         name: request
         required: true
         schema:
-          $ref: '#/definitions/github_com_devrapture_pod-events_internal_dto.SubscribeShowsRequest'
+          $ref: '#/definitions/dto.SubscribeShowsRequest'
       responses:
         "200":
           description: subscribed successfully
           schema:
-            $ref: '#/definitions/github_com_devrapture_pod-events_pkg_response.APIResponse'
+            $ref: '#/definitions/response.APIResponse'
         "400":
           description: invalid or too many Spotify show IDs
           schema:
-            $ref: '#/definitions/github_com_devrapture_pod-events_pkg_response.APIResponse'
+            $ref: '#/definitions/response.APIResponse'
         "404":
           description: podcast show not found
           schema:
-            $ref: '#/definitions/github_com_devrapture_pod-events_pkg_response.APIResponse'
+            $ref: '#/definitions/response.APIResponse'
         "409":
           description: already subscribed
           schema:
-            $ref: '#/definitions/github_com_devrapture_pod-events_pkg_response.APIResponse'
+            $ref: '#/definitions/response.APIResponse'
         "422":
           description: invalid request
           schema:
-            $ref: '#/definitions/github_com_devrapture_pod-events_pkg_response.APIResponse'
-        "424":
-          description: Spotify authorization required
-          schema:
-            $ref: '#/definitions/github_com_devrapture_pod-events_pkg_response.APIResponse'
+            $ref: '#/definitions/response.APIResponse'
         "429":
           description: Spotify rate limit exceeded
           schema:
-            $ref: '#/definitions/github_com_devrapture_pod-events_pkg_response.APIResponse'
+            $ref: '#/definitions/response.APIResponse'
         "500":
           description: internal server error
           schema:
-            $ref: '#/definitions/github_com_devrapture_pod-events_pkg_response.APIResponse'
+            $ref: '#/definitions/response.APIResponse'
         "503":
-          description: Spotify unavailable
+          description: Spotify temporarily unavailable
           schema:
-            $ref: '#/definitions/github_com_devrapture_pod-events_pkg_response.APIResponse'
+            $ref: '#/definitions/response.APIResponse'
       security:
       - BearerAuth: []
       summary: Subscribe to shows
@@ -629,11 +638,11 @@ paths:
           description: subscriptions fetched successfully
           schema:
             allOf:
-            - $ref: '#/definitions/github_com_devrapture_pod-events_pkg_response.APIResponse'
+            - $ref: '#/definitions/response.APIResponse'
             - properties:
                 data:
                   items:
-                    $ref: '#/definitions/github_com_devrapture_pod-events_internal_dto.SubscriptionResponse'
+                    $ref: '#/definitions/dto.SubscriptionResponse'
                   type: array
               type: object
       security:
@@ -654,15 +663,15 @@ paths:
         "200":
           description: unsubscribed successfully
           schema:
-            $ref: '#/definitions/github_com_devrapture_pod-events_pkg_response.APIResponse'
+            $ref: '#/definitions/response.APIResponse'
         "400":
           description: invalid subscription ID
           schema:
-            $ref: '#/definitions/github_com_devrapture_pod-events_pkg_response.APIResponse'
+            $ref: '#/definitions/response.APIResponse'
         "404":
           description: subscription not found
           schema:
-            $ref: '#/definitions/github_com_devrapture_pod-events_pkg_response.APIResponse'
+            $ref: '#/definitions/response.APIResponse'
       security:
       - BearerAuth: []
       summary: Unsubscribe from a show
@@ -678,11 +687,11 @@ paths:
         "200":
           description: Telegram connect link created
           schema:
-            $ref: '#/definitions/github_com_devrapture_pod-events_pkg_response.APIResponse'
+            $ref: '#/definitions/response.APIResponse'
         "409":
           description: already have a Telegram channel
           schema:
-            $ref: '#/definitions/github_com_devrapture_pod-events_pkg_response.APIResponse'
+            $ref: '#/definitions/response.APIResponse'
       security:
       - BearerAuth: []
       summary: Generate Telegram connect link
@@ -699,7 +708,7 @@ paths:
         name: update
         required: true
         schema:
-          $ref: '#/definitions/github_com_devrapture_pod-events_internal_notifications_telegram.Update'
+          $ref: '#/definitions/telegram.Update'
       responses:
         "200":
           description: OK
