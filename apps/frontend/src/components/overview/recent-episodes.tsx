@@ -37,13 +37,13 @@ export function RecentEpisodes({ episodes }: RecentEpisodesProps) {
 			<CardHeader>
 				<CardTitle>Recent episodes</CardTitle>
 				<CardDescription>
-					The latest episodes successfully delivered to your channels.
+					The newest released episodes from shows you follow.
 				</CardDescription>
 			</CardHeader>
 			<CardContent>
 				{episodes.length === 0 ? (
 					<p className="text-sm text-zinc-500">
-						Delivered episodes will appear here.
+						New episodes from shows you follow will appear here.
 					</p>
 				) : (
 					<ul className="divide-y divide-white/8">

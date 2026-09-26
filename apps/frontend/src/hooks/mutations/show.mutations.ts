@@ -27,25 +27,3 @@ export const useSubscribeToShow = createMutation({
 		});
 	},
 });
-
-export const useBulkTrackShows = createMutation({
-	mutationFn: async (variables: {
-		spotifyShowIds: string[];
-	}): Promise<APIResponse> => {
-		const response = await apis.shows.subscribe(variables.spotifyShowIds);
-		return response.data;
-	},
-	onSuccess: (_data, variables) => {
-		Sentry.metrics.count(
-			"podevents.subscription.created",
-			variables.spotifyShowIds.length,
-			{ attributes: { source: "spotify_import" } },
-		);
-		queryClient.invalidateQueries({ queryKey: showKeys.all });
-		queryClient.invalidateQueries({ queryKey: subscriptionKeys.all });
-		queryClient.invalidateQueries({
-			queryKey: dashboardKeys.all,
-			refetchType: "all",
-		});
-	},
-});

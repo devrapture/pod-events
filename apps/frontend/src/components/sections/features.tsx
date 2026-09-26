@@ -48,7 +48,8 @@ const FEATURES = [
 	{
 		icon: Lock,
 		title: "Secure by Default",
-		description: "Spotify tokens are encrypted using AES-256-GCM at rest.",
+		description:
+			"Google sign-in is isolated from the encrypted owner Spotify credential.",
 	},
 	{
 		icon: Server,

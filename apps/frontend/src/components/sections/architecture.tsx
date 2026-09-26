@@ -129,10 +129,10 @@ export function Architecture() {
 						</span>
 					</div>
 					<pre className="overflow-x-auto p-4 font-mono text-xs text-zinc-400 leading-relaxed">
-						{`POST /api/v1/cron/check-episodes
-Authorization: Bearer <cron-secret>
+						{`POST /cron/check-episodes
+X-Cron-Secret: <cron-secret>
 
-→ Fetch saved shows from PostgreSQL
+→ Fetch subscribed shows from PostgreSQL
 → Query Spotify API for new episodes
 → Deduplicate via idempotency keys
 → Dispatch to notification channels`}

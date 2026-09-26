@@ -29,6 +29,10 @@ func TestRunClosesDatabaseWhenServerFails(t *testing.T) {
 	t.Setenv("SPOTIFY_CLIENT_SECRET", "test")
 	t.Setenv("SPOTIFY_CLIENT_ID", "test")
 	t.Setenv("SPOTIFY_REDIRECT_URL", "http://localhost/callback")
+	t.Setenv("GOOGLE_CLIENT_SECRET", "test")
+	t.Setenv("GOOGLE_CLIENT_ID", "test")
+	t.Setenv("GOOGLE_REDIRECT_URL", "http://localhost/google/callback")
+	t.Setenv("OWNER_EMAIL", "owner@example.com")
 	t.Setenv("FRONTEND_URL", "http://localhost")
 	t.Setenv("JWT_SECRET", "test")
 	t.Setenv("TELEGRAM_BOT_TOKEN", "test")
@@ -87,6 +91,10 @@ func TestRunFlushesSentryBeforeExit(t *testing.T) {
 		"SPOTIFY_CLIENT_SECRET=test",
 		"SPOTIFY_CLIENT_ID=test",
 		"SPOTIFY_REDIRECT_URL=http://localhost/callback",
+		"GOOGLE_CLIENT_SECRET=test",
+		"GOOGLE_CLIENT_ID=test",
+		"GOOGLE_REDIRECT_URL=http://localhost/google/callback",
+		"OWNER_EMAIL=owner@example.com",
 		"FRONTEND_URL=http://localhost",
 		"JWT_SECRET=test",
 		"TELEGRAM_BOT_TOKEN=test",

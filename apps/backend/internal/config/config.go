@@ -21,6 +21,10 @@ type Config struct {
 	SpotifyClientSecret    string
 	SpotifyClientID        string
 	SpotifyRedirectURL     string
+	GoogleClientSecret     string
+	GoogleClientID         string
+	GoogleRedirectURL      string
+	OwnerEmail             string
 	FrontendURL            string
 	JwtExpires             int
 	JwtSecret              string
@@ -66,6 +70,10 @@ func Load() (*Config, error) {
 		SpotifyClientSecret:    mustGetEnv("SPOTIFY_CLIENT_SECRET"),
 		SpotifyClientID:        mustGetEnv("SPOTIFY_CLIENT_ID"),
 		SpotifyRedirectURL:     mustGetEnv("SPOTIFY_REDIRECT_URL"),
+		GoogleClientSecret:     mustGetEnv("GOOGLE_CLIENT_SECRET"),
+		GoogleClientID:         mustGetEnv("GOOGLE_CLIENT_ID"),
+		GoogleRedirectURL:      mustGetEnv("GOOGLE_REDIRECT_URL"),
+		OwnerEmail:             strings.ToLower(strings.TrimSpace(mustGetEnv("OWNER_EMAIL"))),
 		FrontendURL:            mustGetEnv("FRONTEND_URL"),
 		JwtExpires:             JwtExpires,
 		JwtSecret:              mustGetEnv("JWT_SECRET"),

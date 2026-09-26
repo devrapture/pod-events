@@ -17,9 +17,9 @@ import { Card, CardContent } from "@/components/ui/card";
 const STEPS = [
 	{
 		icon: Headphones,
-		title: "Connect Spotify",
+		title: "Sign in with Google",
 		description:
-			"Authenticate with OAuth 2.0 and link your Spotify account securely.",
+			"Create your PodEvents account without connecting a personal Spotify library.",
 		color: "text-[#1DB954]",
 		bg: "bg-[#1DB954]/10 border-[#1DB954]/20",
 	},

@@ -9,6 +9,7 @@ import type {
 	HealthResponse,
 	NotificationChannel,
 	SavedShowResponse,
+	SpotifyOwnerAuthorization,
 	SubscribeShowsRequest,
 	SubscriptionResponse,
 	TelegramLinkResponse,
@@ -22,21 +23,13 @@ export const apis = {
 
 		me: () => serverWithInterceptors.get<APIResponse>("/auth/me"),
 
-		spotifyLogin: () => server.get("/auth/spotify/login"),
-
-		spotifyCallback: (params: { code: string; state: string }) =>
-			server.get("/auth/spotify/callback", { params }),
+		spotifyOwnerLogin: () =>
+			serverWithInterceptors.get<APIResponse<SpotifyOwnerAuthorization>>(
+				"/auth/spotify/owner/login",
+			),
 	},
 
 	shows: {
-		saved: (q?: string) =>
-			serverWithInterceptors.get<APIResponse<SavedShowResponse[]>>(
-				"/shows/saved",
-				{
-					params: q ? { q } : undefined,
-				},
-			),
-
 		search: (params: { q: string; limit?: number; offset?: number }) =>
 			serverWithInterceptors.get<APIResponse<SavedShowResponse[]>>(
 				"/shows/search",

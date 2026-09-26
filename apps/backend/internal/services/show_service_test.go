@@ -108,6 +108,7 @@ func TestSubscribeMissingToken(t *testing.T) {
 		stubTokenRepository{},
 		nil,
 		nil,
+		nil,
 		gocache.New(gocache.DefaultExpiration, gocache.DefaultExpiration),
 		zap.NewNop(),
 	)

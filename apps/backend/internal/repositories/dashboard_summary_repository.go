@@ -2,11 +2,9 @@ package repositories
 
 import (
 	"context"
-	"errors"
 	"time"
 
 	"github.com/devrapture/pod-events/internal/dto"
-	apperrors "github.com/devrapture/pod-events/internal/errors"
 	"github.com/devrapture/pod-events/internal/models"
 	"github.com/google/uuid"
 	"gorm.io/gorm"
@@ -17,14 +15,12 @@ type DashboardSummaryRepository interface {
 }
 
 type dasboardSummaryRepository struct {
-	db        *gorm.DB
-	tokenRepo TokenRepository
+	db *gorm.DB
 }
 
-func NewDashboardSummaryRepository(db *gorm.DB, tokenRepo TokenRepository) DashboardSummaryRepository {
+func NewDashboardSummaryRepository(db *gorm.DB) DashboardSummaryRepository {
 	return &dasboardSummaryRepository{
-		db:        db,
-		tokenRepo: tokenRepo,
+		db: db,
 	}
 }
 
@@ -53,25 +49,7 @@ func (r *dasboardSummaryRepository) GetDashboardSummary(ctx context.Context, use
 		return nil, err
 	}
 
-	hasSpotifyToken := false
-	_, err := r.tokenRepo.GetByUserID(ctx, userID)
-	if err == nil {
-		hasSpotifyToken = true
-	} else if !errors.Is(err, apperrors.ErrorSpotifyTokenNotFound) {
-		return nil, err
-	}
-
 	setupItems := []dto.DashboardItems{
-		{
-			Key:       "connect_spotify",
-			Label:     "Connect Spotify",
-			Completed: hasSpotifyToken,
-		},
-		{
-			Key:       "import_spotify",
-			Label:     "Import Spotify Podcasts",
-			Completed: hasSpotifyToken,
-		},
 		{
 			Key:       "subscribe_podcast",
 			Label:     "Subscribe to at least one podcast",
@@ -90,21 +68,16 @@ func (r *dasboardSummaryRepository) GetDashboardSummary(ctx context.Context, use
 	}
 
 	if err := dbFromCtx(ctx, r.db).WithContext(ctx).
-		Model(&models.NotificationLog{}).Select(`
+		Model(&models.Episode{}).Select(`
 		episodes.name AS episode_title,
 		podcast_shows.name AS podcast_name,
 		episodes.release_date AS release_date,
 		episodes.duration_ms AS duration,
 		episodes.spotify_url AS url
-	`).Joins("JOIN episodes ON episodes.id = notification_logs.episode_id").
+	`).Joins("JOIN subscriptions ON subscriptions.podcast_show_id = episodes.podcast_show_id AND subscriptions.deleted_at IS NULL").
 		Joins("JOIN podcast_shows ON podcast_shows.id = episodes.podcast_show_id").
-		Where(
-			"notification_logs.user_id = ? AND notification_logs.status = ? AND notification_logs.sent_at IS NOT NULL",
-			userID,
-			models.NotificationStatusSent,
-		).
-		Group("episodes.id, podcast_shows.id").
-		Order("MAX(notification_logs.sent_at) DESC").
+		Where("subscriptions.user_id = ?", userID).
+		Order("episodes.release_date DESC").
 		Limit(5).
 		Scan(&recentEpisodesResponse).Error; err != nil {
 		return nil, err
