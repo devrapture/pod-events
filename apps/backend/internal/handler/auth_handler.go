@@ -169,7 +169,7 @@ func (h *AuthHandler) SpotifyOwnerLogin(c *gin.Context) {
 //	@Param       code  query string true "Authorization code from Spotify"
 //	@Param       state query string true "OAuth state token for CSRF protection"
 //	@Success     307
-//	@Router      /auth/spotify/owner/callback [get]
+//	@Router      /auth/spotify/callback [get]
 func (h *AuthHandler) SpotifyOwnerCallback(c *gin.Context) {
 	code := c.Query("code")
 	state := c.Query("state")

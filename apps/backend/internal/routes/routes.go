@@ -64,7 +64,7 @@ func Setup(db *gorm.DB, deps HandlerDependencies, cfg *config.Config, logger *za
 		auth.
 			GET("/google/login", deps.AuthHandler.GoogleLogin).
 			GET("/google/callback", deps.AuthHandler.GoogleCallback).
-			GET("/spotify/owner/callback", deps.AuthHandler.SpotifyOwnerCallback).
+			GET("/spotify/callback", deps.AuthHandler.SpotifyOwnerCallback).
 			POST("/exchange", deps.AuthHandler.ExchangeAuthCode)
 
 		protected := v1.Group("")

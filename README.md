@@ -92,7 +92,7 @@ make dev
 | `OWNER_EMAIL` | Verified Google email allowed to run the hidden Spotify owner setup |
 | `SPOTIFY_CLIENT_ID` | Spotify OAuth client ID for the owner service credential |
 | `SPOTIFY_CLIENT_SECRET` | Spotify OAuth client secret for the owner service credential |
-| `SPOTIFY_REDIRECT_URL` | Spotify callback URI (e.g. `http://localhost:8080/api/v1/auth/spotify/owner/callback`) |
+| `SPOTIFY_REDIRECT_URL` | Spotify callback URI (e.g. `http://localhost:8080/api/v1/auth/spotify/callback`) |
 | `JWT_SECRET` | Random secret (`openssl rand -base64 32`) |
 | `JWT_EXPIRES_IN_HOURS` | JWT lifetime in hours (default `24`) |
 | `TOKEN_ENCRYPTION_KEY` | AES-256 key (`make generate-encryption-key`) |

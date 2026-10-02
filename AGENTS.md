@@ -208,7 +208,7 @@ Protected routes use `AuthMiddleware` unless noted.
 | Area | Methods / paths |
 |---|---|
 | Health | `GET /api/v1/health` (public) |
-| Auth | `GET /api/v1/auth/google/login`, `.../callback`, `POST /api/v1/auth/exchange`; `GET /api/v1/auth/me` (auth); owner-only `GET /api/v1/auth/spotify/owner/login` + callback |
+| Auth | `GET /api/v1/auth/google/login`, `.../callback`, `POST /api/v1/auth/exchange`; `GET /api/v1/auth/me` (auth); owner-only `GET /api/v1/auth/spotify/owner/login` + `GET /api/v1/auth/spotify/callback` |
 | Dashboard | `GET /api/v1/dashboard/summary` |
 | Shows | `GET /api/v1/shows/search`, `POST /api/v1/shows/subscribe` (saved-show import is disabled) |
 | Subscriptions | `GET /api/v1/subscriptions`, `DELETE /api/v1/subscriptions/:id` |
