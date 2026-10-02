@@ -202,6 +202,8 @@ Header: X-Cron-Secret: <CRON_SECRET>
 
 The endpoint is guarded by a constant-time compare of `X-Cron-Secret` to `CRON_SECRET` — it is **not** user JWT auth.
 
+The check runs synchronously with a 25-second deadline so serverless runtimes keep the invocation alive. A successful response includes `shows_checked`, `new_episodes`, `notifications_sent`, and `errors`; a run that exceeds the deadline returns HTTP 504. External schedulers should allow at least 30 seconds for the request.
+
 When triggered, the backend:
 
 1. Loads the owner service credential and tracked shows, then fetches each show’s latest available episode from Spotify (skips null placeholders in Spotify’s episode list; handles rate limits).

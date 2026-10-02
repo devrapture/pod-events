@@ -1,5 +1,18 @@
 basePath: /api/v1
 definitions:
+  cron.CheckResult:
+    properties:
+      errors:
+        items:
+          type: string
+        type: array
+      new_episodes:
+        type: integer
+      notifications_sent:
+        type: integer
+      shows_checked:
+        type: integer
+    type: object
   dto.AuthExchangeRequest:
     properties:
       code:
@@ -489,12 +502,29 @@ paths:
       produces:
       - application/json
       responses:
+        "200":
+          description: Cron job completed
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.APIResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/cron.CheckResult'
+              type: object
         "202":
-          description: Cron job started or already running
+          description: Cron job already running
           schema:
             $ref: '#/definitions/response.APIResponse'
         "401":
           description: Unauthorized
+          schema:
+            $ref: '#/definitions/response.APIResponse'
+        "500":
+          description: Cron job failed
+          schema:
+            $ref: '#/definitions/response.APIResponse'
+        "504":
+          description: Cron job timed out
           schema:
             $ref: '#/definitions/response.APIResponse'
       summary: Trigger episode check
