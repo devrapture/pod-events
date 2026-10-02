@@ -334,7 +334,7 @@ paths:
       summary: Get current user
       tags:
       - Auth
-  /auth/spotify/owner/callback:
+  /auth/spotify/callback:
     get:
       description: Completes the owner-only Spotify authorization flow
       parameters:
