@@ -2,6 +2,7 @@ package handler
 
 import (
 	"context"
+	"errors"
 	"net/http"
 	"sync"
 	"time"
@@ -12,9 +13,16 @@ import (
 	"go.uber.org/zap"
 )
 
+const cronJobTimeout = 25 * time.Second
+
+type episodeRunner interface {
+	Run(ctx context.Context) (*cron.CheckResult, error)
+}
+
 type CronJobHandler struct {
 	logger         *zap.Logger
-	episodeChecker *cron.EpisodeChecker
+	episodeChecker episodeRunner
+	timeout        time.Duration
 	runMu          sync.Mutex
 }
 
@@ -22,6 +30,7 @@ func NewCronJobHandler(logger *zap.Logger, episodeChecker *cron.EpisodeChecker) 
 	return &CronJobHandler{
 		logger:         logger,
 		episodeChecker: episodeChecker,
+		timeout:        cronJobTimeout,
 	}
 }
 
@@ -32,8 +41,11 @@ func NewCronJobHandler(logger *zap.Logger, episodeChecker *cron.EpisodeChecker) 
 //	@Tags        Cron
 //	@Produce     json
 //	@Param       X-Cron-Secret header string true "Cron secret for authorization"
-//	@Success     202 {object} response.APIResponse "Cron job started or already running"
+//	@Success     200 {object} response.APIResponse{data=cron.CheckResult} "Cron job completed"
+//	@Success     202 {object} response.APIResponse "Cron job already running"
 //	@Failure     401 {object} response.APIResponse "Unauthorized"
+//	@Failure     500 {object} response.APIResponse "Cron job failed"
+//	@Failure     504 {object} response.APIResponse "Cron job timed out"
 //	@Router       /cron/check-episodes [post]
 func (h *CronJobHandler) CheckEpisodes(c *gin.Context) {
 	// TryLock returns false if another run already has the lock.
@@ -47,27 +59,31 @@ func (h *CronJobHandler) CheckEpisodes(c *gin.Context) {
 		)
 		return
 	}
+	defer h.runMu.Unlock()
 
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Minute)
+	ctx, cancel := context.WithTimeout(c.Request.Context(), h.timeout)
+	defer cancel()
 
-	go func() {
-		defer h.runMu.Unlock() // Allow the next run when this one finishes.
-		defer cancel()         // Clean up the timeout context.
-
-		result, err := h.episodeChecker.Run(ctx)
-		if err != nil {
-			h.logger.Error("cron job failed", zap.Error(err))
+	result, err := h.episodeChecker.Run(ctx)
+	if err != nil {
+		if errors.Is(err, context.DeadlineExceeded) || errors.Is(ctx.Err(), context.DeadlineExceeded) {
+			h.logger.Error("cron job timed out", zap.Error(err))
+			response.ErrorResponse(c, http.StatusGatewayTimeout, "Cron job timed out")
 			return
 		}
 
-		h.logger.Info("cron job completed", zap.Any("result", result))
-	}()
+		h.logger.Error("cron job failed", zap.Error(err))
+		response.ErrorResponse(c, http.StatusInternalServerError, "Cron job failed")
+		return
+	}
+
+	h.logger.Info("cron job completed", zap.Any("result", result))
 
 	response.SuccessResponse(
 		c,
-		http.StatusAccepted,
-		"Cron job started",
-		nil,
+		http.StatusOK,
+		"Cron job completed",
+		result,
 		nil,
 	)
 }

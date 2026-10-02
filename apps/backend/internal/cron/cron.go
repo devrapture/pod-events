@@ -49,10 +49,10 @@ func NewEpisodeChecker(
 
 // CheckResult summarizes the outcome of a cron run.
 type CheckResult struct {
-	ShowsChecked      int
-	NewEpisodes       int
-	NotificationsSent int
-	Errors            []string
+	ShowsChecked      int      `json:"shows_checked"`
+	NewEpisodes       int      `json:"new_episodes"`
+	NotificationsSent int      `json:"notifications_sent"`
+	Errors            []string `json:"errors"`
 }
 
 func (c *EpisodeChecker) Run(ctx context.Context) (*CheckResult, error) {

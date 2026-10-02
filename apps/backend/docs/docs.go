@@ -385,14 +385,44 @@ const docTemplate = `{
                     }
                 ],
                 "responses": {
+                    "200": {
+                        "description": "Cron job completed",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/response.APIResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/cron.CheckResult"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
                     "202": {
-                        "description": "Cron job started or already running",
+                        "description": "Cron job already running",
                         "schema": {
                             "$ref": "#/definitions/response.APIResponse"
                         }
                     },
                     "401": {
                         "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/response.APIResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Cron job failed",
+                        "schema": {
+                            "$ref": "#/definitions/response.APIResponse"
+                        }
+                    },
+                    "504": {
+                        "description": "Cron job timed out",
                         "schema": {
                             "$ref": "#/definitions/response.APIResponse"
                         }
@@ -755,6 +785,26 @@ const docTemplate = `{
         }
     },
     "definitions": {
+        "cron.CheckResult": {
+            "type": "object",
+            "properties": {
+                "errors": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "new_episodes": {
+                    "type": "integer"
+                },
+                "notifications_sent": {
+                    "type": "integer"
+                },
+                "shows_checked": {
+                    "type": "integer"
+                }
+            }
+        },
         "dto.AuthExchangeRequest": {
             "type": "object",
             "required": [
