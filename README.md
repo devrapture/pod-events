@@ -1,3 +1,4 @@
+![Cron job status](https://api.cron-job.org/jobs/8203402/e5c7462ce907a9ab/status-3.svg)
 <img width="1600" height="496" alt="image" src="https://github.com/user-attachments/assets/45864420-f9aa-492c-8780-e2e4d715dfee" />
 
 # Pod Events
