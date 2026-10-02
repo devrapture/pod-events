@@ -141,7 +141,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/auth/spotify/owner/callback": {
+        "/auth/spotify/callback": {
             "get": {
                 "description": "Completes the owner-only Spotify authorization flow",
                 "tags": [
