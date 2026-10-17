@@ -740,8 +740,8 @@ github.com/getsentry/sentry-go v0.49.0 h1:Ehejknu1l023Ub7QoRBVLAI7g3Jnhqku4oWx4B
 github.com/getsentry/sentry-go v0.49.0/go.mod h1:nuMJAoCfe1u0Bts2ocyNI+TW8HT84vRMqwA5Qq/SKUI=
 github.com/getsentry/sentry-go/gin v0.48.0 h1:AT5zU/GZqgD4m4mzCRnY3qckeb2L423aihAGWtsCMqk=
 github.com/getsentry/sentry-go/gin v0.48.0/go.mod h1:MqdZe63I4Bwu3J8SiHaPIGP86/d0uZjOFfsOPZecRjU=
-github.com/getsentry/sentry-go/zap v0.48.0 h1:70AkfRMRos4Va1XoZ5WVG0lHloLPAwO9pY/THjvzVSI=
-github.com/getsentry/sentry-go/zap v0.48.0/go.mod h1:Nr/+4XigvTxVLWae+XPTAVV+WPyxSNPmTg3Kv8tg3jQ=
+github.com/getsentry/sentry-go/zap v0.49.0 h1:LH1xxup/c+6EojkEUGdKY2cnikF3jHzh0Tup4ubMfVo=
+github.com/getsentry/sentry-go/zap v0.49.0/go.mod h1:SYY5PEBEn3V4zxw3KCzgNZMunaUbIGhrrENxKoQxsYE=
 github.com/ghodss/yaml v1.0.0/go.mod h1:4dBDuWmgqj2HViK6kFavaiC9ZROes6MMH2rRYeMEF04=
 github.com/gin-contrib/gzip v0.0.6 h1:NjcunTcGAj5CO1gn4N8jHOSIeRFHIbn51z6K+xaN4d4=
 github.com/gin-contrib/gzip v0.0.6/go.mod h1:QOJlmV2xmayAjkNS2Y8NQsMneuRShOU/kjovCXNuzzk=
